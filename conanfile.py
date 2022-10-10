@@ -9,6 +9,7 @@ required_conan_version = ">=1.43.0"
 
 class ConanConfiguration(ConanFile):
     build_requires = [
+        "tinyobjloader/1.0.6",
         "glm/0.9.9.8",
         "gtest/1.11.0",
         "lodepng/cci.20200615",

@@ -92,6 +92,9 @@ foreach(
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
         find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")
+    elseif("tinyobjloader" STREQUAL "${conanPackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
     elseif("glm" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
@@ -215,6 +218,7 @@ add_library("test-lib" INTERFACE
     "src/test/cpp/exqudens/vulkan/Vertex.hpp"
     "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
+    "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
     "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
     #"src/test/cpp/exqudens/vulkan/ConfigurationTests.hpp"
     #"src/test/cpp/exqudens/vulkan/ShaderTests.hpp"
@@ -238,6 +242,7 @@ target_link_libraries("test-lib" INTERFACE
     "glm::glm"
     "lodepng::lodepng"
     "glfw"
+    "tinyobjloader::tinyobjloader"
 )
 set_target_properties("test-lib" PROPERTIES
     CXX_STANDARD 23

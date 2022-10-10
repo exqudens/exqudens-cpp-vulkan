@@ -5,6 +5,7 @@
 
 #include "TestConfiguration.hpp"
 #include "exqudens/vulkan/TestUtilsTests.hpp"
+#include "exqudens/vulkan/TinyObjLoaderTests.hpp"
 #include "exqudens/vulkan/OtherTests.hpp"
 //#include "exqudens/vulkan/ConfigurationTests.hpp"
 //#include "exqudens/vulkan/ShaderTests.hpp"

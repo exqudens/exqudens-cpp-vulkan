@@ -5,9 +5,11 @@
 #include <string>
 #include <optional>
 #include <vector>
+#include <unordered_map>
 #include <limits>
 #include <chrono>
 #include <algorithm>
+#include <filesystem>
 #include <iostream>
 #include <format>
 
@@ -20,6 +22,10 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#ifndef TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+#endif
 
 #include "TestUtils.hpp"
 #include "exqudens/vulkan/all.hpp"
@@ -86,6 +92,49 @@ namespace exqudens::vulkan {
 
         public:
 
+          void readObj(
+              const std::string& path,
+              std::vector<Vertex>& vertices,
+              std::vector<uint16_t>& indices
+          ) {
+            tinyobj::attrib_t attrib;
+            std::vector<tinyobj::shape_t> shapes;
+            std::vector<tinyobj::material_t> materials;
+            std::string err;
+
+            if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str())) {
+              throw std::runtime_error(err);
+            }
+
+            std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+            for (const auto& shape : shapes) {
+              for (const auto& index : shape.mesh.indices) {
+                Vertex vertex = {};
+
+                vertex.pos = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2]
+                };
+
+                vertex.texCoord = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                };
+
+                vertex.color = {1.0f, 1.0f, 1.0f};
+
+                if (uniqueVertices.count(vertex) == 0) {
+                  uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                  vertices.emplace_back(vertex);
+                }
+
+                indices.emplace_back(uniqueVertices[vertex]);
+              }
+            }
+          }
+
           vk::PipelineShaderStageCreateInfo createStage(const std::string& path) {
             std::vector<char> bytes = Utility::readFile(path);
             if (bytes.empty()) {
@@ -114,7 +163,7 @@ namespace exqudens::vulkan {
             try {
               std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
 
-              vertexVector = {
+              /*vertexVector = {
                   {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
                   {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
                   {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -129,17 +178,25 @@ namespace exqudens::vulkan {
               indexVector = {
                   0, 1, 2, 2, 3, 0,
                   4, 5, 6, 6, 7, 4
-              };
+              };*/
 
-              unsigned int tmpImageWidth, tmpImageHeight, tmpImageDepth;
+              readObj(
+                  std::filesystem::path(arguments.front()).append("resources").append("obj").append("viking_room.obj").make_preferred().string(),
+                  vertexVector,
+                  indexVector
+              );
+
+              unsigned int tmpImageWidth, tmpImageHeight, tmpImageDepth, tmpImageMipLevels;
               std::vector<unsigned char> tmpImageData;
               TestUtils::readPng(
-                  std::filesystem::path().append("resources").append("png").append("texture.png").make_preferred().string(),
+                  //std::filesystem::path(arguments.front()).append("resources").append("png").append("texture.png").make_preferred().string(),
+                  std::filesystem::path(arguments.front()).append("resources").append("png").append("viking_room.png").make_preferred().string(),
                   tmpImageWidth,
                   tmpImageHeight,
                   tmpImageDepth,
                   tmpImageData
               );
+              tmpImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tmpImageWidth, tmpImageHeight)))) + 1;
 
               Utility::setEnvironmentVariable("VK_LAYER_PATH", arguments.front());
 
@@ -322,11 +379,11 @@ namespace exqudens::vulkan {
                                   .setHeight(tmpImageHeight)
                                   .setDepth(1)
                           )
-                          .setMipLevels(1)
+                          .setMipLevels(tmpImageMipLevels)
                           .setArrayLayers(1)
                           .setSamples(vk::SampleCountFlagBits::e1)
                           .setTiling(vk::ImageTiling::eOptimal)
-                          .setUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
+                          .setUsage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
                           .setSharingMode(vk::SharingMode::eExclusive)
                           .setQueueFamilyIndices({})
                   )
@@ -346,7 +403,7 @@ namespace exqudens::vulkan {
                               vk::ImageSubresourceRange()
                                   .setAspectMask(vk::ImageAspectFlagBits::eColor)
                                   .setBaseMipLevel(0)
-                                  .setLevelCount(1)
+                                  .setLevelCount(textureImage.createInfo.mipLevels)
                                   .setBaseArrayLayer(0)
                                   .setLayerCount(1)
                           )
@@ -432,6 +489,10 @@ namespace exqudens::vulkan {
                           .setMagFilter(vk::Filter::eLinear)
                           .setMinFilter(vk::Filter::eLinear)
                           .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+                          .setMinLod(0.0f)
+                          //.setMinLod((float) textureImage.createInfo.mipLevels / 2)
+                          .setMaxLod((float) textureImage.createInfo.mipLevels)
+                          .setMipLodBias(0.0f)
                           .setAddressModeU(vk::SamplerAddressMode::eRepeat)
                           .setAddressModeV(vk::SamplerAddressMode::eRepeat)
                           .setAddressModeW(vk::SamplerAddressMode::eRepeat)
@@ -548,87 +609,9 @@ namespace exqudens::vulkan {
 
               transferCommandBuffer.reference().begin({});
 
-              insertDepthImagePipelineBarrier(transferCommandBuffer.reference());
+              insertDepthImagePipelineBarrier();
 
-              transferCommandBuffer.reference().pipelineBarrier(
-                  vk::PipelineStageFlagBits::eTopOfPipe,
-                  vk::PipelineStageFlagBits::eTransfer,
-                  vk::DependencyFlags(0),
-                  {},
-                  {},
-                  {
-                      vk::ImageMemoryBarrier()
-                          .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                          .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                          .setImage(*textureImage.reference())
-                          .setOldLayout(vk::ImageLayout::eUndefined)
-                          .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
-                          .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
-                          .setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
-                          .setSubresourceRange(
-                              vk::ImageSubresourceRange()
-                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                                  .setBaseMipLevel(0)
-                                  .setLevelCount(1)
-                                  .setBaseArrayLayer(0)
-                                  .setLayerCount(1)
-                          )
-                  }
-              );
-              transferCommandBuffer.reference().copyBufferToImage(
-                  *textureBuffer.reference(),
-                  *textureImage.reference(),
-                  vk::ImageLayout::eTransferDstOptimal,
-                  {
-                      vk::BufferImageCopy()
-                          .setBufferOffset(0)
-                          .setBufferRowLength(0)
-                          .setImageOffset(
-                              vk::Offset3D()
-                                  .setX(0)
-                                  .setY(0)
-                                  .setZ(0)
-                          )
-                          .setImageExtent(
-                              vk::Extent3D()
-                                  .setWidth(textureImage.createInfo.extent.width)
-                                  .setHeight(textureImage.createInfo.extent.height)
-                                  .setDepth(1)
-                          )
-                          .setImageSubresource(
-                              vk::ImageSubresourceLayers()
-                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                                  .setMipLevel(0)
-                                  .setBaseArrayLayer(0)
-                                  .setLayerCount(1)
-                          )
-                  }
-              );
-              transferCommandBuffer.reference().pipelineBarrier(
-                  vk::PipelineStageFlagBits::eTransfer,
-                  vk::PipelineStageFlagBits::eFragmentShader,
-                  vk::DependencyFlags(0),
-                  {},
-                  {},
-                  {
-                      vk::ImageMemoryBarrier()
-                          .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                          .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                          .setImage(*textureImage.reference())
-                          .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
-                          .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                          .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-                          .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
-                          .setSubresourceRange(
-                              vk::ImageSubresourceRange()
-                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                                  .setBaseMipLevel(0)
-                                  .setLevelCount(1)
-                                  .setBaseArrayLayer(0)
-                                  .setLayerCount(1)
-                          )
-                  }
-              );
+              copyBufferToImageAndGenerateMipmaps();
 
               transferCommandBuffer.reference().copyBuffer(
                   *vertexStagingBuffer.reference(),
@@ -921,9 +904,9 @@ namespace exqudens::vulkan {
             }
           }
 
-          void insertDepthImagePipelineBarrier(vk::raii::CommandBuffer& commandBuffer) {
+          void insertDepthImagePipelineBarrier() {
             try {
-              commandBuffer.pipelineBarrier(
+              transferCommandBuffer.reference().pipelineBarrier(
                   vk::PipelineStageFlagBits::eTopOfPipe,
                   vk::PipelineStageFlagBits::eEarlyFragmentTests,
                   vk::DependencyFlags(0),
@@ -958,6 +941,209 @@ namespace exqudens::vulkan {
             }
           }
 
+          void copyBufferToImageAndGenerateMipmaps() {
+            try {
+              transferCommandBuffer.reference().pipelineBarrier(
+                  vk::PipelineStageFlagBits::eTopOfPipe,
+                  vk::PipelineStageFlagBits::eTransfer,
+                  vk::DependencyFlags(0),
+                  {},
+                  {},
+                  {
+                      vk::ImageMemoryBarrier()
+                          .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                          .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                          .setImage(*textureImage.reference())
+                          .setOldLayout(vk::ImageLayout::eUndefined)
+                          .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+                          .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
+                          .setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
+                          .setSubresourceRange(
+                              vk::ImageSubresourceRange()
+                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                  .setBaseMipLevel(0)
+                                  .setLevelCount(textureImage.createInfo.mipLevels)
+                                  .setBaseArrayLayer(0)
+                                  .setLayerCount(1)
+                          )
+                  }
+              );
+
+              transferCommandBuffer.reference().copyBufferToImage(
+                  *textureBuffer.reference(),
+                  *textureImage.reference(),
+                  vk::ImageLayout::eTransferDstOptimal,
+                  {
+                      vk::BufferImageCopy()
+                          .setBufferOffset(0)
+                          .setBufferRowLength(0)
+                          .setImageOffset(
+                              vk::Offset3D()
+                                  .setX(0)
+                                  .setY(0)
+                                  .setZ(0)
+                          )
+                          .setImageExtent(
+                              vk::Extent3D()
+                                  .setWidth(textureImage.createInfo.extent.width)
+                                  .setHeight(textureImage.createInfo.extent.height)
+                                  .setDepth(1)
+                          )
+                          .setImageSubresource(
+                              vk::ImageSubresourceLayers()
+                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                  .setMipLevel(0)
+                                  .setBaseArrayLayer(0)
+                                  .setLayerCount(1)
+                          )
+                  }
+              );
+
+              // Check if image format supports linear blitting
+              vk::FormatProperties formatProperties = physicalDevice.reference().getFormatProperties(textureImage.createInfo.format);
+
+              if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+                throw std::runtime_error(CALL_INFO() + "texture image format does not support linear blitting!");
+              }
+
+              auto mipWidth = (int32_t) textureImage.createInfo.extent.width;
+              auto mipHeight = (int32_t) textureImage.createInfo.extent.height;
+
+              for (uint32_t i = 1; i < textureImage.createInfo.mipLevels; i++) {
+                transferCommandBuffer.reference().pipelineBarrier(
+                    vk::PipelineStageFlagBits::eTransfer,
+                    vk::PipelineStageFlagBits::eTransfer,
+                    vk::DependencyFlags(0),
+                    {},
+                    {},
+                    {
+                        vk::ImageMemoryBarrier()
+                            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .setImage(*textureImage.reference())
+                            .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+                            .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
+                            .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                            .setDstAccessMask(vk::AccessFlagBits::eTransferRead)
+                            .setSubresourceRange(
+                                vk::ImageSubresourceRange()
+                                    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                    .setBaseMipLevel(i - 1)
+                                    .setLevelCount(1)
+                                    .setBaseArrayLayer(0)
+                                    .setLayerCount(1)
+                            )
+                    }
+                );
+
+                vk::ImageBlit blit = vk::ImageBlit()
+                    .setSrcOffsets({
+                        vk::Offset3D()
+                            .setX(0)
+                            .setY(0)
+                            .setZ(0),
+                        vk::Offset3D()
+                            .setX(mipWidth)
+                            .setY(mipHeight)
+                            .setZ(1)
+                    })
+                    .setSrcSubresource(
+                        vk::ImageSubresourceLayers()
+                            .setLayerCount(1)
+                            .setLayerCount(1)
+                            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                            .setLayerCount(1)
+                            .setMipLevel(i - 1)
+                            .setBaseArrayLayer(0)
+                            .setLayerCount(1)
+                    )
+                    .setDstOffsets({
+                        vk::Offset3D()
+                            .setX(0)
+                            .setY(0)
+                            .setZ(0),
+                        vk::Offset3D()
+                            .setX((int32_t) (mipWidth > 1 ? mipWidth / 2 : 1))
+                            .setY((int32_t) (mipHeight > 1 ? mipHeight / 2 : 1))
+                            .setZ((int32_t) 1)
+                    })
+                    .setDstSubresource(
+                        vk::ImageSubresourceLayers()
+                            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                            .setMipLevel(i)
+                            .setBaseArrayLayer(0)
+                            .setLayerCount(1)
+                    );
+
+                transferCommandBuffer.reference().blitImage(
+                    *textureImage.reference(),
+                    vk::ImageLayout::eTransferSrcOptimal,
+                    *textureImage.reference(),
+                    vk::ImageLayout::eTransferDstOptimal,
+                    blit,
+                    vk::Filter::eLinear
+                );
+
+                transferCommandBuffer.reference().pipelineBarrier(
+                    vk::PipelineStageFlagBits::eTransfer,
+                    vk::PipelineStageFlagBits::eFragmentShader,
+                    vk::DependencyFlags(0),
+                    {},
+                    {},
+                    {
+                        vk::ImageMemoryBarrier()
+                            .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                            .setImage(*textureImage.reference())
+                            .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
+                            .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                            .setSrcAccessMask(vk::AccessFlagBits::eTransferRead)
+                            .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
+                            .setSubresourceRange(
+                                vk::ImageSubresourceRange()
+                                    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                    .setBaseMipLevel(i - 1)
+                                    .setLevelCount(1)
+                                    .setBaseArrayLayer(0)
+                                    .setLayerCount(1)
+                            )
+                    }
+                );
+
+                if (mipWidth > 1) mipWidth /= 2;
+                if (mipHeight > 1) mipHeight /= 2;
+              }
+
+              transferCommandBuffer.reference().pipelineBarrier(
+                  vk::PipelineStageFlagBits::eTransfer,
+                  vk::PipelineStageFlagBits::eFragmentShader,
+                  vk::DependencyFlags(0),
+                  {},
+                  {},
+                  {
+                      vk::ImageMemoryBarrier()
+                          .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                          .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                          .setImage(*textureImage.reference())
+                          .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+                          .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                          .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                          .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
+                          .setSubresourceRange(
+                              vk::ImageSubresourceRange()
+                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                  .setBaseMipLevel(textureImage.createInfo.mipLevels - 1)
+                                  .setLevelCount(1)
+                                  .setBaseArrayLayer(0)
+                                  .setLayerCount(1)
+                          )
+                  }
+              );
+            } catch (...) {
+              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+            }
+          }
+
           void reCreateSwapchain(int width, int height) {
             try {
               std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
@@ -978,7 +1164,7 @@ namespace exqudens::vulkan {
 
               transferCommandBuffer.reference().begin({});
 
-              insertDepthImagePipelineBarrier(transferCommandBuffer.reference());
+              insertDepthImagePipelineBarrier();
 
               transferCommandBuffer.reference().end();
               transferQueue.reference().submit(
