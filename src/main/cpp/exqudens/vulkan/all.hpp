@@ -6,7 +6,7 @@
 #include "exqudens/vulkan/Instance.hpp"
 #include "exqudens/vulkan/MessengerCreateInfo.hpp"
 #include "exqudens/vulkan/Messenger.hpp"
-#include "exqudens/vulkan/QueueRequirement.hpp"
+#include "exqudens/vulkan/QueueInfo.hpp"
 #include "exqudens/vulkan/PhysicalDevice.hpp"
 #include "exqudens/vulkan/Device.hpp"
 #include "exqudens/vulkan/Image.hpp"

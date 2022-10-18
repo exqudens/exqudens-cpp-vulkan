@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstring>
 #include <string>
-#include <optional>
 #include <vector>
 #include <unordered_map>
 #include <limits>
@@ -52,6 +51,7 @@ namespace exqudens::vulkan {
 
           Instance instance = {};
           Surface surface = {};
+          vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures> physicalDeviceFeatures = {};
           PhysicalDevice physicalDevice = {};
           Device device = {};
           Queue transferQueue = {};
@@ -248,11 +248,48 @@ namespace exqudens::vulkan {
                   .setSurface(surface.value)
                   .addEnabledExtensionName(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                   .addEnabledExtensionName(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME)
-                  .setFeatures(vk::PhysicalDeviceFeatures().setSamplerAnisotropy(true))
-                  .addQueueRequirement(vk::QueueFlagBits::eCompute)
-                  .addQueueRequirement(vk::QueueFlagBits::eTransfer)
-                  .addQueueRequirement(vk::QueueFlagBits::eGraphics, true)
-                  .setQueuePriority(1.0f)
+                  .addQueuePriority(1.0f)
+                  .setIsSuitableFunction([this](const vk::raii::PhysicalDevice& p) {
+                    bool result = false;
+                    std::vector<vk::QueueFamilyProperties> properties = p.getQueueFamilyProperties();
+                    bool computeValid = false;
+                    bool transferValid = false;
+                    bool graphicsValid = false;
+                    bool presentValid = false;
+                    for (size_t i = 0; i < properties.size(); i++) {
+                      if (properties[i].queueFlags & vk::QueueFlagBits::eCompute) {
+                        computeValid = true;
+                      }
+                      if (properties[i].queueFlags & vk::QueueFlagBits::eTransfer) {
+                        transferValid = true;
+                      }
+                      if (properties[i].queueFlags & vk::QueueFlagBits::eGraphics && properties[i].timestampValidBits > 0) {
+                        graphicsValid = true;
+                      }
+                      if (surface.value && p.getSurfaceSupportKHR(static_cast<uint32_t>(i), *surface.reference())) {
+                        presentValid = true;
+                      }
+
+                      result = computeValid && transferValid && graphicsValid && presentValid;
+                      if (result) {
+                        break;
+                      }
+                    }
+                    if (!result) {
+                      return result;
+                    }
+                    auto f = p.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures>();
+                    result = f.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy;
+                    if (!result) {
+                      return result;
+                    }
+                    result = f.get<vk::PhysicalDeviceHostQueryResetFeatures>().hostQueryReset;
+                    if (!result) {
+                      return result;
+                    }
+                    physicalDeviceFeatures = f;
+                    return result;
+                  })
               .build();
               std::cout << std::format("physicalDevice: '{}'", (bool) physicalDevice.value) << std::endl;
 
@@ -264,10 +301,11 @@ namespace exqudens::vulkan {
                   .setCreateInfo(
                       vk::DeviceCreateInfo()
                           .setQueueCreateInfos(physicalDevice.uniqueQueueCreateInfos)
-                          .setPEnabledFeatures(&physicalDevice.features)
+                          //.setPEnabledFeatures(&physicalDevice.features)
                           .setPEnabledExtensionNames(physicalDevice.enabledExtensionNames)
                           .setPEnabledLayerNames(instance.enabledLayerNames)
-                          .setPNext(physicalDevice.hostQueryResetFeatures.has_value() ? &physicalDevice.hostQueryResetFeatures.value() : nullptr)
+                          //.setPNext(physicalDevice.hostQueryResetFeatures.has_value() ? &physicalDevice.hostQueryResetFeatures.value() : nullptr)
+                          .setPNext(&physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>())
                   )
               .build();
               std::cout << std::format("device: '{}'", (bool) device.value) << std::endl;
@@ -500,8 +538,8 @@ namespace exqudens::vulkan {
                           .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
                           .setUnnormalizedCoordinates(false)
                           .setCompareEnable(false)
-                          .setAnisotropyEnable(physicalDevice.features.samplerAnisotropy)
-                          .setMaxAnisotropy(physicalDevice.features.samplerAnisotropy ? physicalDevice.reference().getProperties().limits.maxSamplerAnisotropy : 0)
+                          .setAnisotropyEnable(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy)
+                          .setMaxAnisotropy(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy ? physicalDevice.reference().getProperties().limits.maxSamplerAnisotropy : 0)
                   )
               .build();
               std::cout << std::format("sampler: '{}'", (bool) sampler.value) << std::endl;

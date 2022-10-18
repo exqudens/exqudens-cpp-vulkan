@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
+#include <any>
 #include <array>
+#include <utility>
 #include <vector>
 #include <map>
 #include <memory>
@@ -10,125 +12,62 @@
 #include <format>
 
 #include <gtest/gtest.h>
+#include <vulkan/vulkan_raii.hpp>
 
 #include "TestUtils.hpp"
 
 namespace exqudens::vulkan {
 
-  class MyClassA {
-
-    private:
-
-      inline static unsigned int currentId = 1;
-
-    public:
-
-      unsigned int id = 0;
-
-      MyClassA() {
-        std::cout << std::format("{}", CALL_INFO()) << std::endl;
-        id = currentId;
-        currentId++;
-      }
-
-      ~MyClassA() {
-        std::cout << std::format("{}: id: '{}'", CALL_INFO(), id) << std::endl;
-      }
-
-  };
-
-  class MyClassB {
-
-    private:
-
-      inline static unsigned int currentId = 1;
-
-    public:
-
-      unsigned int id = 0;
-      std::shared_ptr<MyClassA> value = {};
-
-      MyClassB() {
-        std::cout << std::format("{}", CALL_INFO()) << std::endl;
-        id = currentId;
-        currentId++;
-      }
-
-      ~MyClassB() {
-        std::cout << std::format("{}: id: '{}'", CALL_INFO(), id) << std::endl;
-      }
-
-  };
-
-  class MyEnvironment {
-
-    private:
-
-      unsigned int instanceId = 1;
-
-      std::map<unsigned int, std::shared_ptr<MyClassB>> instanceMap = {};
-
-    public:
-
-      MyClassB& createInstance(const unsigned int& id = 0) {
-        auto* instance = new MyClassB();
-        if (id != 0 && instanceMap.contains(id)) {
-          instanceMap.erase(id);
-          instance->id = id;
-        } else {
-          instance->id = instanceId++;
-        }
-        instance->value = std::make_shared<MyClassA>();
-        instanceMap[instance->id] = std::shared_ptr<MyClassB>(instance);
-        return *instanceMap[instance->id];
-      }
-
-  };
-
-  class OtherTests : public testing::Test {
-
-    protected:
-
-      std::string previousPath = {};
-
-      void SetUp() override {
-        try {
-          std::cout << std::format("{}", CALL_INFO()) << std::endl;
-          previousPath = TestUtils::getEnvironmentVariable("PATH").value_or("");
-          TestUtils::setEnvironmentVariable("PATH", TestUtils::getExecutableDir());
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
-
-      void TearDown() override {
-        try {
-          std::cout << std::format("{}", CALL_INFO()) << std::endl;
-          TestUtils::setEnvironmentVariable("PATH", previousPath);
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
-
-  };
+  class OtherTests : public testing::Test {};
 
   TEST_F(OtherTests, test1) {
     try {
-      //GTEST_SKIP() << "Skipping test: '" << __FUNCTION__ << "'";
-      MyEnvironment environment;
+      std::vector<std::pair<vk::StructureType, std::any>> features2;
 
-      MyClassB instance1 = environment.createInstance();
-      unsigned int instance1Id = instance1.id;
-      std::cout << std::format("instance1Id: '{}'", instance1Id) << std::endl;
-      std::cout << std::format("instance1.value.id: '{}'", instance1.value->id) << std::endl;
+      features2.emplace_back(
+          std::make_pair(
+              vk::PhysicalDeviceFeatures2::structureType,
+              vk::PhysicalDeviceFeatures2().setFeatures(vk::PhysicalDeviceFeatures().setSamplerAnisotropy(true))
+          )
+      );
 
-      instance1 = {};
-      std::cout << std::format("instance1 cleared") << std::endl;
+      features2.emplace_back(
+          std::make_pair(
+              vk::PhysicalDeviceHostQueryResetFeatures::structureType,
+              vk::PhysicalDeviceHostQueryResetFeatures().setHostQueryReset(true)
+          )
+      );
 
-      instance1 = environment.createInstance(instance1Id);
-      instance1Id = instance1.id;
-      std::cout << std::format("instance1.id: '{}'", instance1.id) << std::endl;
-      std::cout << std::format("instance1.value.id: '{}'", instance1.value->id) << std::endl;
+      std::any_cast<vk::PhysicalDeviceFeatures2>(features2[0].second).setPNext(&features2[1].second);
+
+      ASSERT_EQ(2, features2.size());
+
+      ASSERT_EQ(vk::PhysicalDeviceFeatures2::structureType, features2[0].first);
+      ASSERT_EQ(vk::PhysicalDeviceHostQueryResetFeatures::structureType, features2[1].first);
+
+      ASSERT_EQ(true, std::any_cast<vk::PhysicalDeviceFeatures2>(features2[0].second).features.samplerAnisotropy);
+      ASSERT_TRUE(std::any_cast<vk::PhysicalDeviceFeatures2>(features2[0].second).pNext == nullptr);
+      ASSERT_EQ(true, std::any_cast<vk::PhysicalDeviceHostQueryResetFeatures>(features2[1].second).hostQueryReset);
+
+      std::vector<std::pair<vk::StructureType, std::shared_ptr<void>>> fs2;
+
+      fs2.emplace_back(
+          std::make_pair(
+              vk::PhysicalDeviceHostQueryResetFeatures::structureType,
+              std::make_shared<vk::PhysicalDeviceHostQueryResetFeatures>(vk::PhysicalDeviceHostQueryResetFeatures().setHostQueryReset(true))
+          )
+      );
+
+      fs2.emplace_back(
+          std::make_pair(
+              vk::PhysicalDeviceFeatures2::structureType,
+              std::make_shared<vk::PhysicalDeviceFeatures2>(
+                  vk::PhysicalDeviceFeatures2().setFeatures(vk::PhysicalDeviceFeatures().setSamplerAnisotropy(true)).setPNext(fs2[0].second.get())
+              )
+          )
+      );
+
+      //a->setPNext(a.get());
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }

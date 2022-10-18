@@ -1,15 +1,18 @@
 #pragma once
 
 #include <string>
+#include <any>
 #include <optional>
+#include <utility>
 #include <vector>
 #include <memory>
+#include <functional>
 #include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/Macros.hpp"
-#include "exqudens/vulkan/QueueRequirement.hpp"
+#include "exqudens/vulkan/QueueInfo.hpp"
 
 namespace exqudens::vulkan {
 
@@ -20,9 +23,7 @@ namespace exqudens::vulkan {
     inline static Builder builder();
 
     std::vector<const char*> enabledExtensionNames;
-    vk::PhysicalDeviceFeatures features;
-    std::optional<vk::PhysicalDeviceHostQueryResetFeatures> hostQueryResetFeatures;
-    std::vector<QueueRequirement> queueRequirements;
+    std::vector<QueueInfo> queueInfos;
     std::vector<float> queuePriorities;
     std::vector<vk::DeviceQueueCreateInfo> computeQueueCreateInfos;
     std::vector<vk::DeviceQueueCreateInfo> transferQueueCreateInfos;
@@ -50,10 +51,9 @@ namespace exqudens::vulkan {
 
       std::weak_ptr<vk::raii::Instance> instance;
       std::vector<const char*> enabledExtensionNames;
-      std::optional<vk::PhysicalDeviceFeatures> features;
-      std::vector<QueueRequirement> queueRequirements;
       std::optional<vk::SurfaceKHR> surface;
       std::vector<float> queuePriorities;
+      std::function<bool(const vk::raii::PhysicalDevice&)> isSuitableFunction;
 
     public:
 
@@ -77,31 +77,6 @@ namespace exqudens::vulkan {
         return *this;
       }
 
-      PhysicalDevice::Builder& setFeatures(const vk::PhysicalDeviceFeatures& val) {
-        features = val;
-        return *this;
-      }
-
-      PhysicalDevice::Builder& addQueueRequirement(const vk::QueueFlagBits& type) {
-        queueRequirements.emplace_back(QueueRequirement().setType(type).setTimestampRequired(false));
-        return *this;
-      }
-
-      PhysicalDevice::Builder& addQueueRequirement(const vk::QueueFlagBits& type, const bool& timestampRequired) {
-        queueRequirements.emplace_back(QueueRequirement().setType(type).setTimestampRequired(timestampRequired));
-        return *this;
-      }
-
-      PhysicalDevice::Builder& addQueueRequirement(const QueueRequirement& val) {
-        queueRequirements.emplace_back(val);
-        return *this;
-      }
-
-      PhysicalDevice::Builder& setQueueRequirements(const std::vector<QueueRequirement>& val) {
-        queueRequirements = val;
-        return *this;
-      }
-
       PhysicalDevice::Builder& setSurface(const vk::SurfaceKHR& val) {
         surface = val;
         return *this;
@@ -112,25 +87,118 @@ namespace exqudens::vulkan {
         return *this;
       }
 
-      PhysicalDevice::Builder& setQueuePriority(const float& val) {
-        queuePriorities.clear();
-        queuePriorities.emplace_back(float(val));
+      PhysicalDevice::Builder& addQueuePriority(const float& val) {
+        queuePriorities.emplace_back(val);
+        return *this;
+      }
+
+      PhysicalDevice::Builder& setQueuePriorities(const std::vector<float>& val) {
+        queuePriorities = val;
+        return *this;
+      }
+
+      PhysicalDevice::Builder& setIsSuitableFunction(const std::function<bool(const vk::raii::PhysicalDevice&)>& val) {
+        isSuitableFunction = val;
         return *this;
       }
 
       PhysicalDevice build() {
         try {
+          if (!isSuitableFunction) {
+            throw std::runtime_error(CALL_INFO() + ": 'isSuitableFunction' is not defined!");
+          }
+
           PhysicalDevice target = {};
           target.enabledExtensionNames = enabledExtensionNames;
-          target.features = features.value_or(vk::PhysicalDeviceFeatures());
-          target.queueRequirements = queueRequirements;
           target.queuePriorities = queuePriorities;
           std::vector<vk::raii::PhysicalDevice> values = vk::raii::PhysicalDevices(
               *instance.lock()
           );
+
+          std::vector<QueueInfo> tmpQueueInfos = {};
+
           for (vk::raii::PhysicalDevice& physicalDevice : values) {
 
-            bool queueFamilyIndicesAdequate = true;
+            bool suitable = isSuitableFunction(physicalDevice);
+
+            if (suitable) {
+              std::vector<vk::QueueFamilyProperties> queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
+
+              for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+
+                QueueInfo queueInfo = QueueInfo()
+                    .setFamilyIndex(static_cast<uint32_t>(i))
+                    .setPriorities(target.queuePriorities);
+
+                if (queueFamilyProperties[i].timestampValidBits > 0) {
+                  queueInfo.setTimestampSupported(true);
+                }
+
+                if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eCompute) {
+                  queueInfo.addType(vk::QueueFlagBits::eCompute);
+                }
+
+                if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eTransfer) {
+                  queueInfo.addType(vk::QueueFlagBits::eTransfer);
+                }
+
+                if (queueFamilyProperties[i].queueFlags & vk::QueueFlagBits::eGraphics) {
+                  queueInfo.addType(vk::QueueFlagBits::eGraphics);
+                }
+
+                if (surface && physicalDevice.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface.value())) {
+                  queueInfo.setPresentType(true);
+                }
+
+                if (!queueInfo.types.empty() || queueInfo.presentType) {
+                  tmpQueueInfos.emplace_back(queueInfo);
+                }
+              }
+
+              if (!tmpQueueInfos.empty()) {
+                target.queueInfos = tmpQueueInfos;
+
+                std::vector<vk::DeviceQueueCreateInfo> tmpComputeQueueCreateInfos = {};
+                std::vector<vk::DeviceQueueCreateInfo> tmpTransferQueueCreateInfos = {};
+                std::vector<vk::DeviceQueueCreateInfo> tmpGraphicsQueueCreateInfos = {};
+                std::vector<vk::DeviceQueueCreateInfo> tmpPresentQueueCreateInfos = {};
+                std::map<uint32_t, vk::DeviceQueueCreateInfo> queueCreateInfoMap = {};
+
+                for (const QueueInfo& queueInfo : target.queueInfos) {
+                  vk::DeviceQueueCreateInfo queueCreateInfo = vk::DeviceQueueCreateInfo()
+                      .setQueueFamilyIndex(queueInfo.familyIndex)
+                      .setQueuePriorities(queueInfo.priorities);
+                  if (queueInfo.types.contains(vk::QueueFlagBits::eCompute)) {
+                    tmpComputeQueueCreateInfos.emplace_back(queueCreateInfo);
+                  }
+                  if (queueInfo.types.contains(vk::QueueFlagBits::eTransfer)) {
+                    tmpTransferQueueCreateInfos.emplace_back(queueCreateInfo);
+                  }
+                  if (queueInfo.types.contains(vk::QueueFlagBits::eGraphics)) {
+                    tmpGraphicsQueueCreateInfos.emplace_back(queueCreateInfo);
+                  }
+                  if (queueInfo.presentType) {
+                    tmpPresentQueueCreateInfos.emplace_back(queueCreateInfo);
+                  }
+                  queueCreateInfoMap.try_emplace(queueCreateInfo.queueFamilyIndex, queueCreateInfo);
+                }
+
+                target.computeQueueCreateInfos = tmpComputeQueueCreateInfos;
+                target.transferQueueCreateInfos = tmpTransferQueueCreateInfos;
+                target.graphicsQueueCreateInfos = tmpGraphicsQueueCreateInfos;
+                target.presentQueueCreateInfos = tmpPresentQueueCreateInfos;
+                std::vector<vk::DeviceQueueCreateInfo> tmpUniqueQueueCreateInfos = {};
+                for (const auto& [k, v] : queueCreateInfoMap) {
+                  tmpUniqueQueueCreateInfos.emplace_back(v);
+                }
+                target.uniqueQueueCreateInfos = tmpUniqueQueueCreateInfos;
+                target.value = std::make_shared<vk::raii::PhysicalDevice>(std::move(physicalDevice));
+              }
+
+              break;
+            }
+
+            /*bool queueFamilyIndicesAdequate = true;
             bool deviceExtensionAdequate = true;
             bool swapChainAdequate = true;
             bool anisotropyAdequate = true;
@@ -224,9 +292,12 @@ namespace exqudens::vulkan {
               continue;
             }
 
-            if (target.features.samplerAnisotropy) {
+            if (target.features && target.features.value().samplerAnisotropy) {
               vk::PhysicalDeviceFeatures physicalDeviceFeatures = physicalDevice.getFeatures();
               anisotropyAdequate = physicalDeviceFeatures.samplerAnisotropy;
+            } else if (!target.features2.empty()) {
+              vk::PhysicalDeviceFeatures2 physicalDeviceFeatures2 = physicalDevice.getFeatures2();
+              anisotropyAdequate = physicalDeviceFeatures2.features.samplerAnisotropy;
             }
             if (!anisotropyAdequate) {
               continue;
@@ -243,7 +314,7 @@ namespace exqudens::vulkan {
             }
             target.uniqueQueueCreateInfos = tmpUniqueQueueCreateInfos;
             target.value = std::make_shared<vk::raii::PhysicalDevice>(std::move(physicalDevice));
-            break;
+            break;*/
           }
           if (!target.value) {
             throw std::runtime_error(CALL_INFO() + ": failed to create physical device!");
