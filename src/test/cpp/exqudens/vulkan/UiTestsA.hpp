@@ -66,6 +66,8 @@ namespace exqudens::vulkan {
           std::vector<ImageView> swapchainImageViews = {};
           Image depthImage = {};
           ImageView depthImageView = {};
+          Image colorImage = {};
+          ImageView colorImageView = {};
           RenderPass renderPass = {};
           std::map<std::string, std::pair<vk::ShaderModuleCreateInfo, std::shared_ptr<vk::raii::ShaderModule>>> shaders;
           Pipeline pipeline = {};
@@ -89,6 +91,7 @@ namespace exqudens::vulkan {
           size_t currentFrame = 0;
           uint8_t timeDiffCounter = 0;
           float physicalDeviceTimestampPeriod = 0;
+          vk::SampleCountFlagBits physicalDeviceMsaaSamples = {};
 
         public:
 
@@ -243,6 +246,16 @@ namespace exqudens::vulkan {
               .build();
               std::cout << std::format("surface: '{}'", (bool) surface.value) << std::endl;
 
+              vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures> tmpPhysicalDeviceFeatures = {
+                  vk::PhysicalDeviceFeatures2()
+                      .setFeatures(
+                          vk::PhysicalDeviceFeatures()
+                              .setSamplerAnisotropy(true)
+                      ),
+                  vk::PhysicalDeviceHostQueryResetFeatures()
+                      .setHostQueryReset(true)
+              };
+              physicalDeviceFeatures = tmpPhysicalDeviceFeatures;
               physicalDevice = PhysicalDevice::builder()
                   .setInstance(instance.value)
                   .setSurface(surface.value)
@@ -287,7 +300,6 @@ namespace exqudens::vulkan {
                     if (!result) {
                       return result;
                     }
-                    physicalDeviceFeatures = f;
                     return result;
                   })
               .build();
@@ -295,6 +307,12 @@ namespace exqudens::vulkan {
 
               physicalDeviceTimestampPeriod = physicalDevice.reference().getProperties().limits.timestampPeriod;
               std::cout << std::format("physicalDeviceTimestampPeriod: '{}'", physicalDeviceTimestampPeriod) << std::endl;
+
+              physicalDeviceMsaaSamples = Utility::getMaxUsableSampleCount({
+                  physicalDevice.reference().getProperties().limits.framebufferColorSampleCounts,
+                  physicalDevice.reference().getProperties().limits.framebufferDepthSampleCounts
+              });
+              std::cout << std::format("physicalDeviceMsaaSamples: '{}'", vk::to_string(physicalDeviceMsaaSamples)) << std::endl;
 
               device = Device::builder()
                   .setPhysicalDevice(physicalDevice.value)
@@ -744,7 +762,7 @@ namespace exqudens::vulkan {
                           )
                           .setMipLevels(1)
                           .setArrayLayers(1)
-                          .setSamples(vk::SampleCountFlagBits::e1)
+                          .setSamples(physicalDeviceMsaaSamples)
                           .setTiling(vk::ImageTiling::eOptimal)
                           .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
                           .setSharingMode(vk::SharingMode::eExclusive)
@@ -776,29 +794,87 @@ namespace exqudens::vulkan {
               .build();
               std::cout << std::format("depthImageView: '{}'", (bool) depthImageView.value) << std::endl;
 
+              colorImage = Image::builder()
+                  .setPhysicalDevice(physicalDevice.value)
+                  .setDevice(device.value)
+                  .setCreateInfo(
+                      vk::ImageCreateInfo()
+                          .setImageType(vk::ImageType::e2D)
+                          .setFormat(swapchain.createInfo.imageFormat)
+                          .setExtent(
+                              vk::Extent3D()
+                                  .setWidth(swapchain.createInfo.imageExtent.width)
+                                  .setHeight(swapchain.createInfo.imageExtent.height)
+                                  .setDepth(1)
+                          )
+                          .setMipLevels(1)
+                          .setArrayLayers(1)
+                          .setSamples(physicalDeviceMsaaSamples)
+                          .setTiling(vk::ImageTiling::eOptimal)
+                          .setUsage(vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment)
+                          .setSharingMode(vk::SharingMode::eExclusive)
+                          .setQueueFamilyIndices({})
+                          .setInitialLayout(vk::ImageLayout::eUndefined)
+                  )
+                  .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
+              .build();
+              std::cout << std::format("colorImage: '{}'", (bool) colorImage.value) << std::endl;
+
+              colorImageView = ImageView::builder()
+                  .setDevice(device.value)
+                  .setCreateInfo(
+                      vk::ImageViewCreateInfo()
+                          .setImage(*colorImage.reference())
+                          .setFormat(colorImage.createInfo.format)
+                          .setViewType(vk::ImageViewType::e2D)
+                          .setFlags({})
+                          .setComponents({})
+                          .setSubresourceRange(
+                              vk::ImageSubresourceRange()
+                                  .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                  .setBaseMipLevel(0)
+                                  .setLevelCount(1)
+                                  .setBaseArrayLayer(0)
+                                  .setLayerCount(1)
+                          )
+                  )
+              .build();
+              std::cout << std::format("colorImageView: '{}'", (bool) colorImageView.value) << std::endl;
+
               renderPass = RenderPass::builder()
                   .setDevice(device.value)
                   .addAttachment(
                       vk::AttachmentDescription()
                           .setFormat(swapchain.createInfo.imageFormat)
-                          .setSamples(vk::SampleCountFlagBits::e1)
+                          .setSamples(physicalDeviceMsaaSamples)
                           .setLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStoreOp(vk::AttachmentStoreOp::eDontCare)
                           .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
                           .setInitialLayout(vk::ImageLayout::eUndefined)
-                          .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
+                          .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal)
                   )
                   .addAttachment(
                       vk::AttachmentDescription()
                           .setFormat(depthImage.createInfo.format)
-                          .setSamples(vk::SampleCountFlagBits::e1)
+                          .setSamples(physicalDeviceMsaaSamples)
                           .setLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStoreOp(vk::AttachmentStoreOp::eDontCare)
                           .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
                           .setInitialLayout(vk::ImageLayout::eUndefined)
                           .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+                  )
+                  .addAttachment(
+                      vk::AttachmentDescription()
+                          .setFormat(swapchain.createInfo.imageFormat)
+                          .setSamples(vk::SampleCountFlagBits::e1)
+                          .setLoadOp(vk::AttachmentLoadOp::eDontCare)
+                          .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                          .setStoreOp(vk::AttachmentStoreOp::eStore)
+                          .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                          .setInitialLayout(vk::ImageLayout::eUndefined)
+                          .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
                   )
                   .addSubpass(
                       SubpassDescription()
@@ -812,6 +888,11 @@ namespace exqudens::vulkan {
                               vk::AttachmentReference()
                                   .setAttachment(1)
                                   .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+                          )
+                          .addResolveAttachment(
+                              vk::AttachmentReference()
+                                  .setAttachment(2)
+                                  .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
                           )
                   )
                   .addDependency(
@@ -878,7 +959,7 @@ namespace exqudens::vulkan {
                           )
                           .setMultisampleState(
                               vk::PipelineMultisampleStateCreateInfo()
-                                  .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+                                  .setRasterizationSamples(physicalDeviceMsaaSamples)
                                   .setSampleShadingEnable(false)
                                   .setMinSampleShading(1.0)
                                   .setPSampleMask(nullptr)
@@ -922,8 +1003,9 @@ namespace exqudens::vulkan {
                 swapchainFramebuffers.emplace_back(
                     Framebuffer::builder()
                         .setDevice(device.value)
-                        .addAttachment(*imageView.reference())
+                        .addAttachment(*colorImageView.reference())
                         .addAttachment(*depthImageView.reference())
+                        .addAttachment(*imageView.reference())
                         .setCreateInfo(
                             vk::FramebufferCreateInfo()
                                 .setRenderPass(*renderPass.reference())
@@ -1192,6 +1274,8 @@ namespace exqudens::vulkan {
               swapchainFramebuffers.clear();
               pipeline.value.reset();
               renderPass.value.reset();
+              colorImageView.value.reset();
+              colorImage.value.reset();
               depthImageView.value.reset();
               depthImage.value.reset();
               std::ranges::for_each(swapchainImageViews, [](auto& o1) {o1.value.reset();});
@@ -1299,7 +1383,7 @@ namespace exqudens::vulkan {
                 if (vk::Result::eSuccess == queryResults.first) {
                   if (timeDiffCounter == 9) {
                     float timeDiff = physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second[1] - queryResults.second[0]);
-                    std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
+                    //std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
                     timeDiffCounter = 0;
                   } else {
                     timeDiffCounter++;
@@ -1364,9 +1448,11 @@ namespace exqudens::vulkan {
 
               auto currentTime = std::chrono::high_resolution_clock::now();
               float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+              float angle = time * glm::radians(90.0f);
+              //float angle = 0.5f * glm::radians(90.0f);
 
               UniformBufferObject ubo = {};
-              ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+              ubo.model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
               ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
               ubo.proj = glm::perspective(glm::radians(45.0f), (float) swapchain.createInfo.imageExtent.width / (float) swapchain.createInfo.imageExtent.height, 0.1f, 10.0f);
               ubo.proj[1][1] *= -1;
@@ -1413,6 +1499,8 @@ namespace exqudens::vulkan {
 
               glfwSetWindowUserPointer(window, this);
               glfwSetFramebufferSizeCallback(window, frameBufferResizeCallback);
+              //glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
+              //glfwSetKeyCallback(window, keyCallback);
 
               uint32_t glfwExtensionCount = 0;
               const char** glfwExtensions;

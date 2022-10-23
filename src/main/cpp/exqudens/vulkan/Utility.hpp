@@ -220,6 +220,37 @@ namespace exqudens::vulkan {
         }
       }
 
+      static vk::SampleCountFlagBits getMaxUsableSampleCount(
+          const std::vector<vk::SampleCountFlags>& flags
+      ) {
+        try {
+          vk::SampleCountFlags counts = vk::SampleCountFlagBits::e1;
+          if (!flags.empty()) {
+            counts = flags.front();
+            for (size_t i = 1; i < flags.size(); i++) {
+              counts &= flags[i];
+            }
+          }
+          if (counts & vk::SampleCountFlagBits::e64) {
+            return vk::SampleCountFlagBits::e64;
+          } else if (counts & vk::SampleCountFlagBits::e32) {
+            return vk::SampleCountFlagBits::e32;
+          } else if (counts & vk::SampleCountFlagBits::e16) {
+            return vk::SampleCountFlagBits::e16;
+          } else if (counts & vk::SampleCountFlagBits::e8) {
+            return vk::SampleCountFlagBits::e8;
+          } else if (counts & vk::SampleCountFlagBits::e4) {
+            return vk::SampleCountFlagBits::e4;
+          } else if (counts & vk::SampleCountFlagBits::e2) {
+            return vk::SampleCountFlagBits::e2;
+          } else {
+            return vk::SampleCountFlagBits::e1;
+          }
+        } catch (...) {
+          std::throw_with_nested(std::runtime_error(CALL_INFO()));
+        }
+      }
+
   };
 
 }
