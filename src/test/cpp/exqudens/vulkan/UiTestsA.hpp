@@ -251,6 +251,7 @@ namespace exqudens::vulkan {
                       .setFeatures(
                           vk::PhysicalDeviceFeatures()
                               .setSamplerAnisotropy(true)
+                              .setSampleRateShading(true)
                       ),
                   vk::PhysicalDeviceHostQueryResetFeatures()
                       .setHostQueryReset(true)
@@ -293,6 +294,7 @@ namespace exqudens::vulkan {
                     }
                     auto f = p.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures>();
                     result = f.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy;
+                    result = f.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading;
                     if (!result) {
                       return result;
                     }
@@ -962,6 +964,8 @@ namespace exqudens::vulkan {
                                   .setRasterizationSamples(physicalDeviceMsaaSamples)
                                   .setSampleShadingEnable(false)
                                   .setMinSampleShading(1.0)
+                                  //.setSampleShadingEnable(true)
+                                  //.setMinSampleShading(0.2f)
                                   .setPSampleMask(nullptr)
                                   .setAlphaToCoverageEnable(false)
                                   .setAlphaToOneEnable(false)
