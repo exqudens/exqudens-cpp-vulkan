@@ -18,6 +18,9 @@ class ConanConfiguration(ConanFile):
     requires = [
         "vulkan/1.3.224.1"
     ]
+    settings = "arch", "os", "compiler", "build_type"
+    options = {"interface": [True, False], "shared": [True, False]}
+    default_options = {"interface": False, "shared": True}
     generators = "cmake_find_package"
 
     def set_name(self):
@@ -82,14 +85,18 @@ class ConanConfiguration(ConanFile):
 
     def package_info(self):
         try:
-            self.cpp_info.libs = []
+            if self.options.interface:
+                self.cpp_info.libs = []
+            else:
+                self.cpp_info.libs = tools.collect_libs(self)
         except Exception as e:
             error(format_exc())
             raise e
 
     def package_id(self):
         try:
-            self.info.header_only()
+            if self.options.interface:
+                self.info.header_only()
         except Exception as e:
             error(format_exc())
             raise e

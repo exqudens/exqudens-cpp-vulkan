@@ -2,38 +2,28 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct DescriptorPool {
+  struct EXQUDENS_VULKAN_EXPORT DescriptorPool {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     std::vector<vk::DescriptorPoolSize> poolSizes;
     vk::DescriptorPoolCreateInfo createInfo;
     std::shared_ptr<vk::raii::DescriptorPool> value;
 
-    vk::raii::DescriptorPool& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::DescriptorPool& reference();
 
   };
 
-  class DescriptorPool::Builder {
+  class EXQUDENS_VULKAN_EXPORT DescriptorPool::Builder {
 
     private:
 
@@ -43,47 +33,16 @@ namespace exqudens::vulkan {
 
     public:
 
-      DescriptorPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      DescriptorPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      DescriptorPool::Builder& addPoolSize(const vk::DescriptorPoolSize& val) {
-        poolSizes.emplace_back(val);
-        return *this;
-      }
+      DescriptorPool::Builder& addPoolSize(const vk::DescriptorPoolSize& val);
 
-      DescriptorPool::Builder& setPoolSizes(const std::vector<vk::DescriptorPoolSize>& val) {
-        poolSizes = val;
-        return *this;
-      }
+      DescriptorPool::Builder& setPoolSizes(const std::vector<vk::DescriptorPoolSize>& val);
 
-      DescriptorPool::Builder& setCreateInfo(const vk::DescriptorPoolCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      DescriptorPool::Builder& setCreateInfo(const vk::DescriptorPoolCreateInfo& val);
 
-      DescriptorPool build() {
-        try {
-          DescriptorPool target = {};
-          target.poolSizes = poolSizes;
-          target.createInfo = createInfo.value();
-          target.createInfo.setPoolSizes(target.poolSizes);
-          //target.createInfo.setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
-          target.value = std::make_shared<vk::raii::DescriptorPool>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      DescriptorPool build();
 
   };
-
-  DescriptorPool::Builder DescriptorPool::builder() {
-    return {};
-  }
 
 }

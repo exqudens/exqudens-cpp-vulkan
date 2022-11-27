@@ -2,38 +2,28 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct DescriptorSetLayout {
+  struct EXQUDENS_VULKAN_EXPORT DescriptorSetLayout {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     std::vector<vk::DescriptorSetLayoutBinding> bindings;
     vk::DescriptorSetLayoutCreateInfo createInfo;
     std::shared_ptr<vk::raii::DescriptorSetLayout> value;
 
-    vk::raii::DescriptorSetLayout& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::DescriptorSetLayout& reference();
 
   };
 
-  class DescriptorSetLayout::Builder {
+  class EXQUDENS_VULKAN_EXPORT DescriptorSetLayout::Builder {
 
     private:
 
@@ -43,46 +33,16 @@ namespace exqudens::vulkan {
 
     public:
 
-      DescriptorSetLayout::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      DescriptorSetLayout::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      DescriptorSetLayout::Builder& addBinding(const vk::DescriptorSetLayoutBinding& val) {
-        bindings.emplace_back(val);
-        return *this;
-      }
+      DescriptorSetLayout::Builder& addBinding(const vk::DescriptorSetLayoutBinding& val);
 
-      DescriptorSetLayout::Builder& setBindings(const std::vector<vk::DescriptorSetLayoutBinding>& val) {
-        bindings = val;
-        return *this;
-      }
+      DescriptorSetLayout::Builder& setBindings(const std::vector<vk::DescriptorSetLayoutBinding>& val);
 
-      DescriptorSetLayout::Builder& setCreateInfo(const vk::DescriptorSetLayoutCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      DescriptorSetLayout::Builder& setCreateInfo(const vk::DescriptorSetLayoutCreateInfo& val);
 
-      DescriptorSetLayout build() {
-        try {
-          DescriptorSetLayout target = {};
-          target.bindings = bindings;
-          target.createInfo = createInfo.value_or(vk::DescriptorSetLayoutCreateInfo());
-          target.createInfo.setBindings(target.bindings);
-          target.value = std::make_shared<vk::raii::DescriptorSetLayout>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      DescriptorSetLayout build();
 
   };
-
-  DescriptorSetLayout::Builder DescriptorSetLayout::builder() {
-    return {};
-  }
 
 }

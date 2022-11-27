@@ -1,23 +1,23 @@
 #pragma once
 
+#include <string>
 #include <optional>
 #include <vector>
-#include <map>
 #include <functional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
+#include "exqudens/vulkan/export.hpp"
 #include "exqudens/vulkan/GraphicsPipelineCreateInfo.hpp"
 
 namespace exqudens::vulkan {
 
-  struct Pipeline {
+  struct EXQUDENS_VULKAN_EXPORT Pipeline {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     std::vector<vk::DescriptorSetLayout> setLayouts;
     std::vector<vk::PushConstantRange> pushConstantRanges;
@@ -30,46 +30,18 @@ namespace exqudens::vulkan {
     std::optional<vk::ComputePipelineCreateInfo> computeCreateInfo;
     std::optional<GraphicsPipelineCreateInfo> graphicsCreateInfo;
     std::optional<vk::RayTracingPipelineCreateInfoNV> rayTracingCreateInfo;
-    //std::map<std::string, std::pair<vk::ShaderModuleCreateInfo, std::shared_ptr<vk::raii::ShaderModule>>> shaders;
     std::vector<vk::PipelineShaderStageCreateInfo> stages;
     std::shared_ptr<vk::raii::Pipeline> value;
 
-    vk::raii::PipelineLayout& layoutReference() {
-      try {
-        if (!layout) {
-          throw std::runtime_error(CALL_INFO() + ": layout is not initialized!");
-        }
-        return *layout;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::PipelineLayout& layoutReference();
 
-    vk::raii::PipelineCache& cacheReference() {
-      try {
-        if (!cache) {
-          throw std::runtime_error(CALL_INFO() + ": cache is not initialized!");
-        }
-        return *cache;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::PipelineCache& cacheReference();
 
-    vk::raii::Pipeline& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::Pipeline& reference();
 
   };
 
-  class Pipeline::Builder {
+  class EXQUDENS_VULKAN_EXPORT Pipeline::Builder {
 
     private:
 
@@ -87,152 +59,38 @@ namespace exqudens::vulkan {
 
     public:
 
-      Pipeline::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      Pipeline::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Pipeline::Builder& setReadFileFunction(const std::function<std::vector<char>(const std::string&)>& val) {
-        readFileFunction = val;
-        return *this;
-      }
+      Pipeline::Builder& setReadFileFunction(const std::function<std::vector<char>(const std::string&)>& val);
 
-      Pipeline::Builder& addSetLayout(const vk::DescriptorSetLayout& val) {
-        setLayouts.emplace_back(val);
-        return *this;
-      }
+      Pipeline::Builder& addSetLayout(const vk::DescriptorSetLayout& val);
 
-      Pipeline::Builder& setSetLayouts(const std::vector<vk::DescriptorSetLayout>& val) {
-        setLayouts = val;
-        return *this;
-      }
+      Pipeline::Builder& setSetLayouts(const std::vector<vk::DescriptorSetLayout>& val);
 
-      Pipeline::Builder& addPushConstantRange(const vk::PushConstantRange& val) {
-        pushConstantRanges.emplace_back(val);
-        return *this;
-      }
+      Pipeline::Builder& addPushConstantRange(const vk::PushConstantRange& val);
 
-      Pipeline::Builder& setPushConstantRanges(const std::vector<vk::PushConstantRange>& val) {
-        pushConstantRanges = val;
-        return *this;
-      }
+      Pipeline::Builder& setPushConstantRanges(const std::vector<vk::PushConstantRange>& val);
 
-      Pipeline::Builder& setLayoutCreateInfo(const vk::PipelineLayoutCreateInfo& val) {
-        layoutCreateInfo = val;
-        return *this;
-      }
+      Pipeline::Builder& setLayoutCreateInfo(const vk::PipelineLayoutCreateInfo& val);
 
-      Pipeline::Builder& setCacheCreateInfo(const vk::PipelineCacheCreateInfo& val) {
-        cacheCreateInfo = val;
-        return *this;
-      }
+      Pipeline::Builder& setCacheCreateInfo(const vk::PipelineCacheCreateInfo& val);
 
-      Pipeline::Builder& setComputeCreateInfo(const vk::ComputePipelineCreateInfo& val) {
-        computeCreateInfo = val;
-        return *this;
-      }
+      Pipeline::Builder& setComputeCreateInfo(const vk::ComputePipelineCreateInfo& val);
 
-      Pipeline::Builder& setGraphicsCreateInfo(const GraphicsPipelineCreateInfo& val) {
-        graphicsCreateInfo = val;
-        return *this;
-      }
+      Pipeline::Builder& setGraphicsCreateInfo(const GraphicsPipelineCreateInfo& val);
 
-      Pipeline::Builder& setRayTracingCreateInfo(const vk::RayTracingPipelineCreateInfoNV& val) {
-        rayTracingCreateInfo = val;
-        return *this;
-      }
+      Pipeline::Builder& setRayTracingCreateInfo(const vk::RayTracingPipelineCreateInfoNV& val);
 
-      Pipeline::Builder& addStage(const vk::PipelineShaderStageCreateInfo& val) {
-        stages.emplace_back(val);
-        return *this;
-      }
+      Pipeline::Builder& addStage(const vk::PipelineShaderStageCreateInfo& val);
 
-      Pipeline::Builder& setStages(const std::vector<vk::PipelineShaderStageCreateInfo>& val) {
-        stages = val;
-        return *this;
-      }
+      Pipeline::Builder& setStages(const std::vector<vk::PipelineShaderStageCreateInfo>& val);
 
-      Pipeline::Builder& addPath(const std::string& val) {
-        paths.emplace_back(val);
-        return *this;
-      }
+      Pipeline::Builder& addPath(const std::string& val);
 
-      Pipeline::Builder& setPaths(const std::vector<std::string>& val) {
-        paths = val;
-        return *this;
-      }
+      Pipeline::Builder& setPaths(const std::vector<std::string>& val);
 
-      Pipeline build() {
-        try {
-          if (!readFileFunction) {
-            readFileFunction = &Utility::readFile;
-          }
-
-          Pipeline target = {};
-          target.setLayouts = setLayouts;
-          target.pushConstantRanges = pushConstantRanges;
-          target.layoutCreateInfo = layoutCreateInfo.value_or(vk::PipelineLayoutCreateInfo());
-          target.layoutCreateInfo.setSetLayouts(target.setLayouts);
-          target.layoutCreateInfo.setPushConstantRanges(target.pushConstantRanges);
-          target.layout = std::make_shared<vk::raii::PipelineLayout>(
-              *device.lock(),
-              target.layoutCreateInfo
-          );
-          target.cacheCreateInfo = cacheCreateInfo.value_or(vk::PipelineCacheCreateInfo());
-          target.cache = std::make_shared<vk::raii::PipelineCache>(
-              *device.lock(),
-              target.cacheCreateInfo
-          );
-          target.computeCreateInfo = computeCreateInfo;
-          target.graphicsCreateInfo = graphicsCreateInfo;
-          target.rayTracingCreateInfo = rayTracingCreateInfo;
-          std::map<std::string, std::pair<vk::ShaderModuleCreateInfo, std::shared_ptr<vk::raii::ShaderModule>>> shaders;
-          if (graphicsCreateInfo) {
-            for (const std::string& path : paths) {
-              if (!shaders.contains(path)) {
-                std::vector<char> bytes = readFileFunction(path);
-                if (bytes.empty()) {
-                  throw std::runtime_error(CALL_INFO() + ": '" + path + "' failed to create shader module bytes is empty!");
-                }
-                vk::ShaderModuleCreateInfo shaderCreateInfo = vk::ShaderModuleCreateInfo()
-                    .setCodeSize(bytes.size())
-                    .setPCode(reinterpret_cast<const uint32_t*>(bytes.data()));
-                shaders[path] = std::make_pair(
-                    shaderCreateInfo,
-                    std::make_shared<vk::raii::ShaderModule>(*device.lock(), shaderCreateInfo)
-                );
-                vk::PipelineShaderStageCreateInfo stage = vk::PipelineShaderStageCreateInfo();
-                stage.setPName("main");
-                stage.setModule(*(*shaders[path].second));
-                if (path.ends_with(".vert.spv")) {
-                  stage.setStage(vk::ShaderStageFlagBits::eVertex);
-                } else if (path.ends_with(".frag.spv")) {
-                  stage.setStage(vk::ShaderStageFlagBits::eFragment);
-                } else {
-                  throw std::invalid_argument(CALL_INFO() + ": '" + path + "' failed to create shader!");
-                }
-                stages.emplace_back(stage);
-              }
-            }
-            target.stages = stages;
-            target.graphicsCreateInfo.value().setStages(target.stages);
-            target.graphicsCreateInfo.value().setLayout(*target.layoutReference());
-            target.value = std::make_shared<vk::raii::Pipeline>(
-                *device.lock(),
-                target.cacheReference(),
-                target.graphicsCreateInfo.value()
-            );
-          }
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      Pipeline build();
 
   };
-
-  Pipeline::Builder Pipeline::builder() {
-    return {};
-  }
 
 }

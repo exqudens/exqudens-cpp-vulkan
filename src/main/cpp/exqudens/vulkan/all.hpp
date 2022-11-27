@@ -1,6 +1,7 @@
 #pragma once
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/macros.hpp"
+
 #include "exqudens/vulkan/Utility.hpp"
 
 #include "exqudens/vulkan/Instance.hpp"

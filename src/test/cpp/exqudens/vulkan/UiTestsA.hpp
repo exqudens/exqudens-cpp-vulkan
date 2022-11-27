@@ -620,23 +620,23 @@ namespace exqudens::vulkan {
                             .setDstArrayElement(0)
                             .setDescriptorCount(1)
                             .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                            .setBufferInfo({
+                            .addBufferInfo(
                                 vk::DescriptorBufferInfo()
                                     .setBuffer(*uniformBuffers[i].reference())
                                     .setOffset(0)
                                     .setRange(sizeof(UniformBufferObject))
-                            }),
+                            ),
                         WriteDescriptorSet()
                             .setDstBinding(1)
                             .setDstArrayElement(0)
                             .setDescriptorCount(1)
                             .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-                            .setImageInfo({
+                            .addImageInfo(
                                 vk::DescriptorImageInfo()
                                     .setSampler(*sampler.reference())
                                     .setImageView(*textureImageView.reference())
                                     .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                            })
+                            )
                     })
                 .build();
               }
@@ -931,7 +931,7 @@ namespace exqudens::vulkan {
                           )
                           .setViewportState(
                               PipelineViewportStateCreateInfo()
-                                  .setViewports({
+                                  .addViewport(
                                       vk::Viewport()
                                           .setWidth((float) swapchain.createInfo.imageExtent.width)
                                           .setHeight((float) swapchain.createInfo.imageExtent.height)
@@ -939,12 +939,12 @@ namespace exqudens::vulkan {
                                           .setMaxDepth(1.0)
                                           .setX(0.0)
                                           .setY(0.0)
-                                  })
-                                  .setScissors({
+                                  )
+                                  .addScissor(
                                       vk::Rect2D()
                                           .setOffset({0, 0})
                                           .setExtent(swapchain.createInfo.imageExtent)
-                                  })
+                                  )
                           )
                           .setRasterizationState(
                               vk::PipelineRasterizationStateCreateInfo()
@@ -987,7 +987,7 @@ namespace exqudens::vulkan {
                                   .setLogicOpEnable(false)
                                   .setLogicOp(vk::LogicOp::eCopy)
                                   .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f})
-                                  .setAttachments({
+                                  .addAttachment(
                                       vk::PipelineColorBlendAttachmentState()
                                           .setBlendEnable(false)
                                           .setColorBlendOp(vk::BlendOp::eAdd)
@@ -997,7 +997,7 @@ namespace exqudens::vulkan {
                                           .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
                                           .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
                                           .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
-                                  })
+                                  )
                           )
                   )
               .build();
@@ -1310,8 +1310,20 @@ namespace exqudens::vulkan {
 
           void drawFrame(int width, int height) {
             try {
+              if (
+                  inFlightFences.size() < MAX_FRAMES_IN_FLIGHT
+                  || imageAvailableSemaphores.size() < MAX_FRAMES_IN_FLIGHT
+                  || graphicsCommandBuffers.size() < MAX_FRAMES_IN_FLIGHT
+                  || swapchainFramebuffers.size() < MAX_FRAMES_IN_FLIGHT
+                  || descriptorSets.size() < MAX_FRAMES_IN_FLIGHT
+                  || imageAvailableSemaphores.size() < MAX_FRAMES_IN_FLIGHT
+                  || renderFinishedSemaphores.size() < MAX_FRAMES_IN_FLIGHT
+              ) {
+                std::throw_with_nested(std::runtime_error(CALL_INFO() + ": vector.size() < MAX_FRAMES_IN_FLIGHT !!!"));
+              }
+
               vk::Result result = device.reference().waitForFences(
-                  {*inFlightFences[currentFrame].reference()},
+                  {*inFlightFences.at(currentFrame).reference()},
                   true,
                   UINT64_MAX
               );
@@ -1319,14 +1331,10 @@ namespace exqudens::vulkan {
                 throw std::runtime_error(CALL_INFO() + ": failed to 'device.waitForFences(...)'!");
               }
 
-              std::vector<uint32_t> imageIndices = {};
-              {
-                std::pair<vk::Result, uint32_t> pair = swapchain
-                    .reference()
-                    .acquireNextImage(UINT64_MAX, *imageAvailableSemaphores[currentFrame].reference());
-                result = pair.first;
-                imageIndices.emplace_back(pair.second);
-              }
+              std::pair<vk::Result, uint32_t> swapchainNextImage = swapchain
+                  .reference()
+                  .acquireNextImage(UINT64_MAX, *imageAvailableSemaphores.at(currentFrame).reference());
+              result = swapchainNextImage.first;
               if (vk::Result::eErrorOutOfDateKHR == result) {
                 reCreateSwapchain(width, height);
                 return;
@@ -1335,10 +1343,10 @@ namespace exqudens::vulkan {
               }
 
               updateUniformBuffer();
-              device.reference().resetFences({*inFlightFences[currentFrame].reference()});
-              graphicsCommandBuffers[currentFrame].reference().reset();
+              device.reference().resetFences({*inFlightFences.at(currentFrame).reference()});
+              graphicsCommandBuffers.at(currentFrame).reference().reset();
 
-              graphicsCommandBuffers[currentFrame].reference().begin({});
+              graphicsCommandBuffers.at(currentFrame).reference().begin({});
               std::vector<vk::ClearValue> clearValues = {
                   vk::ClearValue()
                       .setColor(
@@ -1353,12 +1361,12 @@ namespace exqudens::vulkan {
                       )
               };
 
-              graphicsCommandBuffers[currentFrame].reference().writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, *queryPool.reference(), 0);
+              graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *queryPool.reference(), 0);
 
-              graphicsCommandBuffers[currentFrame].reference().beginRenderPass(
+              graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
                   vk::RenderPassBeginInfo()
                       .setRenderPass(*renderPass.reference())
-                      .setFramebuffer(*swapchainFramebuffers[imageIndices.front()].reference())
+                      .setFramebuffer(*swapchainFramebuffers.at(swapchainNextImage.second).reference())
                       .setRenderArea(
                           vk::Rect2D()
                               .setOffset(
@@ -1372,39 +1380,43 @@ namespace exqudens::vulkan {
                   vk::SubpassContents::eInline
               );
 
-              graphicsCommandBuffers[currentFrame].reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.reference());
-              graphicsCommandBuffers[currentFrame].reference().bindVertexBuffers(0, {*vertexBuffer.reference()}, {0});
-              graphicsCommandBuffers[currentFrame].reference().bindIndexBuffer(*indexBuffer.reference(), 0, vk::IndexType::eUint16);
-              graphicsCommandBuffers[currentFrame].reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline.layoutReference(), 0, {*descriptorSets[currentFrame].reference()}, {});
-              graphicsCommandBuffers[currentFrame].reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
+              graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.reference());
+              graphicsCommandBuffers.at(currentFrame).reference().bindVertexBuffers(0, {*vertexBuffer.reference()}, {0});
+              graphicsCommandBuffers.at(currentFrame).reference().bindIndexBuffer(*indexBuffer.reference(), 0, vk::IndexType::eUint16);
+              graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline.layoutReference(), 0, {*descriptorSets.at(currentFrame).reference()}, {});
+              graphicsCommandBuffers.at(currentFrame).reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
 
-              graphicsCommandBuffers[currentFrame].reference().endRenderPass();
+              graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
 
-              graphicsCommandBuffers[currentFrame].reference().writeTimestamp(vk::PipelineStageFlagBits::eAllCommands, *queryPool.reference(), 1);
+              graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, *queryPool.reference(), 1);
 
-              std::pair<vk::Result, std::vector<uint64_t>> queryResults = queryPool.reference().getResults<uint64_t>(0, 1, sizeof(uint64_t), sizeof(uint64_t));
-              if (vk::Result::eNotReady == queryResults.first || vk::Result::eSuccess == queryResults.first) {
-                if (vk::Result::eSuccess == queryResults.first) {
-                  if (timeDiffCounter == 9) {
-                    float timeDiff = physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second[1] - queryResults.second[0]);
-                    //std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
-                    timeDiffCounter = 0;
-                  } else {
-                    timeDiffCounter++;
+              try {
+                std::pair<vk::Result, std::vector<uint64_t>> queryResults = queryPool.reference().getResults<uint64_t>(0, 1, sizeof(uint64_t) * 2, sizeof(uint64_t), vk::QueryResultFlagBits::e64);
+                if (vk::Result::eNotReady == queryResults.first || vk::Result::eSuccess == queryResults.first) {
+                  if (vk::Result::eSuccess == queryResults.first && queryResults.second.size() > 1) {
+                    if (timeDiffCounter == 9) {
+                      float timeDiff = physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second.at(1) - queryResults.second.at(0));
+                      //std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
+                      timeDiffCounter = 0;
+                    } else {
+                      timeDiffCounter++;
+                    }
                   }
+                } else {
+                  throw std::runtime_error("failed to 'queryPool.getResults(...)'!");
                 }
-              } else {
-                throw std::runtime_error("failed to 'queryPool.getResults(...)'!");
+              } catch (...) {
+                std::throw_with_nested(std::runtime_error(CALL_INFO() + ": exception in 'queryPool.getResults(...)'!"));
               }
 
               queryPool.reference().reset(0, 2);
 
-              graphicsCommandBuffers[currentFrame].reference().end();
+              graphicsCommandBuffers.at(currentFrame).reference().end();
 
               std::vector<vk::PipelineStageFlags> waitDstStageMask = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-              std::vector<vk::Semaphore> waitSemaphores = {*imageAvailableSemaphores[currentFrame].reference()};
-              std::vector<vk::Semaphore> signalSemaphores = {*renderFinishedSemaphores[currentFrame].reference()};
-              std::vector<vk::CommandBuffer> commandBuffers = {*graphicsCommandBuffers[currentFrame].reference()};
+              std::vector<vk::Semaphore> waitSemaphores = {*imageAvailableSemaphores.at(currentFrame).reference()};
+              std::vector<vk::Semaphore> signalSemaphores = {*renderFinishedSemaphores.at(currentFrame).reference()};
+              std::vector<vk::CommandBuffer> commandBuffers = {*graphicsCommandBuffers.at(currentFrame).reference()};
 
               graphicsQueue.reference().submit(
                   {
@@ -1414,7 +1426,7 @@ namespace exqudens::vulkan {
                           .setSignalSemaphores(signalSemaphores)
                           .setCommandBuffers(commandBuffers)
                   },
-                  *inFlightFences[currentFrame].reference()
+                  *inFlightFences.at(currentFrame).reference()
               );
 
               std::vector<vk::SwapchainKHR> swapchains = {*swapchain.reference()};
@@ -1423,7 +1435,7 @@ namespace exqudens::vulkan {
                   vk::PresentInfoKHR()
                       .setWaitSemaphores(signalSemaphores)
                       .setSwapchains(swapchains)
-                      .setImageIndices(imageIndices)
+                      .setImageIndices(swapchainNextImage.second)
               );
               if (vk::Result::eErrorOutOfDateKHR == result || vk::Result::eSuboptimalKHR == result || resized) {
                 resized = false;

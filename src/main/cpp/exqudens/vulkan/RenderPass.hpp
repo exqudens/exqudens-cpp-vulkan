@@ -3,20 +3,19 @@
 #include <optional>
 #include <vector>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 #include "exqudens/vulkan/SubpassDescription.hpp"
 
 namespace exqudens::vulkan {
 
-  struct RenderPass {
+  struct EXQUDENS_VULKAN_EXPORT RenderPass {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     std::vector<vk::AttachmentDescription> attachments;
     std::vector<SubpassDescription> subpasses;
@@ -24,20 +23,11 @@ namespace exqudens::vulkan {
     vk::RenderPassCreateInfo createInfo;
     std::shared_ptr<vk::raii::RenderPass> value;
 
-    vk::raii::RenderPass& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::RenderPass& reference();
 
   };
 
-  class RenderPass::Builder {
+  class EXQUDENS_VULKAN_EXPORT RenderPass::Builder {
 
     private:
 
@@ -49,71 +39,24 @@ namespace exqudens::vulkan {
 
     public:
 
-      RenderPass::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      RenderPass::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      RenderPass::Builder& addAttachment(const vk::AttachmentDescription& val) {
-        attachments.emplace_back(val);
-        return *this;
-      }
+      RenderPass::Builder& addAttachment(const vk::AttachmentDescription& val);
 
-      RenderPass::Builder& setAttachments(const std::vector<vk::AttachmentDescription>& val) {
-        attachments = val;
-        return *this;
-      }
+      RenderPass::Builder& setAttachments(const std::vector<vk::AttachmentDescription>& val);
 
-      RenderPass::Builder& addSubpass(const SubpassDescription& val) {
-        subpasses.emplace_back(val);
-        return *this;
-      }
+      RenderPass::Builder& addSubpass(const SubpassDescription& val);
 
-      RenderPass::Builder& setSubpasses(const std::vector<SubpassDescription>& val) {
-        subpasses = val;
-        return *this;
-      }
+      RenderPass::Builder& setSubpasses(const std::vector<SubpassDescription>& val);
 
-      RenderPass::Builder& addDependency(const vk::SubpassDependency& val) {
-        dependencies.emplace_back(val);
-        return *this;
-      }
+      RenderPass::Builder& addDependency(const vk::SubpassDependency& val);
 
-      RenderPass::Builder& setDependencies(const std::vector<vk::SubpassDependency>& val) {
-        dependencies = val;
-        return *this;
-      }
+      RenderPass::Builder& setDependencies(const std::vector<vk::SubpassDependency>& val);
 
-      RenderPass::Builder& setCreateInfo(const vk::RenderPassCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      RenderPass::Builder& setCreateInfo(const vk::RenderPassCreateInfo& val);
 
-      RenderPass build() {
-        try {
-          RenderPass target = {};
-          target.attachments = attachments;
-          target.subpasses = subpasses;
-          target.dependencies = dependencies;
-          target.createInfo = createInfo.value_or(vk::RenderPassCreateInfo());
-          target.createInfo.setAttachments(target.attachments);
-          target.createInfo.setSubpassCount(target.subpasses.size());
-          target.createInfo.setPSubpasses(target.subpasses.data());
-          target.createInfo.setDependencies(target.dependencies);
-          target.value = std::make_shared<vk::raii::RenderPass>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      RenderPass build();
 
   };
-
-  RenderPass::Builder RenderPass::builder() {
-    return {};
-  }
 
 }

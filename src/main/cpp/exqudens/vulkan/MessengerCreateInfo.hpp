@@ -7,9 +7,11 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
+#include "exqudens/vulkan/export.hpp"
+
 namespace exqudens::vulkan {
 
-  struct MessengerCreateInfo {
+  struct EXQUDENS_VULKAN_EXPORT MessengerCreateInfo {
 
     std::optional<vk::DebugUtilsMessageSeverityFlagsEXT> exceptionSeverity;
     std::optional<vk::DebugUtilsMessageSeverityFlagsEXT> outSeverity;
@@ -19,15 +21,9 @@ namespace exqudens::vulkan {
         std::string
     )> toStringFunction;
 
-    MessengerCreateInfo& setExceptionSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value) {
-      exceptionSeverity = value;
-      return *this;
-    }
+    MessengerCreateInfo& setExceptionSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value);
 
-    MessengerCreateInfo& setOutSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value) {
-      outSeverity = value;
-      return *this;
-    }
+    MessengerCreateInfo& setOutSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value);
 
     MessengerCreateInfo& setToStringFunction(
         const std::function<std::string(
@@ -35,10 +31,7 @@ namespace exqudens::vulkan {
             vk::DebugUtilsMessageTypeFlagsEXT,
             std::string
         )>& value
-    ) {
-      toStringFunction = value;
-      return *this;
-    }
+    );
 
   };
 

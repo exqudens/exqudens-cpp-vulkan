@@ -5,37 +5,25 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
+#include "exqudens/vulkan/export.hpp"
+
 namespace exqudens::vulkan {
 
-  struct PipelineColorBlendStateCreateInfo: vk::PipelineColorBlendStateCreateInfo {
+  struct EXQUDENS_VULKAN_EXPORT PipelineColorBlendStateCreateInfo: vk::PipelineColorBlendStateCreateInfo {
 
-    PipelineColorBlendStateCreateInfo& setFlags(const vk::PipelineColorBlendStateCreateFlags& value) {
-      vk::PipelineColorBlendStateCreateInfo::setFlags(value);
-      return *this;
-    }
+    PipelineColorBlendStateCreateInfo& setFlags(const vk::PipelineColorBlendStateCreateFlags& val);
 
-    PipelineColorBlendStateCreateInfo& setLogicOpEnable(const bool& value) {
-      vk::PipelineColorBlendStateCreateInfo::setLogicOpEnable(value);
-      return *this;
-    }
+    PipelineColorBlendStateCreateInfo& setLogicOpEnable(const bool& val);
 
-    PipelineColorBlendStateCreateInfo& setLogicOp(const vk::LogicOp& value) {
-      vk::PipelineColorBlendStateCreateInfo::setLogicOp(value);
-      return *this;
-    }
+    PipelineColorBlendStateCreateInfo& setLogicOp(const vk::LogicOp& val);
 
-    PipelineColorBlendStateCreateInfo& setBlendConstants(const std::array<float, 4>& value) {
-      vk::PipelineColorBlendStateCreateInfo::setBlendConstants(value);
-      return *this;
-    }
+    PipelineColorBlendStateCreateInfo& setBlendConstants(const std::array<float, 4>& val);
 
     std::vector<vk::PipelineColorBlendAttachmentState> attachments;
 
-    PipelineColorBlendStateCreateInfo& setAttachments(const std::vector<vk::PipelineColorBlendAttachmentState>& value) {
-      attachments = value;
-      vk::PipelineColorBlendStateCreateInfo::setAttachments(attachments);
-      return *this;
-    }
+    PipelineColorBlendStateCreateInfo& addAttachment(const vk::PipelineColorBlendAttachmentState& val);
+
+    PipelineColorBlendStateCreateInfo& setAttachments(const std::vector<vk::PipelineColorBlendAttachmentState>& val);
 
   };
 

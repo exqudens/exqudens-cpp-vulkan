@@ -4,29 +4,24 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
+#include "exqudens/vulkan/export.hpp"
+
 namespace exqudens::vulkan {
 
-  struct PipelineViewportStateCreateInfo: vk::PipelineViewportStateCreateInfo {
+  struct EXQUDENS_VULKAN_EXPORT PipelineViewportStateCreateInfo: vk::PipelineViewportStateCreateInfo {
 
-    PipelineViewportStateCreateInfo& setFlags(const vk::PipelineViewportStateCreateFlags& value) {
-      vk::PipelineViewportStateCreateInfo::setFlags(value);
-      return *this;
-    }
+    PipelineViewportStateCreateInfo& setFlags(const vk::PipelineViewportStateCreateFlags& val);
 
     std::vector<vk::Viewport> viewports;
     std::vector<vk::Rect2D> scissors;
 
-    PipelineViewportStateCreateInfo& setViewports(const std::vector<vk::Viewport>& value) {
-      viewports = value;
-      vk::PipelineViewportStateCreateInfo::setViewports(viewports);
-      return *this;
-    }
+    PipelineViewportStateCreateInfo& addViewport(const vk::Viewport& val);
 
-    PipelineViewportStateCreateInfo& setScissors(const std::vector<vk::Rect2D>& value) {
-      scissors = value;
-      vk::PipelineViewportStateCreateInfo::setScissors(scissors);
-      return *this;
-    }
+    PipelineViewportStateCreateInfo& setViewports(const std::vector<vk::Viewport>& val);
+
+    PipelineViewportStateCreateInfo& addScissor(const vk::Rect2D& val);
+
+    PipelineViewportStateCreateInfo& setScissors(const std::vector<vk::Rect2D>& val);
 
   };
 

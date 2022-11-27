@@ -2,37 +2,27 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct Fence {
+  struct EXQUDENS_VULKAN_EXPORT Fence {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     vk::FenceCreateInfo createInfo;
     std::shared_ptr<vk::raii::Fence> value;
 
-    vk::raii::Fence& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::Fence& reference();
 
   };
 
-  class Fence::Builder {
+  class EXQUDENS_VULKAN_EXPORT Fence::Builder {
 
     private:
 
@@ -41,34 +31,12 @@ namespace exqudens::vulkan {
 
     public:
 
-      Fence::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      Fence::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Fence::Builder& setCreateInfo(const vk::FenceCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      Fence::Builder& setCreateInfo(const vk::FenceCreateInfo& val);
 
-      Fence build() {
-        try {
-          Fence target = {};
-          target.createInfo = createInfo.value_or(vk::FenceCreateInfo());
-          target.value = std::make_shared<vk::raii::Fence>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      Fence build();
 
   };
-
-  Fence::Builder Fence::builder() {
-    return {};
-  }
 
 }

@@ -2,37 +2,27 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct Semaphore {
+  struct EXQUDENS_VULKAN_EXPORT Semaphore {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     vk::SemaphoreCreateInfo createInfo;
     std::shared_ptr<vk::raii::Semaphore> value;
 
-    vk::raii::Semaphore& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::Semaphore& reference();
 
   };
 
-  class Semaphore::Builder {
+  class EXQUDENS_VULKAN_EXPORT Semaphore::Builder {
 
     private:
 
@@ -41,34 +31,12 @@ namespace exqudens::vulkan {
 
     public:
 
-      Semaphore::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      Semaphore::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Semaphore::Builder& setCreateInfo(const vk::SemaphoreCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      Semaphore::Builder& setCreateInfo(const vk::SemaphoreCreateInfo& val);
 
-      Semaphore build() {
-        try {
-          Semaphore target = {};
-          target.createInfo = createInfo.value_or(vk::SemaphoreCreateInfo());
-          target.value = std::make_shared<vk::raii::Semaphore>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      Semaphore build();
 
   };
-
-  Semaphore::Builder Semaphore::builder() {
-    return {};
-  }
 
 }

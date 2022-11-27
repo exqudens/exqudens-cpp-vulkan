@@ -5,9 +5,11 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
+#include "exqudens/vulkan/export.hpp"
+
 namespace exqudens::vulkan {
 
-  struct QueueInfo {
+  struct EXQUDENS_VULKAN_EXPORT QueueInfo {
 
     uint32_t familyIndex;
     std::vector<float> priorities;
@@ -15,40 +17,19 @@ namespace exqudens::vulkan {
     bool presentType;
     bool timestampSupported;
 
-    QueueInfo& setFamilyIndex(const uint32_t& val) {
-      familyIndex = val;
-      return *this;
-    }
+    QueueInfo& setFamilyIndex(const uint32_t& val);
 
-    QueueInfo& addPriority(const float& val) {
-      priorities.emplace_back(val);
-      return *this;
-    }
+    QueueInfo& addPriority(const float& val);
 
-    QueueInfo& setPriorities(const std::vector<float>& val) {
-      priorities = val;
-      return *this;
-    }
+    QueueInfo& setPriorities(const std::vector<float>& val);
 
-    QueueInfo& addType(const vk::QueueFlagBits& val) {
-      types.insert(val);
-      return *this;
-    }
+    QueueInfo& addType(const vk::QueueFlagBits& val);
 
-    QueueInfo& setTypes(const std::set<vk::QueueFlagBits>& val) {
-      types = val;
-      return *this;
-    }
+    QueueInfo& setTypes(const std::set<vk::QueueFlagBits>& val);
 
-    QueueInfo& setPresentType(const bool& val) {
-      presentType = val;
-      return *this;
-    }
+    QueueInfo& setPresentType(const bool& val);
 
-    QueueInfo& setTimestampSupported(const bool& val) {
-      timestampSupported = val;
-      return *this;
-    }
+    QueueInfo& setTimestampSupported(const bool& val);
 
   };
 

@@ -7,7 +7,7 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/Macros.hpp"
+#include "exqudens/vulkan/macros.hpp"
 #include "exqudens/vulkan/WriteDescriptorSet.hpp"
 
 namespace exqudens::vulkan {

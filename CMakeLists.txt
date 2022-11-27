@@ -10,18 +10,88 @@ project("${NAME}" VERSION "${VERSION}" LANGUAGES "NONE")
 message("project: '${PROJECT_NAME}-${PROJECT_VERSION}'")
 
 include("util.cmake")
-include("config.cmake")
+include("GenerateExportHeader")
 enable_testing()
 include("GoogleTest")
 
+find_program(CONAN_COMMAND NAMES "conan.exe" "conan" REQUIRED)
+find_program(DOXYGEN_COMMAND NAMES "doxygen.exe" "doxygen" REQUIRED)
+
+enable_language("C")
+enable_language("CXX")
+
+set(CMAKE_OBJECT_PATH_MAX 1000)
+set(CMAKE_SHARED_LIBRARY_PREFIX "")
+set(CMAKE_SHARED_MODULE_PREFIX "")
+set(CMAKE_STATIC_LIBRARY_PREFIX "")
+set(CMAKE_IMPORT_LIBRARY_PREFIX "")
+set(CMAKE_STAGING_PREFIX "")
+set(CMAKE_FIND_LIBRARY_PREFIXES "")
+set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)
+set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)
+set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)
+set(CMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY FALSE)
+set(CMAKE_FIND_USE_PACKAGE_REGISTRY FALSE)
+set(CMAKE_FIND_USE_PACKAGE_ROOT_PATH FALSE)
+set(CMAKE_FIND_USE_CMAKE_PATH TRUE)
+set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS FALSE)
+set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
+set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
+
+if("${CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT}")
+    set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/cmake-install" CACHE PATH "..." FORCE)
+endif()
+
+separate_arguments(CMAKE_CXX_FLAGS NATIVE_COMMAND "${CMAKE_CXX_FLAGS}")
+if(MSVC)
+    if(NOT "/EHa" IN_LIST CMAKE_CXX_FLAGS AND "/EHsc" IN_LIST CMAKE_CXX_FLAGS)
+        list(REMOVE_ITEM CMAKE_CXX_FLAGS "/EHsc")
+        list(APPEND CMAKE_CXX_FLAGS "/EHa")
+    endif()
+endif()
+string(JOIN " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+
+if("" STREQUAL "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
+endif()
+
+if("${BUILD_SHARED_LIBS}")
+    set(CONAN_RELEASE_COMPILER_RUNTIME "MD")
+else()
+    set(CONAN_RELEASE_COMPILER_RUNTIME "MT")
+    if("${MINGW}")
+        set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
+    endif()
+endif()
+
+set(CMAKE_VERBOSE_MAKEFILE TRUE CACHE BOOL "" FORCE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
+
+set(TARGET_CMAKE_INSTALL_DEPENDS_ON "cmake-test")
+option(SKIP_CMAKE_TEST "..." FALSE)
+if(${SKIP_CMAKE_TEST})
+    set(TARGET_CMAKE_INSTALL_DEPENDS_ON "${PROJECT_NAME}")
+endif()
+
+set_conan_architecture(CONAN_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+set_conan_compiler(CONAN_COMPILER "${CMAKE_CXX_COMPILER_ID}")
+set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}")
+set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+
+set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
+set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+
 set_conan_settings(CONAN_SETTINGS
-    "${CMAKE_SYSTEM_NAME}"
-    "${CMAKE_SYSTEM_PROCESSOR}"
-    "${CMAKE_CXX_COMPILER_ID}"
-    "${CMAKE_CXX_COMPILER_VERSION}"
-    "${CMAKE_MSVC_RUNTIME_LIBRARY}"
-    "${CMAKE_CXX_STANDARD}"
-    "${CMAKE_BUILD_TYPE}"
+    "arch=${CONAN_ARCH}"
+    "os=${CMAKE_SYSTEM_NAME}"
+    "compiler=${CONAN_COMPILER}"
+    "compiler.version=${CONAN_COMPILER_VERSION}"
+    "compiler.runtime=${CONAN_COMPILER_RUNTIME}"
+    "build_type=${CMAKE_BUILD_TYPE}"
     "vulkan:build_type=Release"
     "vulkan:compiler.runtime=MD"
     "glfw:build_type=Release"
@@ -118,60 +188,159 @@ if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
     return()
 endif()
 
-add_library("${PROJECT_NAME}" INTERFACE
-    "src/main/cpp/exqudens/vulkan/all.hpp"
+set(INTERFACE_INLINE_DEF_NAME "EXQUDENS_VULKAN_INTERFACE_INLINE")
+set(INTERFACE_INLINE_DEFINE "#define ${INTERFACE_INLINE_DEF_NAME}")
+if("${INTERFACE_ONLY}")
+    set(INTERFACE_INLINE_DEFINE "#define ${INTERFACE_INLINE_DEF_NAME} inline")
+endif()
+string(JOIN "\n" INTERFACE_INLINE_CONTENT
+    "#ifndef ${INTERFACE_INLINE_DEF_NAME}"
+    "${INTERFACE_INLINE_DEFINE}"
+    "#endif /* ${INTERFACE_INLINE_DEF_NAME} */\n"
+)
 
-    "src/main/cpp/exqudens/vulkan/Macros.hpp"
-    "src/main/cpp/exqudens/vulkan/Utility.hpp"
+if("${INTERFACE_ONLY}")
+    generate_interface_only_files(GENERATED_SOURCES
+        SRC_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        SRC_BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src/main/cpp"
+        DST_BASE_DIRECTORY "${PROJECT_BINARY_DIR}/generated/src/main/cpp"
+        HEADER_FILES_EXPRESSION "**/*.hpp"
+        SOURCE_FILES_EXPRESSION "**/*.cpp"
+    )
 
-    "src/main/cpp/exqudens/vulkan/Instance.hpp"
-    "src/main/cpp/exqudens/vulkan/MessengerCreateInfo.hpp"
-    "src/main/cpp/exqudens/vulkan/Messenger.hpp"
-    "src/main/cpp/exqudens/vulkan/QueueInfo.hpp"
-    "src/main/cpp/exqudens/vulkan/PhysicalDevice.hpp"
-    "src/main/cpp/exqudens/vulkan/Device.hpp"
-    "src/main/cpp/exqudens/vulkan/Image.hpp"
-    "src/main/cpp/exqudens/vulkan/ImageView.hpp"
-    "src/main/cpp/exqudens/vulkan/Buffer.hpp"
-    "src/main/cpp/exqudens/vulkan/Sampler.hpp"
-    "src/main/cpp/exqudens/vulkan/Semaphore.hpp"
-    "src/main/cpp/exqudens/vulkan/Fence.hpp"
-    "src/main/cpp/exqudens/vulkan/SubpassDescription.hpp"
-    "src/main/cpp/exqudens/vulkan/RenderPass.hpp"
-    "src/main/cpp/exqudens/vulkan/DescriptorSetLayout.hpp"
-    "src/main/cpp/exqudens/vulkan/PipelineVertexInputStateCreateInfo.hpp"
-    "src/main/cpp/exqudens/vulkan/PipelineViewportStateCreateInfo.hpp"
-    "src/main/cpp/exqudens/vulkan/PipelineColorBlendStateCreateInfo.hpp"
-    "src/main/cpp/exqudens/vulkan/GraphicsPipelineCreateInfo.hpp"
-    "src/main/cpp/exqudens/vulkan/Pipeline.hpp"
-    "src/main/cpp/exqudens/vulkan/DescriptorPool.hpp"
-    "src/main/cpp/exqudens/vulkan/WriteDescriptorSet.hpp"
-    "src/main/cpp/exqudens/vulkan/DescriptorSet.hpp"
-    "src/main/cpp/exqudens/vulkan/Framebuffer.hpp"
-    "src/main/cpp/exqudens/vulkan/Queue.hpp"
-    "src/main/cpp/exqudens/vulkan/CommandPool.hpp"
-    "src/main/cpp/exqudens/vulkan/CommandBuffer.hpp"
-    "src/main/cpp/exqudens/vulkan/QueryPool.hpp"
-    "src/main/cpp/exqudens/vulkan/Surface.hpp"
-    "src/main/cpp/exqudens/vulkan/Swapchain.hpp"
-)
-target_include_directories("${PROJECT_NAME}" INTERFACE
-    "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/main>"
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/main/cpp>"
-    "$<INSTALL_INTERFACE:include>"
-)
-target_link_libraries("${PROJECT_NAME}" INTERFACE
-    "Vulkan::Vulkan"
-)
+    add_library("${PROJECT_NAME}" INTERFACE
+        ${GENERATED_SOURCES}
+    )
+    file(WRITE "${PROJECT_BINARY_DIR}/generated/src/main/cpp/exqudens/vulkan/export.hpp"
+        "#ifndef EXQUDENS_VULKAN_EXPORT_H\n"
+        "#define EXQUDENS_VULKAN_EXPORT_H\n"
+        "\n"
+        "#ifndef EXQUDENS_VULKAN_EXPORT\n"
+        "#define EXQUDENS_VULKAN_EXPORT\n"
+        "#endif /* EXQUDENS_VULKAN_EXPORT */\n"
+        "\n"
+        "${INTERFACE_INLINE_CONTENT}"
+        "\n"
+        "#endif /* EXQUDENS_VULKAN_EXPORT_H */\n"
+    )
+    target_include_directories("${PROJECT_NAME}" INTERFACE
+        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
+        "$<INSTALL_INTERFACE:include>"
+    )
+    target_link_libraries("${PROJECT_NAME}" INTERFACE
+        "Vulkan::Vulkan"
+    )
+    if(MSVC AND "Debug" STREQUAL "${CMAKE_BUILD_TYPE}")
+        target_compile_options("${PROJECT_NAME}" INTERFACE
+            "-bigobj"
+        )
+    endif()
+else()
+    add_library("${PROJECT_NAME}"
+        "src/main/cpp/exqudens/vulkan/all.hpp"
+        "src/main/cpp/exqudens/vulkan/macros.hpp"
+
+        "src/main/cpp/exqudens/vulkan/Utility.hpp"
+        "src/main/cpp/exqudens/vulkan/Utility.cpp"
+
+        "src/main/cpp/exqudens/vulkan/Instance.hpp"
+        "src/main/cpp/exqudens/vulkan/Instance.cpp"
+        "src/main/cpp/exqudens/vulkan/MessengerCreateInfo.hpp"
+        "src/main/cpp/exqudens/vulkan/MessengerCreateInfo.cpp"
+        "src/main/cpp/exqudens/vulkan/Messenger.hpp"
+        "src/main/cpp/exqudens/vulkan/Messenger.cpp"
+        "src/main/cpp/exqudens/vulkan/QueueInfo.hpp"
+        "src/main/cpp/exqudens/vulkan/QueueInfo.cpp"
+        "src/main/cpp/exqudens/vulkan/PhysicalDevice.hpp"
+        "src/main/cpp/exqudens/vulkan/PhysicalDevice.cpp"
+        "src/main/cpp/exqudens/vulkan/Device.hpp"
+        "src/main/cpp/exqudens/vulkan/Device.cpp"
+        "src/main/cpp/exqudens/vulkan/Image.hpp"
+        "src/main/cpp/exqudens/vulkan/Image.cpp"
+        "src/main/cpp/exqudens/vulkan/ImageView.hpp"
+        "src/main/cpp/exqudens/vulkan/ImageView.cpp"
+        "src/main/cpp/exqudens/vulkan/Buffer.hpp"
+        "src/main/cpp/exqudens/vulkan/Buffer.cpp"
+        "src/main/cpp/exqudens/vulkan/Sampler.hpp"
+        "src/main/cpp/exqudens/vulkan/Sampler.cpp"
+        "src/main/cpp/exqudens/vulkan/Semaphore.hpp"
+        "src/main/cpp/exqudens/vulkan/Semaphore.cpp"
+        "src/main/cpp/exqudens/vulkan/Fence.hpp"
+        "src/main/cpp/exqudens/vulkan/Fence.cpp"
+        "src/main/cpp/exqudens/vulkan/SubpassDescription.hpp"
+        "src/main/cpp/exqudens/vulkan/SubpassDescription.cpp"
+        "src/main/cpp/exqudens/vulkan/RenderPass.hpp"
+        "src/main/cpp/exqudens/vulkan/RenderPass.cpp"
+        "src/main/cpp/exqudens/vulkan/DescriptorSetLayout.hpp"
+        "src/main/cpp/exqudens/vulkan/DescriptorSetLayout.cpp"
+        "src/main/cpp/exqudens/vulkan/PipelineVertexInputStateCreateInfo.hpp"
+        "src/main/cpp/exqudens/vulkan/PipelineVertexInputStateCreateInfo.cpp"
+        "src/main/cpp/exqudens/vulkan/PipelineViewportStateCreateInfo.hpp"
+        "src/main/cpp/exqudens/vulkan/PipelineViewportStateCreateInfo.cpp"
+        "src/main/cpp/exqudens/vulkan/PipelineColorBlendStateCreateInfo.hpp"
+        "src/main/cpp/exqudens/vulkan/PipelineColorBlendStateCreateInfo.cpp"
+        "src/main/cpp/exqudens/vulkan/GraphicsPipelineCreateInfo.hpp"
+        "src/main/cpp/exqudens/vulkan/GraphicsPipelineCreateInfo.cpp"
+        "src/main/cpp/exqudens/vulkan/Pipeline.hpp"
+        "src/main/cpp/exqudens/vulkan/Pipeline.cpp"
+        "src/main/cpp/exqudens/vulkan/DescriptorPool.hpp"
+        "src/main/cpp/exqudens/vulkan/DescriptorPool.cpp"
+        "src/main/cpp/exqudens/vulkan/WriteDescriptorSet.hpp"
+        "src/main/cpp/exqudens/vulkan/WriteDescriptorSet.cpp"
+        "src/main/cpp/exqudens/vulkan/DescriptorSet.hpp"
+        "src/main/cpp/exqudens/vulkan/Framebuffer.hpp"
+        "src/main/cpp/exqudens/vulkan/Queue.hpp"
+        "src/main/cpp/exqudens/vulkan/CommandPool.hpp"
+        "src/main/cpp/exqudens/vulkan/CommandBuffer.hpp"
+        "src/main/cpp/exqudens/vulkan/QueryPool.hpp"
+        "src/main/cpp/exqudens/vulkan/Surface.hpp"
+        "src/main/cpp/exqudens/vulkan/Swapchain.hpp"
+    )
+    generate_export_header("${PROJECT_NAME}"
+        BASE_NAME "EXQUDENS_VULKAN"
+        EXPORT_FILE_NAME "generated/src/main/cpp/exqudens/vulkan/export.hpp"
+        CUSTOM_CONTENT_FROM_VARIABLE "INTERFACE_INLINE_CONTENT"
+    )
+    if(NOT "${BUILD_SHARED_LIBS}")
+        set_target_properties("${PROJECT_NAME}" PROPERTIES COMPILE_FLAGS -DEXQUDENS_VULKAN_STATIC_DEFINE)
+    endif()
+    target_include_directories("${PROJECT_NAME}" PUBLIC
+        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/main/cpp>"
+        "$<INSTALL_INTERFACE:include>"
+    )
+    target_link_libraries("${PROJECT_NAME}" PUBLIC
+        "Vulkan::Vulkan"
+    )
+    if(MSVC AND "Debug" STREQUAL "${CMAKE_BUILD_TYPE}")
+        target_compile_options("${PROJECT_NAME}" PUBLIC
+            "-bigobj"
+        )
+    endif()
+    set_target_properties("${PROJECT_NAME}" PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/main/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/main/bin"
+        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/main/bin"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/bin"
+
+        ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/main/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/main/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/main/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/lib"
+
+        LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/lib"
+        LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/main/lib"
+        LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/main/lib"
+        LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/main/lib"
+        LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/lib"
+    )
+endif()
 set_property(TARGET "${PROJECT_NAME}" PROPERTY "VERSION" "${PROJECT_VERSION}")
 set_property(TARGET "${PROJECT_NAME}" PROPERTY "SOVERSION" "${PROJECT_VERSION_MAJOR}")
 set_property(TARGET "${PROJECT_NAME}" PROPERTY "INTERFACE_${PROJECT_NAME}_MAJOR_VERSION" "${PROJECT_VERSION_MAJOR}")
 set_property(TARGET "${PROJECT_NAME}" APPEND PROPERTY "COMPATIBLE_INTERFACE_STRING" "${PROJECT_NAME}_MAJOR_VERSION")
-if(MSVC AND "Debug" STREQUAL "${CMAKE_BUILD_TYPE}")
-    target_compile_options("${PROJECT_NAME}" INTERFACE
-        "-bigobj"
-    )
-endif()
 install(
     TARGETS "${PROJECT_NAME}"
     EXPORT "${PROJECT_NAME}-targets"
@@ -280,7 +449,7 @@ add_executable("test-app"
     "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
     "src/test/cpp/main.cpp"
 )
-target_link_libraries("test-app" PRIVATE
+target_link_libraries("test-app"
     "test-lib"
 )
 set_target_properties("test-app" PROPERTIES
@@ -307,9 +476,8 @@ set_target_properties("test-app" PROPERTIES
 if("${BUILD_SHARED_LIBS}")
     add_custom_command(TARGET "test-app"
         POST_BUILD
-        #COMMAND "${CMAKE_COMMAND}" -E rm -f "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/*"
-        #COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+        COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
         VERBATIM
@@ -317,8 +485,6 @@ if("${BUILD_SHARED_LIBS}")
 else()
     add_custom_command(TARGET "test-app"
         POST_BUILD
-        #COMMAND "${CMAKE_COMMAND}" -E rm -f "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/*"
-        #COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
