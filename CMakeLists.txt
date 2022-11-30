@@ -82,8 +82,8 @@ set_conan_compiler(CONAN_COMPILER "${CMAKE_CXX_COMPILER_ID}")
 set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}")
 set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
 
+set_python_boolean(CONAN_INTERFACE_ONLY "${INTERFACE_ONLY}")
 set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
-set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
 
 set_conan_settings(CONAN_SETTINGS
     "arch=${CONAN_ARCH}"
@@ -98,10 +98,8 @@ set_conan_settings(CONAN_SETTINGS
     "glfw:compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
 )
 set_conan_options(CONAN_OPTIONS
-    "vulkan:shared=True"
-    "gtest:shared=${CONAN_BUILD_SHARED_LIBS}"
-    "lodepng:shared=${CONAN_BUILD_SHARED_LIBS}"
-    "glfw:shared=${CONAN_BUILD_SHARED_LIBS}"
+    "interface=${CONAN_INTERFACE_ONLY}"
+    "shared=${CONAN_BUILD_SHARED_LIBS}"
 )
 set("CONAN_INSTALL_PREFIX" "${PROJECT_BINARY_DIR}/conan-install")
 if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")

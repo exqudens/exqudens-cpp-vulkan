@@ -40,6 +40,9 @@ class ConanConfiguration(ConanFile):
     def configure(self):
         try:
             self.options["vulkan"].shared = True
+            self.options["glfw"].shared = self.options.shared
+            self.options["lodepng"].shared = self.options.shared
+            self.options["gtest"].shared = self.options.shared
         except Exception as e:
             error(format_exc())
             raise e
