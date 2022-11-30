@@ -2,38 +2,28 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct Queue {
+  struct EXQUDENS_VULKAN_EXPORT Queue {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     uint32_t familyIndex;
     uint32_t index;
     std::shared_ptr<vk::raii::Queue> value;
 
-    vk::raii::Queue& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::Queue& reference();
 
   };
 
-  class Queue::Builder {
+  class EXQUDENS_VULKAN_EXPORT Queue::Builder {
 
     private:
 
@@ -43,41 +33,14 @@ namespace exqudens::vulkan {
 
     public:
 
-      Queue::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      Queue::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Queue::Builder& setFamilyIndex(const uint32_t& val) {
-        familyIndex = val;
-        return *this;
-      }
+      Queue::Builder& setFamilyIndex(const uint32_t& val);
 
-      Queue::Builder& setIndex(const uint32_t& val) {
-        index = val;
-        return *this;
-      }
+      Queue::Builder& setIndex(const uint32_t& val);
 
-      Queue build() {
-        try {
-          Queue target = {};
-          target.familyIndex = familyIndex.value();
-          target.index = index.value_or(0);
-          target.value = std::make_shared<vk::raii::Queue>(
-              *device.lock(),
-              target.familyIndex,
-              target.index
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      Queue build();
 
   };
-
-  Queue::Builder Queue::builder() {
-    return {};
-  }
 
 }

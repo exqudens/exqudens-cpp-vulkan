@@ -2,37 +2,27 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct CommandPool {
+  struct EXQUDENS_VULKAN_EXPORT CommandPool {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     vk::CommandPoolCreateInfo createInfo;
     std::shared_ptr<vk::raii::CommandPool> value;
 
-    vk::raii::CommandPool& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::CommandPool& reference();
 
   };
 
-  class CommandPool::Builder {
+  class EXQUDENS_VULKAN_EXPORT CommandPool::Builder {
 
     private:
 
@@ -41,34 +31,12 @@ namespace exqudens::vulkan {
 
     public:
 
-      CommandPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      CommandPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      CommandPool::Builder& setCreateInfo(const vk::CommandPoolCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      CommandPool::Builder& setCreateInfo(const vk::CommandPoolCreateInfo& val);
 
-      CommandPool build() {
-        try {
-          CommandPool target = {};
-          target.createInfo = createInfo.value();
-          target.value = std::make_shared<vk::raii::CommandPool>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      CommandPool build();
 
   };
-
-  CommandPool::Builder CommandPool::builder() {
-    return {};
-  }
 
 }

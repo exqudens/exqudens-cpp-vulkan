@@ -2,37 +2,27 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct CommandBuffer {
+  struct EXQUDENS_VULKAN_EXPORT CommandBuffer {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     vk::CommandBufferAllocateInfo createInfo;
     std::shared_ptr<vk::raii::CommandBuffer> value;
 
-    vk::raii::CommandBuffer& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::CommandBuffer& reference();
 
   };
 
-  class CommandBuffer::Builder {
+  class EXQUDENS_VULKAN_EXPORT CommandBuffer::Builder {
 
     private:
 
@@ -41,35 +31,12 @@ namespace exqudens::vulkan {
 
     public:
 
-      CommandBuffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      CommandBuffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      CommandBuffer::Builder& setCreateInfo(const vk::CommandBufferAllocateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      CommandBuffer::Builder& setCreateInfo(const vk::CommandBufferAllocateInfo& val);
 
-      CommandBuffer build() {
-        try {
-          CommandBuffer target = {};
-          target.createInfo = createInfo.value();
-          vk::raii::CommandBuffers values = vk::raii::CommandBuffers(
-              *device.lock(),
-              target.createInfo
-          );
-          target.value = std::make_shared<vk::raii::CommandBuffer>(std::move(values.front()));
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      CommandBuffer build();
 
   };
-
-  CommandBuffer::Builder CommandBuffer::builder() {
-    return {};
-  }
 
 }

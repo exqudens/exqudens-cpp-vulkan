@@ -614,7 +614,7 @@ namespace exqudens::vulkan {
                             .setDescriptorPool(*descriptorPool.reference())
                             .setDescriptorSetCount(1)
                     )
-                    .setWrites({
+                    .addWrite(
                         WriteDescriptorSet()
                             .setDstBinding(0)
                             .setDstArrayElement(0)
@@ -625,7 +625,9 @@ namespace exqudens::vulkan {
                                     .setBuffer(*uniformBuffers[i].reference())
                                     .setOffset(0)
                                     .setRange(sizeof(UniformBufferObject))
-                            ),
+                            )
+                    )
+                    .addWrite(
                         WriteDescriptorSet()
                             .setDstBinding(1)
                             .setDstArrayElement(0)
@@ -637,7 +639,7 @@ namespace exqudens::vulkan {
                                     .setImageView(*textureImageView.reference())
                                     .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
                             )
-                    })
+                    )
                 .build();
               }
               std::ranges::for_each(descriptorSets, [](auto& o1) {std::cout << std::format("descriptorSet: '{}'", (bool) o1.value) << std::endl;});
