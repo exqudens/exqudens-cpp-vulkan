@@ -298,8 +298,11 @@ else()
         "src/main/cpp/exqudens/vulkan/CommandBuffer.hpp"
         "src/main/cpp/exqudens/vulkan/CommandBuffer.cpp"
         "src/main/cpp/exqudens/vulkan/QueryPool.hpp"
+        "src/main/cpp/exqudens/vulkan/QueryPool.cpp"
         "src/main/cpp/exqudens/vulkan/Surface.hpp"
+        "src/main/cpp/exqudens/vulkan/Surface.cpp"
         "src/main/cpp/exqudens/vulkan/Swapchain.hpp"
+        "src/main/cpp/exqudens/vulkan/Swapchain.cpp"
     )
     generate_export_header("${PROJECT_NAME}"
         BASE_NAME "EXQUDENS_VULKAN"

@@ -2,37 +2,27 @@
 
 #include <optional>
 #include <memory>
-#include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "exqudens/vulkan/macros.hpp"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-  struct QueryPool {
+  struct EXQUDENS_VULKAN_EXPORT QueryPool {
 
     class Builder;
 
-    inline static Builder builder();
+    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
 
     vk::QueryPoolCreateInfo createInfo;
     std::shared_ptr<vk::raii::QueryPool> value;
 
-    vk::raii::QueryPool& reference() {
-      try {
-        if (!value) {
-          throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
-        }
-        return *value;
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
+    vk::raii::QueryPool& reference();
 
   };
 
-  class QueryPool::Builder {
+  class EXQUDENS_VULKAN_EXPORT QueryPool::Builder {
 
     private:
 
@@ -41,34 +31,12 @@ namespace exqudens::vulkan {
 
     public:
 
-      QueryPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val) {
-        device = val;
-        return *this;
-      }
+      QueryPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      QueryPool::Builder& setCreateInfo(const vk::QueryPoolCreateInfo& val) {
-        createInfo = val;
-        return *this;
-      }
+      QueryPool::Builder& setCreateInfo(const vk::QueryPoolCreateInfo& val);
 
-      QueryPool build() {
-        try {
-          QueryPool target = {};
-          target.createInfo = createInfo.value();
-          target.value = std::make_shared<vk::raii::QueryPool>(
-              *device.lock(),
-              target.createInfo
-          );
-          return target;
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      }
+      QueryPool build();
 
   };
-
-  QueryPool::Builder QueryPool::builder() {
-    return {};
-  }
 
 }
