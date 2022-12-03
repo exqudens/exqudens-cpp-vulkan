@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <fstream>
+#include <cstring>
 
 namespace exqudens::vulkan {
 
@@ -229,6 +230,16 @@ namespace exqudens::vulkan {
       } else {
         return vk::SampleCountFlagBits::e1;
       }
+    } catch (...) {
+      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+  }
+
+  void Utility::copyTo(exqudens::vulkan::Buffer& buffer, const void* data) {
+    try {
+      void* tmpData = buffer.memoryReference().mapMemory(0, buffer.createInfo.size);
+      std::memcpy(tmpData, data, static_cast<size_t>(buffer.createInfo.size));
+      buffer.memoryReference().unmapMemory();
     } catch (...) {
       std::throw_with_nested(std::runtime_error(CALL_INFO()));
     }

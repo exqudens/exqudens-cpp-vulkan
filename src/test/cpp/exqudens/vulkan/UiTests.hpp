@@ -33,7 +33,7 @@
 
 namespace exqudens::vulkan {
 
-  class UiTestsA : public testing::Test {
+  class UiTests : public testing::Test {
 
     protected:
 
@@ -221,7 +221,7 @@ namespace exqudens::vulkan {
                   .setMessengerCreateInfo(
                       MessengerCreateInfo()
                           .setExceptionSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
-                          .setOutSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose)
+                          //.setOutSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose)
                           .setToStringFunction(&Utility::toString)
                   )
                   .setDebugUtilsMessengerCreateInfo(
@@ -294,6 +294,9 @@ namespace exqudens::vulkan {
                     }
                     auto f = p.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures>();
                     result = f.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy;
+                    if (!result) {
+                      return result;
+                    }
                     result = f.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading;
                     if (!result) {
                       return result;
@@ -655,17 +658,9 @@ namespace exqudens::vulkan {
               .build();
               std::cout << std::format("queryPool: '{}'", (bool) queryPool.value) << std::endl;
 
-              void* tmpData = textureBuffer.memoryReference().mapMemory(0, textureBuffer.createInfo.size);
-              std::memcpy(tmpData, tmpImageData.data(), static_cast<size_t>(textureBuffer.createInfo.size));
-              textureBuffer.memoryReference().unmapMemory();
-
-              tmpData = vertexStagingBuffer.memoryReference().mapMemory(0, vertexStagingBuffer.createInfo.size);
-              std::memcpy(tmpData, vertexVector.data(), static_cast<size_t>(vertexStagingBuffer.createInfo.size));
-              vertexStagingBuffer.memoryReference().unmapMemory();
-
-              tmpData = indexStagingBuffer.memoryReference().mapMemory(0, indexStagingBuffer.createInfo.size);
-              std::memcpy(tmpData, indexVector.data(), static_cast<size_t>(indexStagingBuffer.createInfo.size));
-              indexStagingBuffer.memoryReference().unmapMemory();
+              Utility::copyTo(textureBuffer, tmpImageData.data());
+              Utility::copyTo(vertexStagingBuffer, vertexVector.data());
+              Utility::copyTo(indexStagingBuffer, indexVector.data());
 
               transferCommandBuffer.reference().begin({});
 
@@ -1462,23 +1457,25 @@ namespace exqudens::vulkan {
 
           void updateUniformBuffer() {
             try {
-              static auto startTime = std::chrono::high_resolution_clock::now();
+              /*static auto startTime = std::chrono::high_resolution_clock::now();
 
               auto currentTime = std::chrono::high_resolution_clock::now();
               float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-              float angle = time * glm::radians(90.0f);
-              //float angle = 0.5f * glm::radians(90.0f);
+              float angle = time * glm::radians(90.0f);*/
+              float angle = 0.5f * glm::radians(0.0f); // min 0 max 360
 
               UniformBufferObject ubo = {};
               ubo.model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
               ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-              ubo.proj = glm::perspective(glm::radians(45.0f), (float) swapchain.createInfo.imageExtent.width / (float) swapchain.createInfo.imageExtent.height, 0.1f, 10.0f);
+              ubo.proj = glm::perspective(
+                  glm::radians(45.0f),
+                  (float) swapchain.createInfo.imageExtent.width / (float) swapchain.createInfo.imageExtent.height,
+                  0.1f,
+                  10.0f
+              );
               ubo.proj[1][1] *= -1;
 
-              Buffer& buffer = uniformBuffers[currentFrame];
-              void* tmpData = buffer.memoryReference().mapMemory(0, buffer.createInfo.size);
-              std::memcpy(tmpData, &ubo, static_cast<size_t>(buffer.createInfo.size));
-              buffer.memoryReference().unmapMemory();
+              Utility::copyTo(uniformBuffers[currentFrame], &ubo);
             } catch (...) {
               std::throw_with_nested(std::runtime_error(CALL_INFO()));
             }
@@ -1584,7 +1581,7 @@ namespace exqudens::vulkan {
 
   };
 
-  TEST_F(UiTestsA, test1) {
+  TEST_F(UiTests, test1) {
     try {
       std::string executableDir = TestUtils::getExecutableDir();
       std::vector<char*> arguments = {executableDir.data()};

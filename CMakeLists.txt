@@ -84,6 +84,7 @@ set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}
 
 set_python_boolean(CONAN_INTERFACE_ONLY "${INTERFACE_ONLY}")
 set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
+set_python_boolean(CONAN_WITH_DEPENDENCIES "${WITH_DEPENDENCIES}")
 
 set_conan_settings(CONAN_SETTINGS
     "arch=${CONAN_ARCH}"
@@ -100,6 +101,7 @@ set_conan_settings(CONAN_SETTINGS
 set_conan_options(CONAN_OPTIONS
     "interface=${CONAN_INTERFACE_ONLY}"
     "shared=${CONAN_BUILD_SHARED_LIBS}"
+    "dependencies=${CONAN_WITH_DEPENDENCIES}"
 )
 set("CONAN_INSTALL_PREFIX" "${PROJECT_BINARY_DIR}/conan-install")
 if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")
@@ -390,19 +392,13 @@ add_library("test-lib" INTERFACE
     "src/test/cpp/TestConfiguration.hpp"
     "src/test/cpp/TestMacros.hpp"
     "src/test/cpp/TestUtils.hpp"
-    "src/test/cpp/exqudens/vulkan/Vertex.hpp"
-    "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
+    "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
+    "src/test/cpp/exqudens/vulkan/Tests.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
     "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
-    "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
-    #"src/test/cpp/exqudens/vulkan/ConfigurationTests.hpp"
-    #"src/test/cpp/exqudens/vulkan/ShaderTests.hpp"
-    #"src/test/cpp/exqudens/vulkan/FactoryTests.hpp"
-    "src/test/cpp/exqudens/vulkan/UiTestsA.hpp"
-    #"src/test/cpp/exqudens/vulkan/UiTestsB.hpp"
-    #"src/test/cpp/exqudens/vulkan/UiTestsC.hpp"
-    #"src/test/cpp/exqudens/vulkan/UiTestsD.hpp"
-    #"src/test/cpp/exqudens/vulkan/UiTestsE.hpp"
+    "src/test/cpp/exqudens/vulkan/UiTests.hpp"
+    "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
+    "src/test/cpp/exqudens/vulkan/Vertex.hpp"
 )
 target_include_directories("test-lib" INTERFACE
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"

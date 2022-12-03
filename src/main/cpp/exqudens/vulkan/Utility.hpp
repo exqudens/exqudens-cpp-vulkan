@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
+#include "exqudens/vulkan/Buffer.hpp"
 
 namespace exqudens::vulkan {
 
@@ -54,6 +55,8 @@ namespace exqudens::vulkan {
       static vk::SampleCountFlagBits getMaxUsableSampleCount(
           const std::vector<vk::SampleCountFlags>& flags
       );
+
+      static void copyTo(Buffer& buffer, const void* data);
 
   };
 

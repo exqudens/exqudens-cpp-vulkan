@@ -4,17 +4,11 @@
 #include <gtest/gtest.h>
 
 #include "TestConfiguration.hpp"
+#include "exqudens/vulkan/OtherTests.hpp"
 #include "exqudens/vulkan/TestUtilsTests.hpp"
 #include "exqudens/vulkan/TinyObjLoaderTests.hpp"
-#include "exqudens/vulkan/OtherTests.hpp"
-//#include "exqudens/vulkan/ConfigurationTests.hpp"
-//#include "exqudens/vulkan/ShaderTests.hpp"
-//#include "exqudens/vulkan/FactoryTests.hpp"
-#include "exqudens/vulkan/UiTestsA.hpp"
-//#include "exqudens/vulkan/UiTestsB.hpp"
-//#include "exqudens/vulkan/UiTestsC.hpp"
-//#include "exqudens/vulkan/UiTestsD.hpp"
-//#include "exqudens/vulkan/UiTestsE.hpp"
+#include "exqudens/vulkan/Tests.hpp"
+#include "exqudens/vulkan/UiTests.hpp"
 
 class TestApplication {
 

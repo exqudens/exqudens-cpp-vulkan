@@ -8,19 +8,9 @@ required_conan_version = ">=1.43.0"
 
 
 class ConanConfiguration(ConanFile):
-    build_requires = [
-        "tinyobjloader/1.0.6",
-        "glm/0.9.9.8",
-        "gtest/1.11.0",
-        "lodepng/cci.20200615",
-        "glfw/3.3.7"
-    ]
-    requires = [
-        "vulkan/1.3.224.1"
-    ]
     settings = "arch", "os", "compiler", "build_type"
-    options = {"interface": [True, False], "shared": [True, False]}
-    default_options = {"interface": False, "shared": True}
+    options = {"shared": [True, False], "interface": [True, False], "dependencies": [True, False]}
+    default_options = {"shared": True, "interface": False, "dependencies": True}
     generators = "cmake_find_package"
 
     def set_name(self):
@@ -33,6 +23,27 @@ class ConanConfiguration(ConanFile):
     def set_version(self):
         try:
             self.version = tools.load(path.join(path.dirname(path.abspath(__file__)), "name-version.txt")).split(':')[1].strip()
+        except Exception as e:
+            error(format_exc())
+            raise e
+
+    def requirements(self):
+        try:
+            if self.options.dependencies:
+                self.requires("vulkan/1.3.224.1")
+        except Exception as e:
+            error(format_exc())
+            raise e
+
+    def build_requirements(self):
+        try:
+            self.tool_requires("tinyobjloader/1.0.6")
+            self.tool_requires("glm/0.9.9.8")
+            self.tool_requires("gtest/1.11.0")
+            self.tool_requires("lodepng/cci.20200615")
+            self.tool_requires("glfw/3.3.7")
+            if not self.options.dependencies:
+                self.tool_requires("vulkan/1.3.224.1")
         except Exception as e:
             error(format_exc())
             raise e

@@ -36,6 +36,10 @@
         "BUILD_SHARED_LIBS": {
           "type": "BOOL",
           "value": false
+        },
+        "WITH_DEPENDENCIES": {
+          "type": "BOOL",
+          "value": false
         }
       }
     },
@@ -119,6 +123,26 @@
         }
       }
     },
+    {
+      "name": "deps",
+      "hidden": true,
+      "cacheVariables": {
+        "WITH_DEPENDENCIES": {
+          "type": "BOOL",
+          "value": true
+        }
+      }
+    },
+    {
+      "name": "nodeps",
+      "hidden": true,
+      "cacheVariables": {
+        "WITH_DEPENDENCIES": {
+          "type": "BOOL",
+          "value": false
+        }
+      }
+    },
 
     {
       "name": "windows.ninja.interface",
@@ -127,23 +151,43 @@
     },
     {
       "name": "windows.ninja.debug.shared",
-      "inherits": [ "default", "windows", "ninja", "debug", "shared", "mdd" ],
+      "inherits": [ "default", "windows", "ninja", "debug", "shared", "mdd", "deps" ],
       "binaryDir": "${sourceDir}/build/1"
     },
     {
       "name": "windows.ninja.debug.static",
-      "inherits": [ "default", "windows", "ninja", "debug", "static", "mtd" ],
+      "inherits": [ "default", "windows", "ninja", "debug", "static", "mtd", "deps" ],
       "binaryDir": "${sourceDir}/build/2"
     },
     {
       "name": "windows.ninja.release.shared",
-      "inherits": [ "default", "windows", "ninja", "release", "shared", "md" ],
+      "inherits": [ "default", "windows", "ninja", "release", "shared", "md", "deps" ],
       "binaryDir": "${sourceDir}/build/3"
     },
     {
       "name": "windows.ninja.release.static",
-      "inherits": [ "default", "windows", "ninja", "release", "static", "mt" ],
+      "inherits": [ "default", "windows", "ninja", "release", "static", "mt", "deps" ],
       "binaryDir": "${sourceDir}/build/4"
+    },
+    {
+      "name": "windows.ninja.debug.shared.nodeps",
+      "inherits": [ "default", "windows", "ninja", "debug", "shared", "mdd", "nodeps" ],
+      "binaryDir": "${sourceDir}/build/5"
+    },
+    {
+      "name": "windows.ninja.debug.static.nodeps",
+      "inherits": [ "default", "windows", "ninja", "debug", "static", "mtd", "nodeps" ],
+      "binaryDir": "${sourceDir}/build/6"
+    },
+    {
+      "name": "windows.ninja.release.shared.nodeps",
+      "inherits": [ "default", "windows", "ninja", "release", "shared", "md", "nodeps" ],
+      "binaryDir": "${sourceDir}/build/7"
+    },
+    {
+      "name": "windows.ninja.release.static.nodeps",
+      "inherits": [ "default", "windows", "ninja", "release", "static", "mt", "nodeps" ],
+      "binaryDir": "${sourceDir}/build/8"
     }
   ],
   "buildPresets": [
@@ -176,6 +220,26 @@
       "name": "windows.ninja.release.static",
       "configurePreset": "windows.ninja.release.static",
       "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.debug.shared.nodeps",
+      "configurePreset": "windows.ninja.debug.shared.nodeps",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.debug.static.nodeps",
+      "configurePreset": "windows.ninja.debug.static.nodeps",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.release.shared.nodeps",
+      "configurePreset": "windows.ninja.release.shared.nodeps",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.release.static.nodeps",
+      "configurePreset": "windows.ninja.release.static.nodeps",
+      "inherits": [ "default" ]
     }
   ],
   "testPresets": [
@@ -188,7 +252,7 @@
       },
       "filter": {
         "exclude": {
-          "name": "(UiTestsA.test1)|(UiTestsB.test1)|(UiTestsC.test1)|(UiTestsD.test1)|(UiTestsE.test1)"
+          "name": "(UiTests\\.test1)|(UiATests\\.test1)"
         }
       },
       "execution": {
@@ -219,6 +283,26 @@
     {
       "name": "windows.ninja.release.static",
       "configurePreset": "windows.ninja.release.static",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.debug.shared.nodeps",
+      "configurePreset": "windows.ninja.debug.shared.nodeps",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.debug.static.nodeps",
+      "configurePreset": "windows.ninja.debug.static.nodeps",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.release.shared.nodeps",
+      "configurePreset": "windows.ninja.release.shared.nodeps",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "windows.ninja.release.static.nodeps",
+      "configurePreset": "windows.ninja.release.static.nodeps",
       "inherits": [ "default" ]
     }
   ]
