@@ -410,7 +410,7 @@ namespace exqudens::vulkan {
               10.0f
           );
           ubo.proj[1][1] *= -1;
-          Utility::copyTo(uniformBuffer, &ubo);
+          TestUtils::copyTo(uniformBuffer, &ubo);
         } catch (...) {
           std::throw_with_nested(std::runtime_error(CALL_INFO()));
         }
@@ -1374,9 +1374,9 @@ namespace exqudens::vulkan {
       .build();
       std::cout << std::format("outputImage: '{}'", (bool) outputImage.value) << std::endl;
 
-      Utility::copyTo(textureBuffer, tmpImageData.data());
-      Utility::copyTo(vertexStagingBuffer, vertexVector.data());
-      Utility::copyTo(indexStagingBuffer, indexVector.data());
+      TestUtils::copyTo(textureBuffer, tmpImageData.data());
+      TestUtils::copyTo(vertexStagingBuffer, vertexVector.data());
+      TestUtils::copyTo(indexStagingBuffer, indexVector.data());
 
       transferCommandBuffer.reference().begin({});
 

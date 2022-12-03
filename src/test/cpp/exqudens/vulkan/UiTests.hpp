@@ -658,9 +658,9 @@ namespace exqudens::vulkan {
               .build();
               std::cout << std::format("queryPool: '{}'", (bool) queryPool.value) << std::endl;
 
-              Utility::copyTo(textureBuffer, tmpImageData.data());
-              Utility::copyTo(vertexStagingBuffer, vertexVector.data());
-              Utility::copyTo(indexStagingBuffer, indexVector.data());
+              TestUtils::copyTo(textureBuffer, tmpImageData.data());
+              TestUtils::copyTo(vertexStagingBuffer, vertexVector.data());
+              TestUtils::copyTo(indexStagingBuffer, indexVector.data());
 
               transferCommandBuffer.reference().begin({});
 
@@ -1475,7 +1475,7 @@ namespace exqudens::vulkan {
               );
               ubo.proj[1][1] *= -1;
 
-              Utility::copyTo(uniformBuffers[currentFrame], &ubo);
+              TestUtils::copyTo(uniformBuffers[currentFrame], &ubo);
             } catch (...) {
               std::throw_with_nested(std::runtime_error(CALL_INFO()));
             }

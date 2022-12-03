@@ -12,6 +12,7 @@
 
 #include "TestMacros.hpp"
 #include "TestConfiguration.hpp"
+#include "exqudens/vulkan/Buffer.hpp"
 
 class TestUtils {
 
@@ -220,6 +221,16 @@ class TestUtils {
           }
         }
         writePng(path, width, height, depth, pixels);
+      } catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      }
+    }
+
+    static void copyTo(exqudens::vulkan::Buffer& buffer, const void* data) {
+      try {
+        void* tmpData = buffer.memoryReference().mapMemory(0, buffer.createInfo.size);
+        std::memcpy(tmpData, data, static_cast<size_t>(buffer.createInfo.size));
+        buffer.memoryReference().unmapMemory();
       } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO()));
       }
