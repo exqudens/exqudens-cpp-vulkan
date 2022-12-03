@@ -829,7 +829,7 @@ namespace exqudens::vulkan {
                           .setHeight(600)
                           .setDepth(1)
                   )
-                  .setFormat(vk::Format::eR8G8B8A8Unorm)
+                  .setFormat(vk::Format::eR8G8B8A8Srgb)
                   .setImageType(vk::ImageType::e2D)
                   .setMipLevels(1)
                   .setArrayLayers(1)
