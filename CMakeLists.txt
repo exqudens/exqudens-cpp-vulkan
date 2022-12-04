@@ -438,6 +438,14 @@ add_custom_command(
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+    DEPENDS "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.frag"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.frag"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag"
     VERBATIM
 )
 add_executable("test-app"
