@@ -40,6 +40,9 @@ namespace exqudens::vulkan {
           bool resized = false;
 
         private:
+          inline static const std::string OBJ_FILE_PATH = "";
+          inline static const std::string PNG_FILE_PATH = "";
+          inline static const bool ANIMATE = false;
           inline static const size_t MAX_FRAMES_IN_FLIGHT = 2;
 
           std::vector<Vertex> vertexVector = {};
@@ -118,17 +121,38 @@ namespace exqudens::vulkan {
                   4, 5, 6, 6, 7, 4
               };*/
 
+              std::string objFilePath = OBJ_FILE_PATH;
+              if (objFilePath.empty()) {
+                objFilePath = std::filesystem::path(arguments.front())
+                    .append("resources")
+                    .append("obj")
+                    .append("viking_room.obj")
+                    .make_preferred()
+                    .string();
+              } else {
+                objFilePath = std::filesystem::path(objFilePath).make_preferred().string();
+              }
               TestUtils::readObj(
-                  std::filesystem::path(arguments.front()).append("resources").append("obj").append("viking_room.obj").make_preferred().string(),
+                  objFilePath,
                   vertexVector,
                   indexVector
               );
 
+              std::string pngFilePath = PNG_FILE_PATH;
+              if (pngFilePath.empty()) {
+                pngFilePath = std::filesystem::path(arguments.front())
+                    .append("resources")
+                    .append("png")
+                    .append(/* "texture.png" */ "viking_room.png")
+                    .make_preferred()
+                    .string();
+              } else {
+                pngFilePath = std::filesystem::path(pngFilePath).make_preferred().string();
+              }
               unsigned int tmpImageWidth, tmpImageHeight, tmpImageDepth, tmpImageMipLevels;
               std::vector<unsigned char> tmpImageData;
               TestUtils::readPng(
-                  //std::filesystem::path(arguments.front()).append("resources").append("png").append("texture.png").make_preferred().string(),
-                  std::filesystem::path(arguments.front()).append("resources").append("png").append("viking_room.png").make_preferred().string(),
+                  pngFilePath,
                   tmpImageWidth,
                   tmpImageHeight,
                   tmpImageDepth,
@@ -1152,12 +1176,17 @@ namespace exqudens::vulkan {
 
           void updateUniformBuffer() {
             try {
-              /*static auto startTime = std::chrono::high_resolution_clock::now();
+              float angle = 0.0f;
 
-              auto currentTime = std::chrono::high_resolution_clock::now();
-              float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-              float angle = time * glm::radians(90.0f);*/
-              float angle = 0.5f * glm::radians(0.0f); // min 0 max 360
+              if (ANIMATE) {
+                static auto startTime = std::chrono::high_resolution_clock::now();
+
+                auto currentTime = std::chrono::high_resolution_clock::now();
+                float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+                angle = time * glm::radians(90.0f);
+              } else {
+                angle = 0.5f * glm::radians(0.0f); // min 0 max 360
+              }
 
               UniformBufferObject ubo = {};
               ubo.model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
