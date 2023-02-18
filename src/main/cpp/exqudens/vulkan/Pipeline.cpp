@@ -45,8 +45,8 @@ namespace exqudens::vulkan {
     return *this;
   }
 
-  Pipeline::Builder& Pipeline::Builder::setReadFileFunction(const std::function<std::vector<char>(const std::string&)>& val) {
-    readFileFunction = val;
+  Pipeline::Builder& Pipeline::Builder::setReadFileBytesFunction(const std::function<std::vector<char>(const std::string&)>& val) {
+    readFileBytesFunction = val;
     return *this;
   }
 
@@ -117,8 +117,8 @@ namespace exqudens::vulkan {
 
   Pipeline Pipeline::Builder::build() {
     try {
-      if (!readFileFunction) {
-        readFileFunction = &Utility::readFile;
+      if (!readFileBytesFunction) {
+        readFileBytesFunction = &Utility::readFileBytes;
       }
 
       Pipeline target = {};
@@ -143,7 +143,7 @@ namespace exqudens::vulkan {
       if (graphicsCreateInfo) {
         for (const std::string& path : paths) {
           if (!shaders.contains(path)) {
-            std::vector<char> bytes = readFileFunction(path);
+            std::vector<char> bytes = readFileBytesFunction(path);
             if (bytes.empty()) {
               throw std::runtime_error(CALL_INFO() + ": '" + path + "' failed to create shader module bytes is empty!");
             }

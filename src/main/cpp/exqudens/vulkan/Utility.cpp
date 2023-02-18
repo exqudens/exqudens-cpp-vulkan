@@ -2,8 +2,10 @@
 #include "exqudens/vulkan/macros.hpp"
 
 #include <stdexcept>
-#include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <limits>
+#include <cstdlib>
 #include <cstring>
 
 namespace exqudens::vulkan {
@@ -50,22 +52,25 @@ namespace exqudens::vulkan {
     }
   }
 
-  std::vector<char> Utility::readFile(const std::string& path) {
+  std::vector<char> Utility::readFileBytes(const std::string& path) {
     try {
-      std::ifstream file(path, std::ios::ate | std::ios::binary);
+      std::filesystem::path filePath = std::filesystem::path(path).make_preferred();
+      std::size_t fileSizeRaw = std::filesystem::file_size(filePath);
+
+      if (fileSizeRaw > LLONG_MAX) {
+        throw std::runtime_error(CALL_INFO() + ": file size is larger than read max size: '" + std::to_string(fileSizeRaw) + " > " + std::to_string(LLONG_MAX) + "'!");
+      }
+
+      auto fileSize = (std::streamsize) fileSizeRaw;
+      std::vector<char> buffer(fileSize);
+      std::ifstream file(filePath.string(), std::ios::binary);
 
       if (!file.is_open()) {
         throw std::runtime_error(CALL_INFO() + ": failed to open file: '" + path + "'!");
       }
 
-      std::streamsize fileSize = file.tellg();
-      std::vector<char> buffer(fileSize);
-
-      file.seekg(0);
       file.read(buffer.data(), fileSize);
-
       file.close();
-
       return buffer;
     } catch (...) {
       std::throw_with_nested(std::runtime_error(CALL_INFO()));

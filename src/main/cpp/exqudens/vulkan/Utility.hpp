@@ -25,7 +25,7 @@ namespace exqudens::vulkan {
           const std::string& message
       );
 
-      static std::vector<char> readFile(const std::string& path);
+      static std::vector<char> readFileBytes(const std::string& path);
 
       static vk::SwapchainCreateInfoKHR swapChainCreateInfo(
           vk::raii::PhysicalDevice& physicalDevice,

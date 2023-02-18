@@ -80,9 +80,13 @@ namespace exqudens::vulkan {
 
       updateUniformBuffer = [&swapchainImage, &uniformBuffer]() {
         try {
-          float angle = 0.5f * glm::radians(0.0f); // min 0 max 360
+          float angle1 = 0.0f * glm::radians(360.0f); // min 0 max 360
+          float angle2 = 0.0f;
+          glm::vec3 axis1 = glm::vec3(0.0f, 0.0f, 1.0f);
+          glm::vec3 axis2 = glm::vec3(0.0f, 1.0f, 0.0f);
           UniformBufferObject ubo = {};
-          ubo.model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
+          ubo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
+          ubo.model = glm::rotate(ubo.model, angle2, axis2);
           ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
           ubo.proj = glm::perspective(
               glm::radians(45.0f),
@@ -91,7 +95,7 @@ namespace exqudens::vulkan {
               10.0f
           );
           ubo.proj[1][1] *= -1;
-          TestUtils::copyTo(uniformBuffer, &ubo);
+          uniformBuffer.fill(&ubo);
         } catch (...) {
           std::throw_with_nested(std::runtime_error(CALL_INFO()));
         }
@@ -1055,9 +1059,9 @@ namespace exqudens::vulkan {
       .build();
       std::cout << std::format("outputImage: '{}'", (bool) outputImage.value) << std::endl;
 
-      TestUtils::copyTo(textureBuffer, tmpImageData.data());
-      TestUtils::copyTo(vertexStagingBuffer, vertexVector.data());
-      TestUtils::copyTo(indexStagingBuffer, indexVector.data());
+      textureBuffer.fill(tmpImageData.data());
+      vertexStagingBuffer.fill(vertexVector.data());
+      indexStagingBuffer.fill(indexVector.data());
 
       transferCommandBuffer.reference().begin({});
 

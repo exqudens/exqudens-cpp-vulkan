@@ -46,7 +46,7 @@ namespace exqudens::vulkan {
     private:
 
       std::weak_ptr<vk::raii::Device> device;
-      std::function<std::vector<char>(const std::string&)> readFileFunction;
+      std::function<std::vector<char>(const std::string&)> readFileBytesFunction;
       std::vector<vk::DescriptorSetLayout> setLayouts;
       std::vector<vk::PushConstantRange> pushConstantRanges;
       std::optional<vk::PipelineLayoutCreateInfo> layoutCreateInfo;
@@ -61,7 +61,7 @@ namespace exqudens::vulkan {
 
       Pipeline::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Pipeline::Builder& setReadFileFunction(const std::function<std::vector<char>(const std::string&)>& val);
+      Pipeline::Builder& setReadFileBytesFunction(const std::function<std::vector<char>(const std::string&)>& val);
 
       Pipeline::Builder& addSetLayout(const vk::DescriptorSetLayout& val);
 

@@ -2,9 +2,11 @@
 
 #include <string>
 #include <filesystem>
+#include <format>
+#include <iostream>
 
 #ifndef TO_STRING
-#define TO_STRING(var) std::string(#var)
+#define TO_STRING(var) std::format("{}: '{}'", #var, var) // std::string(#var)
 #endif
 
 #ifndef FUNCTION_INFO
@@ -21,4 +23,12 @@
 
 #ifndef CALL_INFO
 #define CALL_INFO() FUNCTION_INFO() + "(" + FILE_INFO() + ":" + LINE_INFO() + ")"
+#endif
+
+#ifndef PRINT
+#define PRINT(var) std::cout << TO_STRING(var)
+#endif
+
+#ifndef PRINTLN
+#define PRINTLN(var) PRINT(var) << std::endl
 #endif

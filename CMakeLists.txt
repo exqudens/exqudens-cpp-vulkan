@@ -1,4 +1,51 @@
-cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+
+block()
+    set(fileName "util.cmake")
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../${fileName}")
+        file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}")
+        file(DOWNLOAD
+            "https://raw.githubusercontent.com/exqudens/exqudens-cmake/master/src/main/cmake/${fileName}"
+            "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}"
+            EXPECTED_MD5 "3ed544e138fcaa4dd18a6b20413070af"
+            STATUS downloadStatus
+        )
+        if("${downloadStatus}" STREQUAL "0;\"No error\"")
+            file(COPY "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/..")
+        else()
+            message(FATAL_ERROR "downloadStatus: '${downloadStatus}'")
+        endif()
+    endif()
+endblock()
+
+include("${CMAKE_CURRENT_BINARY_DIR}/../util.cmake")
+
+string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
+if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS)
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../msvc-16-x64-x64-toolchain.cmake")
+        set_msvc_toolchain_content(TOOLCHAIN_CONTENT
+            PROCESSOR "x86_64"
+            OS "${CMAKE_HOST_SYSTEM_NAME}"
+            VERSION "16"
+            HOST "x64"
+            TARGET "x64"
+        )
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/../msvc-16-x64-x64-toolchain.cmake" "${TOOLCHAIN_CONTENT}")
+    endif()
+    find_program(CONAN_COMMAND NAMES "conan.exe" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS)
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../gcc-toolchain.cmake")
+        find_file(COMPILER_PATH NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+        set_gnu_toolchain_content(TOOLCHAIN_CONTENT
+            PROCESSOR "x86_64"
+            OS "${CMAKE_HOST_SYSTEM_NAME}"
+            PATH "${COMPILER_PATH}"
+        )
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/../gcc-toolchain.cmake" "${TOOLCHAIN_CONTENT}")
+    endif()
+    find_program(CONAN_COMMAND NAMES "conan" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+endif()
+
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/name-version.txt" INFO)
 string(REPLACE ":" ";" INFO_LIST "${INFO}")
 list(GET INFO_LIST 0 RAW_NAME)
@@ -9,7 +56,6 @@ project("${NAME}" VERSION "${VERSION}" LANGUAGES "NONE")
 
 message("project: '${PROJECT_NAME}-${PROJECT_VERSION}'")
 
-include("util.cmake")
 include("GenerateExportHeader")
 enable_testing()
 include("GoogleTest")
@@ -105,6 +151,8 @@ set_conan_options(CONAN_OPTIONS
 )
 set("CONAN_INSTALL_PREFIX" "${PROJECT_BINARY_DIR}/conan-install")
 if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")
+    message("CONAN_SETTINGS: '${CONAN_SETTINGS}'")
+    message("CONAN_OPTIONS: '${CONAN_OPTIONS}'")
     execute_process(
         COMMAND "${CONAN_COMMAND}"
                 install
@@ -392,13 +440,17 @@ add_library("test-lib" INTERFACE
     "src/test/cpp/TestConfiguration.hpp"
     "src/test/cpp/TestMacros.hpp"
     "src/test/cpp/TestUtils.hpp"
+    "src/test/cpp/exqudens/vulkan/Vertex.hpp"
+    "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
+    "src/test/cpp/exqudens/vulkan/Context.hpp"
+    "src/test/cpp/exqudens/vulkan/Functions.hpp"
     "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
     "src/test/cpp/exqudens/vulkan/Tests.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
     "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
     "src/test/cpp/exqudens/vulkan/UiTests.hpp"
-    "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
-    "src/test/cpp/exqudens/vulkan/Vertex.hpp"
+    "src/test/cpp/exqudens/vulkan/Ui1Tests.hpp"
+    "src/test/cpp/exqudens/vulkan/Ui2Tests.hpp"
 )
 target_include_directories("test-lib" INTERFACE
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"
@@ -428,6 +480,12 @@ add_custom_command(
            "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
            "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
            "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
+           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
+           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
+           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
+           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
+           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
     COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-rf" "${PROJECT_BINARY_DIR}/test/bin/resources/shader"
     COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/bin/resources/shader"
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
@@ -438,6 +496,12 @@ add_custom_command(
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
     COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
+    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
     DEPENDS "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert"
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.frag"
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.vert"
@@ -446,6 +510,12 @@ add_custom_command(
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag"
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert"
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.frag"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert"
+            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag"
     VERBATIM
 )
 add_executable("test-app"
@@ -457,6 +527,12 @@ add_executable("test-app"
     "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
     "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
     "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
+    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
+    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
+    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
+    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
+    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
     "src/test/cpp/main.cpp"
 )
 target_link_libraries("test-app"

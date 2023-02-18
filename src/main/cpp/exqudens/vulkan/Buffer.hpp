@@ -25,6 +25,10 @@ namespace exqudens::vulkan {
 
     vk::raii::DeviceMemory& memoryReference();
 
+    void fill(const void* data, size_t offset, size_t size, vk::MemoryMapFlags flags);
+
+    void fill(const void* data);
+
   };
 
   class EXQUDENS_VULKAN_EXPORT Buffer::Builder {

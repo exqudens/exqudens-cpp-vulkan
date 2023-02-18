@@ -9,6 +9,8 @@
 #include "exqudens/vulkan/TinyObjLoaderTests.hpp"
 #include "exqudens/vulkan/Tests.hpp"
 #include "exqudens/vulkan/UiTests.hpp"
+#include "exqudens/vulkan/Ui1Tests.hpp"
+#include "exqudens/vulkan/Ui2Tests.hpp"
 
 class TestApplication {
 

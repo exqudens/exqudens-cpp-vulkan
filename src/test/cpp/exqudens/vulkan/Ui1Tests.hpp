@@ -29,7 +29,7 @@
 
 namespace exqudens::vulkan {
 
-  class UiTests : public testing::Test {
+  class Ui1Tests : public testing::Test {
 
     protected:
 
@@ -38,11 +38,18 @@ namespace exqudens::vulkan {
         public:
 
           bool resized = false;
+          bool left = false;
+          bool right = false;
+          bool up = false;
+          bool down = false;
+
+          float angleLeft = 0.0f;
+          float angleUp = 0.0f;
 
         private:
           inline static const std::string OBJ_FILE_PATH = "";
           inline static const std::string PNG_FILE_PATH = "";
-          inline static const bool ANIMATE = false;
+          inline static const std::string ANIMATE = ""; // "", "auto", "control"
           inline static const size_t MAX_FRAMES_IN_FLIGHT = 2;
 
           std::vector<Vertex> vertexVector = {};
@@ -58,6 +65,21 @@ namespace exqudens::vulkan {
           Queue presentQueue = {};
           CommandPool transferCommandPool = {};
           CommandPool graphicsCommandPool = {};
+          DescriptorPool descriptorPool = {};
+
+          std::vector<Buffer> shadowUniformBuffers = std::vector<Buffer>(MAX_FRAMES_IN_FLIGHT);
+          CommandBuffer shadowTransferCommandBuffer = {};
+          std::vector<CommandBuffer> shadowGraphicsCommandBuffers = std::vector<CommandBuffer>(MAX_FRAMES_IN_FLIGHT);
+          DescriptorSetLayout shadowDescriptorSetLayout = {};
+          RenderPass shadowRenderPass = {};
+          std::map<std::string, std::pair<vk::ShaderModuleCreateInfo, std::shared_ptr<vk::raii::ShaderModule>>> shadowShaders;
+          Pipeline shadowPipeline = {};
+          std::vector<Image> shadowDepthImages = std::vector<Image>(MAX_FRAMES_IN_FLIGHT);
+          std::vector<ImageView> shadowDepthImageViews = std::vector<ImageView>(MAX_FRAMES_IN_FLIGHT);
+          std::vector<Framebuffer> shadowFramebuffers = std::vector<Framebuffer>(MAX_FRAMES_IN_FLIGHT);
+          Sampler shadowSampler = {};
+          std::vector<DescriptorSet> shadowDescriptorSets = std::vector<DescriptorSet>(MAX_FRAMES_IN_FLIGHT);
+
           CommandBuffer transferCommandBuffer = {};
           std::vector<CommandBuffer> graphicsCommandBuffers = std::vector<CommandBuffer>(MAX_FRAMES_IN_FLIGHT);
           DescriptorSetLayout descriptorSetLayout = {};
@@ -83,7 +105,6 @@ namespace exqudens::vulkan {
           std::vector<Semaphore> imageAvailableSemaphores = std::vector<Semaphore>(MAX_FRAMES_IN_FLIGHT);
           std::vector<Semaphore> renderFinishedSemaphores = std::vector<Semaphore>(MAX_FRAMES_IN_FLIGHT);
           std::vector<Fence> inFlightFences = std::vector<Fence>(MAX_FRAMES_IN_FLIGHT);
-          DescriptorPool descriptorPool = {};
           std::vector<DescriptorSet> descriptorSets = std::vector<DescriptorSet>(MAX_FRAMES_IN_FLIGHT);
           QueryPool queryPool = {};
 
@@ -99,7 +120,9 @@ namespace exqudens::vulkan {
               const std::vector<const char*>& glfwInstanceRequiredExtensions,
               GLFWwindow* window,
               uint32_t width,
-              uint32_t height
+              uint32_t height,
+              uint32_t shadowWidth,
+              uint32_t shadowHeight
           ) {
             try {
               std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
@@ -327,6 +350,308 @@ namespace exqudens::vulkan {
               .build();
               std::cout << std::format("graphicsCommandPool: '{}'", (bool) graphicsCommandPool.value) << std::endl;
 
+              descriptorPool = DescriptorPool::builder()
+                  .setDevice(device.value)
+                  .addPoolSize(
+                      vk::DescriptorPoolSize()
+                          .setType(vk::DescriptorType::eUniformBuffer)
+                          .setDescriptorCount(descriptorSets.size() + shadowDescriptorSets.size())
+                  )
+                  .addPoolSize(
+                      vk::DescriptorPoolSize()
+                          .setType(vk::DescriptorType::eCombinedImageSampler)
+                          .setDescriptorCount(descriptorSets.size() + shadowDescriptorSets.size())
+                  )
+                  .setCreateInfo(
+                      vk::DescriptorPoolCreateInfo()
+                          .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+                          .setMaxSets(descriptorSets.size() + shadowDescriptorSets.size())
+                  )
+              .build();
+              std::cout << std::format("descriptorPool: '{}'", (bool) descriptorPool.value) << std::endl;
+
+              for (auto& uniformBuffer : shadowUniformBuffers) {
+                uniformBuffer = Buffer::builder()
+                    .setPhysicalDevice(physicalDevice.value)
+                    .setDevice(device.value)
+                    .setCreateInfo(
+                        vk::BufferCreateInfo()
+                            .setSize(sizeof(UniformBufferObject) * shadowUniformBuffers.size())
+                            .setUsage(vk::BufferUsageFlagBits::eUniformBuffer)
+                            .setSharingMode(vk::SharingMode::eExclusive)
+                    )
+                    .setMemoryCreateInfo(
+                        vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+                    )
+                .build();
+              }
+              std::ranges::for_each(shadowUniformBuffers, [](auto& o1) {std::cout << std::format("shadowUniformBuffer: '{}'", (bool) o1.value) << std::endl;});
+
+              shadowTransferCommandBuffer = CommandBuffer::builder()
+                  .setDevice(device.value)
+                  .setCreateInfo(
+                      vk::CommandBufferAllocateInfo()
+                          .setCommandPool(*transferCommandPool.reference())
+                          .setCommandBufferCount(1)
+                          .setLevel(vk::CommandBufferLevel::ePrimary)
+                  )
+              .build();
+              std::cout << std::format("shadowTransferCommandBuffer: '{}'", (bool) shadowTransferCommandBuffer.value) << std::endl;
+
+              for (auto& commandBuffer : shadowGraphicsCommandBuffers) {
+                commandBuffer = CommandBuffer::builder()
+                    .setDevice(device.value)
+                    .setCreateInfo(
+                        vk::CommandBufferAllocateInfo()
+                            .setCommandPool(*graphicsCommandPool.reference())
+                            .setCommandBufferCount(1)
+                            .setLevel(vk::CommandBufferLevel::ePrimary)
+                    )
+                .build();
+              }
+              std::ranges::for_each(shadowGraphicsCommandBuffers, [](const auto& o1) {std::cout << std::format("shadowGraphicsCommandBuffer: '{}'", (bool) o1.value) << std::endl;});
+
+              shadowDescriptorSetLayout = DescriptorSetLayout::builder()
+                  .setDevice(device.value)
+                  .addBinding(
+                      vk::DescriptorSetLayoutBinding()
+                          .setBinding(0)
+                          .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                          .setDescriptorCount(1)
+                          .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+                  )
+                  .addBinding(
+                      vk::DescriptorSetLayoutBinding()
+                          .setBinding(1)
+                          .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                          .setDescriptorCount(1)
+                          .setStageFlags(vk::ShaderStageFlagBits::eFragment)
+                  )
+              .build();
+              std::cout << std::format("shadowDescriptorSetLayout: '{}'", (bool) shadowDescriptorSetLayout.value) << std::endl;
+
+              for (auto& image : shadowDepthImages) {
+                image = Image::builder()
+                    .setPhysicalDevice(physicalDevice.value)
+                    .setDevice(device.value)
+                    .setCreateInfo(
+                        vk::ImageCreateInfo()
+                            .setImageType(vk::ImageType::e2D)
+                            .setFormat(Utility::imageDepthFormat(physicalDevice.reference()))
+                            .setExtent(
+                                vk::Extent3D()
+                                    .setWidth(shadowWidth)
+                                    .setHeight(shadowHeight)
+                                    .setDepth(1)
+                            )
+                            .setMipLevels(1)
+                            .setArrayLayers(1)
+                            .setSamples(vk::SampleCountFlagBits::e1)
+                            .setTiling(vk::ImageTiling::eOptimal)
+                            .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled)
+                            .setSharingMode(vk::SharingMode::eExclusive)
+                            .setQueueFamilyIndices({})
+                            .setInitialLayout(vk::ImageLayout::eUndefined)
+                    )
+                    .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
+                .build();
+              }
+              std::ranges::for_each(shadowDepthImages, [](const auto& o1) {std::cout << std::format("shadowDepthImage: '{}'", (bool) o1.value) << std::endl;});
+
+              for (size_t i = 0; i < shadowDepthImages.size(); i++) {
+                shadowDepthImageViews.at(i) = ImageView::builder()
+                    .setDevice(device.value)
+                    .setCreateInfo(
+                        vk::ImageViewCreateInfo()
+                            .setImage(*shadowDepthImages.at(i).reference())
+                            .setFormat(shadowDepthImages.at(i).createInfo.format)
+                            .setViewType(vk::ImageViewType::e2D)
+                            .setFlags({})
+                            .setComponents({})
+                            .setSubresourceRange(
+                                vk::ImageSubresourceRange()
+                                    .setAspectMask(vk::ImageAspectFlagBits::eDepth)
+                                    .setBaseMipLevel(0)
+                                    .setLevelCount(1)
+                                    .setBaseArrayLayer(0)
+                                    .setLayerCount(1)
+                            )
+                    )
+                .build();
+              }
+              std::ranges::for_each(shadowDepthImageViews, [](const auto& o1) {std::cout << std::format("shadowDepthImageView: '{}'", (bool) o1.value) << std::endl;});
+
+              shadowRenderPass = RenderPass::builder()
+                  .setDevice(device.value)
+                  .addAttachment(
+                      vk::AttachmentDescription()
+                          .setFormat(shadowDepthImages.at(0).createInfo.format)
+                          .setSamples(vk::SampleCountFlagBits::e1)
+                          .setLoadOp(vk::AttachmentLoadOp::eClear)
+                          .setStoreOp(vk::AttachmentStoreOp::eStore)
+                          .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                          .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                          .setInitialLayout(vk::ImageLayout::eUndefined)
+                          .setFinalLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                  )
+                  .addSubpass(
+                      SubpassDescription()
+                          .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                          .setDepthStencilAttachment(
+                              vk::AttachmentReference()
+                                  .setAttachment(0)
+                                  .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
+                          )
+                  )
+              .build();
+              std::cout << std::format("shadowRenderPass: '{}'", (bool) shadowRenderPass.value) << std::endl;
+
+              for (size_t i = 0; i < shadowDepthImageViews.size(); i++) {
+                shadowFramebuffers.at(i) = Framebuffer::builder()
+                    .setDevice(device.value)
+                    .addAttachment(*shadowDepthImageViews.at(i).reference())
+                    .setCreateInfo(
+                        vk::FramebufferCreateInfo()
+                            .setRenderPass(*shadowRenderPass.reference())
+                            .setWidth(shadowDepthImages.at(i).createInfo.extent.width)
+                            .setHeight(shadowDepthImages.at(i).createInfo.extent.height)
+                            .setLayers(1)
+                    )
+                .build();
+              }
+              std::ranges::for_each(shadowFramebuffers, [](const auto& o1) {std::cout << std::format("shadowFramebuffer: '{}'", (bool) o1.value) << std::endl;});
+
+              shadowPipeline = Pipeline::builder()
+                  .setDevice(device.value)
+                  .addStage(TestUtils::createStage(device, shadowShaders, "resources/shader/shadow-shader-5.vert.spv"))
+                  .addSetLayout(*shadowDescriptorSetLayout.reference())
+                  .setGraphicsCreateInfo(
+                      GraphicsPipelineCreateInfo()
+                          .setRenderPass(*shadowRenderPass.reference())
+                          .setSubpass(0)
+                          .setVertexInputState(
+                              PipelineVertexInputStateCreateInfo()
+                                  .addVertexBindingDescription(Vertex::getBindingDescription())
+                                  .setVertexAttributeDescriptions(Vertex::getAttributeDescriptions())
+                          )
+                          .setRasterizationState(
+                              vk::PipelineRasterizationStateCreateInfo()
+                                  .setDepthClampEnable(false)
+                                  .setRasterizerDiscardEnable(false)
+                                  .setPolygonMode(vk::PolygonMode::eFill)
+                                  .setCullMode(vk::CullModeFlagBits::eBack)
+                                  .setFrontFace(vk::FrontFace::eCounterClockwise)
+                                  .setLineWidth(1.0)
+                                  .setDepthBiasEnable(false)
+                                  .setDepthBiasConstantFactor(0.0)
+                                  .setDepthBiasClamp(0.0)
+                                  .setDepthBiasSlopeFactor(0.0)
+                          )
+                          .setViewportState(
+                              PipelineViewportStateCreateInfo()
+                                  .addViewport(
+                                      vk::Viewport()
+                                          .setWidth((float) shadowDepthImages.at(0).createInfo.extent.width)
+                                          .setHeight((float) shadowDepthImages.at(0).createInfo.extent.height)
+                                          .setMinDepth(0.0)
+                                          .setMaxDepth(1.0)
+                                          .setX(0.0)
+                                          .setY(0.0)
+                                  )
+                                  .addScissor(
+                                      vk::Rect2D()
+                                          .setOffset({0, 0})
+                                          .setExtent(
+                                              vk::Extent2D()
+                                                  .setWidth(shadowDepthImages.at(0).createInfo.extent.width)
+                                                  .setHeight(shadowDepthImages.at(0).createInfo.extent.height)
+                                          )
+                                  )
+                          )
+                          .setInputAssemblyState(
+                              vk::PipelineInputAssemblyStateCreateInfo()
+                                  .setTopology(vk::PrimitiveTopology::eTriangleList)
+                                  .setPrimitiveRestartEnable(false)
+                          )
+                          .setDepthStencilState(
+                              vk::PipelineDepthStencilStateCreateInfo()
+                                  .setDepthTestEnable(true)
+                                  .setDepthWriteEnable(true)
+                                  .setDepthCompareOp(vk::CompareOp::eLess)
+                                  .setDepthBoundsTestEnable(false)
+                                  .setStencilTestEnable(false)
+                                  .setFront({})
+                                  .setBack({})
+                                  .setMinDepthBounds(0.0)
+                                  .setMaxDepthBounds(1.0)
+                          )
+                  )
+              .build();
+              std::cout << std::format("shadowPipeline: '{}'", (bool) shadowPipeline.value) << std::endl;
+
+              shadowSampler = Sampler::builder()
+                  .setDevice(device.value)
+                  .setCreateInfo(
+                      vk::SamplerCreateInfo()
+                          .setMagFilter(vk::Filter::eLinear)
+                          .setMinFilter(vk::Filter::eLinear)
+                          .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+                          .setMinLod(0.0f)
+                          //.setMinLod((float) textureImage.createInfo.mipLevels / 2)
+                          .setMaxLod((float) shadowDepthImages.at(0).createInfo.mipLevels)
+                          .setMipLodBias(0.0f)
+                          .setAddressModeU(vk::SamplerAddressMode::eRepeat)
+                          .setAddressModeV(vk::SamplerAddressMode::eRepeat)
+                          .setAddressModeW(vk::SamplerAddressMode::eRepeat)
+                          .setCompareOp(vk::CompareOp::eAlways)
+                          .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
+                          .setUnnormalizedCoordinates(false)
+                          .setCompareEnable(false)
+                          .setAnisotropyEnable(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy)
+                          .setMaxAnisotropy(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy ? physicalDevice.reference().getProperties().limits.maxSamplerAnisotropy : 0)
+                  )
+              .build();
+              std::cout << std::format("shadowSampler: '{}'", (bool) shadowSampler.value) << std::endl;
+
+              for (size_t i = 0 ; i < shadowDescriptorSets.size(); i++) {
+                shadowDescriptorSets.at(i) = DescriptorSet::builder()
+                    .setDevice(device.value)
+                    .addSetLayout(*shadowDescriptorSetLayout.reference())
+                    .setCreateInfo(
+                        vk::DescriptorSetAllocateInfo()
+                            .setDescriptorPool(*descriptorPool.reference())
+                            .setDescriptorSetCount(1)
+                    )
+                    .addWrite(
+                        WriteDescriptorSet()
+                            .setDstBinding(0)
+                            .setDstArrayElement(0)
+                            .setDescriptorCount(1)
+                            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                            .addBufferInfo(
+                                vk::DescriptorBufferInfo()
+                                    .setBuffer(*shadowUniformBuffers.at(i).reference())
+                                    .setOffset(0)
+                                    .setRange(sizeof(UniformBufferObject))
+                            )
+                    )
+                    .addWrite(
+                        WriteDescriptorSet()
+                            .setDstBinding(1)
+                            .setDstArrayElement(0)
+                            .setDescriptorCount(1)
+                            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                            .addImageInfo(
+                                vk::DescriptorImageInfo()
+                                    .setSampler(*shadowSampler.reference())
+                                    .setImageView(*shadowDepthImageViews.at(i).reference())
+                                    .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                            )
+                    )
+                .build();
+              }
+              std::ranges::for_each(shadowDescriptorSets, [](auto& o1) {std::cout << std::format("shadowDescriptorSet: '{}'", (bool) o1.value) << std::endl;});
+
               transferCommandBuffer = CommandBuffer::builder()
                   .setDevice(device.value)
                   .setCreateInfo(
@@ -547,28 +872,8 @@ namespace exqudens::vulkan {
               }
               std::ranges::for_each(inFlightFences, [](auto& o1) {std::cout << std::format("inFlightFence: '{}'", (bool) o1.value) << std::endl;});
 
-              descriptorPool = DescriptorPool::builder()
-                  .setDevice(device.value)
-                  .addPoolSize(
-                      vk::DescriptorPoolSize()
-                          .setType(vk::DescriptorType::eUniformBuffer)
-                          .setDescriptorCount(MAX_FRAMES_IN_FLIGHT)
-                  )
-                  .addPoolSize(
-                      vk::DescriptorPoolSize()
-                          .setType(vk::DescriptorType::eCombinedImageSampler)
-                          .setDescriptorCount(MAX_FRAMES_IN_FLIGHT)
-                  )
-                  .setCreateInfo(
-                      vk::DescriptorPoolCreateInfo()
-                          .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                          .setMaxSets(MAX_FRAMES_IN_FLIGHT)
-                  )
-              .build();
-              std::cout << std::format("descriptorPool: '{}'", (bool) descriptorPool.value) << std::endl;
-
               for (size_t i = 0 ; i < descriptorSets.size(); i++) {
-                descriptorSets[i] = DescriptorSet::builder()
+                descriptorSets.at(i) = DescriptorSet::builder()
                     .setDevice(device.value)
                     .addSetLayout(*descriptorSetLayout.reference())
                     .setCreateInfo(
@@ -630,18 +935,28 @@ namespace exqudens::vulkan {
               transferCommandBuffer.reference().copyBuffer(
                   *vertexStagingBuffer.reference(),
                   *vertexBuffer.reference(),
-                  {vk::BufferCopy().setSize(vertexStagingBuffer.createInfo.size)}
+                  {
+                      vk::BufferCopy()
+                          .setSize(vertexStagingBuffer.createInfo.size)
+                  }
               );
 
               transferCommandBuffer.reference().copyBuffer(
                   *indexStagingBuffer.reference(),
                   *indexBuffer.reference(),
-                  {vk::BufferCopy().setSize(indexStagingBuffer.createInfo.size)}
+                  {
+                      vk::BufferCopy()
+                          .setSize(indexStagingBuffer.createInfo.size)
+                  }
               );
 
               transferCommandBuffer.reference().end();
               transferQueue.reference().submit(
-                  {vk::SubmitInfo().setCommandBufferCount(1).setPCommandBuffers(&(*transferCommandBuffer.reference()))}
+                  {
+                    vk::SubmitInfo()
+                      .setCommandBufferCount(1)
+                      .setPCommandBuffers(&(*transferCommandBuffer.reference()))
+                  }
               );
               transferQueue.reference().waitIdle();
 
@@ -857,9 +1172,9 @@ namespace exqudens::vulkan {
 
               pipeline = Pipeline::builder()
                   .setDevice(device.value)
-                  //.addPath("resources/shader/shader-4.vert.spv")
-                  .addStage(TestUtils::createStage(device, shaders, "resources/shader/shader-4.vert.spv"))
-                  .addPath("resources/shader/shader-4.frag.spv")
+                  //.addPath("resources/shader/shader-5.vert.spv")
+                  .addStage(TestUtils::createStage(device, shaders, "resources/shader/shader-5.vert.spv"))
+                  .addPath("resources/shader/shader-5.frag.spv")
                   .addSetLayout(*descriptorSetLayout.reference())
                   .setGraphicsCreateInfo(
                       GraphicsPipelineCreateInfo()
@@ -867,7 +1182,7 @@ namespace exqudens::vulkan {
                           .setSubpass(0)
                           .setVertexInputState(
                               PipelineVertexInputStateCreateInfo()
-                                  .setVertexBindingDescriptions({Vertex::getBindingDescription()})
+                                  .addVertexBindingDescription(Vertex::getBindingDescription())
                                   .setVertexAttributeDescriptions(Vertex::getAttributeDescriptions())
                           )
                           .setInputAssemblyState(
@@ -889,7 +1204,11 @@ namespace exqudens::vulkan {
                                   .addScissor(
                                       vk::Rect2D()
                                           .setOffset({0, 0})
-                                          .setExtent(swapchain.createInfo.imageExtent)
+                                          .setExtent(
+                                              vk::Extent2D()
+                                                  .setWidth(swapchain.createInfo.imageExtent.width)
+                                                  .setHeight(swapchain.createInfo.imageExtent.height)
+                                          )
                                   )
                           )
                           .setRasterizationState(
@@ -974,7 +1293,7 @@ namespace exqudens::vulkan {
             }
           }
 
-          void reCreateSwapchain(int width, int height) {
+          void reCreateSwapchain(int width, int height, int shadowWidth, int shadowHeight) {
             try {
               std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
 
@@ -1014,7 +1333,7 @@ namespace exqudens::vulkan {
             }
           }
 
-          void drawFrame(int width, int height) {
+          void drawFrame(int width, int height, int shadowWidth, int shadowHeight) {
             try {
               if (
                   inFlightFences.size() < MAX_FRAMES_IN_FLIGHT
@@ -1042,7 +1361,7 @@ namespace exqudens::vulkan {
                   .acquireNextImage(UINT64_MAX, *imageAvailableSemaphores.at(currentFrame).reference());
               result = swapchainNextImage.first;
               if (vk::Result::eErrorOutOfDateKHR == result) {
-                reCreateSwapchain(width, height);
+                reCreateSwapchain(width, height, shadowWidth, shadowHeight);
                 return;
               } else if (vk::Result::eSuccess != result && vk::Result::eSuboptimalKHR != result) {
                 throw std::runtime_error("failed to 'swapChain.acquireNextImage(...)'!");
@@ -1145,7 +1464,7 @@ namespace exqudens::vulkan {
               );
               if (vk::Result::eErrorOutOfDateKHR == result || vk::Result::eSuboptimalKHR == result || resized) {
                 resized = false;
-                reCreateSwapchain(width, height);
+                reCreateSwapchain(width, height, shadowWidth, shadowHeight);
               } else if (vk::Result::eSuccess != result) {
                 throw std::runtime_error("failed to 'swapChain.acquireNextImage(...)'!");
               }
@@ -1166,20 +1485,82 @@ namespace exqudens::vulkan {
 
           void updateUniformBuffer(Buffer& uniformBuffer) {
             try {
-              float angle = 0.0f;
+              float angle1 = 0.0f;
+              glm::vec3 axis1 = glm::vec3(0.0f, 0.0f, 1.0f);
 
-              if (ANIMATE) {
+              float angle2 = 0.0f;
+              glm::vec3 axis2 = glm::vec3(0.0f, 1.0f, 0.0f);
+
+              if (ANIMATE == std::string("auto")) {
                 static auto startTime = std::chrono::high_resolution_clock::now();
 
                 auto currentTime = std::chrono::high_resolution_clock::now();
                 float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-                angle = time * glm::radians(90.0f);
+                angle1 = time * glm::radians(90.0f);
+                angle2 = 0.0f;
+              } else if(ANIMATE == std::string("control")) {
+                if (left) {
+                  float tmpMod = angleLeft + 0.01f;
+                  if (tmpMod >= 1.0f) {
+                    tmpMod = 0.0f;
+                  }
+                  angleLeft = tmpMod;
+                } else if (right) {
+                  float tmpMod = angleLeft - 0.01f;
+                  if (tmpMod <= 0.0f) {
+                    tmpMod = 1.0f;
+                  }
+                  angleLeft = tmpMod;
+                }
+
+                angle1 = angleLeft * glm::radians(360.0f);
+
+                if (up) {
+                  float tmpMod = angleUp + 0.01f;
+                  if (tmpMod >= 1.0f) {
+                    tmpMod = 0.0f;
+                  }
+                  angleUp = tmpMod;
+                } else if (down) {
+                  float tmpMod = angleUp - 0.01f;
+                  if (tmpMod <= 0.0f) {
+                    tmpMod = 1.0f;
+                  }
+                  angleUp = tmpMod;
+                }
+
+                angle2 = angleUp * glm::radians(360.0f);
               } else {
-                angle = 0.5f * glm::radians(0.0f); // min 0 max 360
+                angle1 = 0.0f * glm::radians(360.0f); // min 0 max 360
+                angle2 = 0.0f;
               }
 
+              glm::vec3 lightPos = glm::vec3();
+              float lightFOV = 45.0f;
+              float zNear = 1.0f;
+              float zFar = 96.0f;
+
+              UniformBufferObject shadowUbo = {};
+
+              shadowUbo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
+              shadowUbo.model = glm::rotate(shadowUbo.model, angle2, axis2);
+              shadowUbo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+              shadowUbo.proj = glm::perspective(
+                  glm::radians(45.0f),
+                  (float) shadowDepthImages.at(0).createInfo.extent.width / (float) shadowDepthImages.at(0).createInfo.extent.height,
+                  0.1f,
+                  10.0f
+              );
+              shadowUbo.proj[1][1] *= -1;
+              shadowUbo.lightPos = glm::vec4(lightPos, 1.0f);
+              shadowUbo.lightSpace = glm::mat4(1.0f);
+              shadowUbo.zNear = zNear;
+              shadowUbo.zFar = zFar;
+
               UniformBufferObject ubo = {};
-              ubo.model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 0.0f, 1.0f));
+
+              ubo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
+              ubo.model = glm::rotate(ubo.model, angle2, axis2);
               ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
               ubo.proj = glm::perspective(
                   glm::radians(45.0f),
@@ -1189,6 +1570,7 @@ namespace exqudens::vulkan {
               );
               ubo.proj[1][1] *= -1;
 
+              shadowUniformBuffers.at(currentFrame).fill(&shadowUbo);
               uniformBuffer.fill(&ubo);
             } catch (...) {
               std::throw_with_nested(std::runtime_error(CALL_INFO()));
@@ -1218,6 +1600,8 @@ namespace exqudens::vulkan {
             try {
               int width = 800;
               int height = 600;
+              int shadowWidth = 2048;
+              int shadowHeight = 2048;
               std::string title = "Vulkan";
 
               glfwInit();
@@ -1229,7 +1613,7 @@ namespace exqudens::vulkan {
               glfwSetWindowUserPointer(window, this);
               glfwSetFramebufferSizeCallback(window, frameBufferResizeCallback);
               //glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
-              //glfwSetKeyCallback(window, keyCallback);
+              glfwSetKeyCallback(window, keyCallback);
 
               uint32_t glfwExtensionCount = 0;
               const char** glfwExtensions;
@@ -1242,7 +1626,9 @@ namespace exqudens::vulkan {
                   glfwInstanceRequiredExtensions,
                   window,
                   static_cast<uint32_t>(width),
-                  static_cast<uint32_t>(height)
+                  static_cast<uint32_t>(height),
+                  static_cast<uint32_t>(shadowWidth),
+                  static_cast<uint32_t>(shadowHeight)
               );
 
               while (!glfwWindowShouldClose(window)) {
@@ -1252,7 +1638,7 @@ namespace exqudens::vulkan {
                   glfwGetFramebufferSize(window, &width, &height);
                   glfwWaitEvents();
                 }
-                renderer->drawFrame(width, height);
+                renderer->drawFrame(width, height, shadowWidth, shadowHeight);
               }
               renderer->waitIdle();
 
@@ -1270,6 +1656,48 @@ namespace exqudens::vulkan {
             try {
               auto* app = reinterpret_cast<TestUiApplication*>(glfwGetWindowUserPointer(window));
               app->renderer->resized = true;
+            } catch (...) {
+              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+            }
+          }
+
+          static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+            try {
+              auto* app = reinterpret_cast<TestUiApplication*>(glfwGetWindowUserPointer(window));
+              int aState = glfwGetKey(window, GLFW_KEY_A);
+              int leftState = glfwGetKey(window, GLFW_KEY_LEFT);
+              int dState = glfwGetKey(window, GLFW_KEY_D);
+              int rightState = glfwGetKey(window, GLFW_KEY_RIGHT);
+              int wState = glfwGetKey(window, GLFW_KEY_W);
+              int upState = glfwGetKey(window, GLFW_KEY_UP);
+              int sState = glfwGetKey(window, GLFW_KEY_S);
+              int downState = glfwGetKey(window, GLFW_KEY_DOWN);
+              if (aState == GLFW_PRESS || leftState == GLFW_PRESS) {
+                app->renderer->left = true;
+                app->renderer->right = false;
+                app->renderer->up = false;
+                app->renderer->down = false;
+              } else if (dState == GLFW_PRESS || rightState == GLFW_PRESS) {
+                app->renderer->left = false;
+                app->renderer->right = true;
+                app->renderer->up = false;
+                app->renderer->down = false;
+              } else if (wState == GLFW_PRESS || upState == GLFW_PRESS) {
+                app->renderer->left = false;
+                app->renderer->right = false;
+                app->renderer->up = true;
+                app->renderer->down = false;
+              } else if (sState == GLFW_PRESS || downState == GLFW_PRESS) {
+                app->renderer->left = false;
+                app->renderer->right = false;
+                app->renderer->up = false;
+                app->renderer->down = true;
+              } else {
+                app->renderer->left = false;
+                app->renderer->right = false;
+                app->renderer->up = false;
+                app->renderer->down = false;
+              }
             } catch (...) {
               std::throw_with_nested(std::runtime_error(CALL_INFO()));
             }
@@ -1295,7 +1723,7 @@ namespace exqudens::vulkan {
 
   };
 
-  TEST_F(UiTests, test1) {
+  TEST_F(Ui1Tests, test1) {
     try {
       std::string executableDir = TestUtils::getExecutableDir();
       std::vector<char*> arguments = {executableDir.data()};

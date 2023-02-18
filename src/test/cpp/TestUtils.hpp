@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <stdexcept>
 
 #include <vulkan/vulkan_raii.hpp>
@@ -24,6 +25,12 @@
 class TestUtils {
 
   public:
+
+    template <typename T, typename... ARGS>
+    inline static void hashCombine(std::size_t &seed, const T &v, ARGS &&... rest) {
+      seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+      (hashCombine(seed, rest), ...);
+    }
 
     static std::string getExecutableFile() {
       try {
@@ -254,16 +261,28 @@ class TestUtils {
           for (const auto& index: shape.mesh.indices) {
             exqudens::vulkan::Vertex vertex = {};
 
-            vertex.pos = {
-                attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2]
-            };
+            if (index.vertex_index >= 0) {
+              vertex.position = {
+                  attrib.vertices[3 * index.vertex_index + 0],
+                  attrib.vertices[3 * index.vertex_index + 1],
+                  attrib.vertices[3 * index.vertex_index + 2]
+              };
+            }
 
-            vertex.texCoord = {
-                attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-            };
+            if (index.normal_index >= 0) {
+              vertex.normal = {
+                  attrib.normals[3 * index.normal_index + 0],
+                  attrib.normals[3 * index.normal_index + 1],
+                  attrib.normals[3 * index.normal_index + 2]
+              };
+            }
+
+            if (index.texcoord_index >= 0) {
+              vertex.texCoord = {
+                  attrib.texcoords[2 * index.texcoord_index + 0],
+                  1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+              };
+            }
 
             vertex.color = {1.0f, 1.0f, 1.0f};
 
@@ -286,7 +305,7 @@ class TestUtils {
         const std::string& path
     ) {
       try {
-        std::vector<char> bytes = exqudens::vulkan::Utility::readFile(path);
+        std::vector<char> bytes = exqudens::vulkan::Utility::readFileBytes(path);
         if (bytes.empty()) {
           throw std::runtime_error(CALL_INFO() + ": '" + path + "' failed to create shader module bytes is empty!");
         }
@@ -301,16 +320,6 @@ class TestUtils {
             .setPName("main")
             .setModule(*(*shaders[path].second))
             .setStage(path.ends_with(".vert.spv") ? vk::ShaderStageFlagBits::eVertex : vk::ShaderStageFlagBits::eFragment);
-      } catch (...) {
-        std::throw_with_nested(std::runtime_error(CALL_INFO()));
-      }
-    }
-
-    static void copyTo(exqudens::vulkan::Buffer& buffer, const void* data) {
-      try {
-        void* tmpData = buffer.memoryReference().mapMemory(0, buffer.createInfo.size);
-        std::memcpy(tmpData, data, static_cast<size_t>(buffer.createInfo.size));
-        buffer.memoryReference().unmapMemory();
       } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO()));
       }
@@ -403,12 +412,7 @@ class TestUtils {
                             .setY(0)
                             .setZ(0)
                     )
-                    .setImageExtent(
-                        vk::Extent3D()
-                            .setWidth(textureImage.createInfo.extent.width)
-                            .setHeight(textureImage.createInfo.extent.height)
-                            .setDepth(1)
-                    )
+                    .setImageExtent(textureImage.createInfo.extent)
                     .setImageSubresource(
                         vk::ImageSubresourceLayers()
                             .setAspectMask(vk::ImageAspectFlagBits::eColor)
@@ -419,119 +423,121 @@ class TestUtils {
             }
         );
 
-        // Check if image format supports linear blitting
-        vk::FormatProperties formatProperties = physicalDevice.reference().getFormatProperties(textureImage.createInfo.format);
+        if (textureImage.createInfo.mipLevels > 1) {
+          // Check if image format supports linear blitting
+          vk::FormatProperties formatProperties = physicalDevice.reference().getFormatProperties(textureImage.createInfo.format);
 
-        if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
-          throw std::runtime_error(CALL_INFO() + "texture image format does not support linear blitting!");
-        }
+          if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+            throw std::runtime_error(CALL_INFO() + "texture image format does not support linear blitting!");
+          }
 
-        auto mipWidth = (int32_t) textureImage.createInfo.extent.width;
-        auto mipHeight = (int32_t) textureImage.createInfo.extent.height;
+          auto mipWidth = (int32_t) textureImage.createInfo.extent.width;
+          auto mipHeight = (int32_t) textureImage.createInfo.extent.height;
 
-        for (uint32_t i = 1; i < textureImage.createInfo.mipLevels; i++) {
-          transferCommandBuffer.reference().pipelineBarrier(
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::DependencyFlags(0),
-              {},
-              {},
-              {
-                  vk::ImageMemoryBarrier()
-                      .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setImage(*textureImage.reference())
-                      .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
-                      .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
-                      .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-                      .setDstAccessMask(vk::AccessFlagBits::eTransferRead)
-                      .setSubresourceRange(
-                          vk::ImageSubresourceRange()
-                              .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                              .setBaseMipLevel(i - 1)
-                              .setLevelCount(1)
-                              .setBaseArrayLayer(0)
-                              .setLayerCount(1)
-                      )
-              }
-          );
+          for (uint32_t i = 1; i < textureImage.createInfo.mipLevels; i++) {
+            transferCommandBuffer.reference().pipelineBarrier(
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::DependencyFlags(0),
+                {},
+                {},
+                {
+                    vk::ImageMemoryBarrier()
+                        .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .setImage(*textureImage.reference())
+                        .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+                        .setNewLayout(vk::ImageLayout::eTransferSrcOptimal)
+                        .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                        .setDstAccessMask(vk::AccessFlagBits::eTransferRead)
+                        .setSubresourceRange(
+                            vk::ImageSubresourceRange()
+                                .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                .setBaseMipLevel(i - 1)
+                                .setLevelCount(1)
+                                .setBaseArrayLayer(0)
+                                .setLayerCount(1)
+                        )
+                }
+            );
 
-          vk::ImageBlit blit = vk::ImageBlit()
-              .setSrcOffsets({
-                                 vk::Offset3D()
-                                     .setX(0)
-                                     .setY(0)
-                                     .setZ(0),
-                                 vk::Offset3D()
-                                     .setX(mipWidth)
-                                     .setY(mipHeight)
-                                     .setZ(1)
-                             })
-              .setSrcSubresource(
-                  vk::ImageSubresourceLayers()
-                      .setLayerCount(1)
-                      .setLayerCount(1)
-                      .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                      .setLayerCount(1)
-                      .setMipLevel(i - 1)
-                      .setBaseArrayLayer(0)
-                      .setLayerCount(1)
-              )
-              .setDstOffsets({
-                                 vk::Offset3D()
-                                     .setX(0)
-                                     .setY(0)
-                                     .setZ(0),
-                                 vk::Offset3D()
-                                     .setX((int32_t) (mipWidth > 1 ? mipWidth / 2 : 1))
-                                     .setY((int32_t) (mipHeight > 1 ? mipHeight / 2 : 1))
-                                     .setZ((int32_t) 1)
-                             })
-              .setDstSubresource(
-                  vk::ImageSubresourceLayers()
-                      .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                      .setMipLevel(i)
-                      .setBaseArrayLayer(0)
-                      .setLayerCount(1)
-              );
+            vk::ImageBlit blit = vk::ImageBlit()
+                .setSrcOffsets({
+                                   vk::Offset3D()
+                                       .setX(0)
+                                       .setY(0)
+                                       .setZ(0),
+                                   vk::Offset3D()
+                                       .setX(mipWidth)
+                                       .setY(mipHeight)
+                                       .setZ(1)
+                               })
+                .setSrcSubresource(
+                    vk::ImageSubresourceLayers()
+                        .setLayerCount(1)
+                        .setLayerCount(1)
+                        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                        .setLayerCount(1)
+                        .setMipLevel(i - 1)
+                        .setBaseArrayLayer(0)
+                        .setLayerCount(1)
+                )
+                .setDstOffsets({
+                                   vk::Offset3D()
+                                       .setX(0)
+                                       .setY(0)
+                                       .setZ(0),
+                                   vk::Offset3D()
+                                       .setX((int32_t) (mipWidth > 1 ? mipWidth / 2 : 1))
+                                       .setY((int32_t) (mipHeight > 1 ? mipHeight / 2 : 1))
+                                       .setZ((int32_t) 1)
+                               })
+                .setDstSubresource(
+                    vk::ImageSubresourceLayers()
+                        .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                        .setMipLevel(i)
+                        .setBaseArrayLayer(0)
+                        .setLayerCount(1)
+                );
 
-          transferCommandBuffer.reference().blitImage(
-              *textureImage.reference(),
-              vk::ImageLayout::eTransferSrcOptimal,
-              *textureImage.reference(),
-              vk::ImageLayout::eTransferDstOptimal,
-              blit,
-              vk::Filter::eLinear
-          );
+            transferCommandBuffer.reference().blitImage(
+                *textureImage.reference(),
+                vk::ImageLayout::eTransferSrcOptimal,
+                *textureImage.reference(),
+                vk::ImageLayout::eTransferDstOptimal,
+                blit,
+                vk::Filter::eLinear
+            );
 
-          transferCommandBuffer.reference().pipelineBarrier(
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::PipelineStageFlagBits::eFragmentShader,
-              vk::DependencyFlags(0),
-              {},
-              {},
-              {
-                  vk::ImageMemoryBarrier()
-                      .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setImage(*textureImage.reference())
-                      .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
-                      .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                      .setSrcAccessMask(vk::AccessFlagBits::eTransferRead)
-                      .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
-                      .setSubresourceRange(
-                          vk::ImageSubresourceRange()
-                              .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                              .setBaseMipLevel(i - 1)
-                              .setLevelCount(1)
-                              .setBaseArrayLayer(0)
-                              .setLayerCount(1)
-                      )
-              }
-          );
+            transferCommandBuffer.reference().pipelineBarrier(
+                vk::PipelineStageFlagBits::eTransfer,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                vk::DependencyFlags(0),
+                {},
+                {},
+                {
+                    vk::ImageMemoryBarrier()
+                        .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                        .setImage(*textureImage.reference())
+                        .setOldLayout(vk::ImageLayout::eTransferSrcOptimal)
+                        .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                        .setSrcAccessMask(vk::AccessFlagBits::eTransferRead)
+                        .setDstAccessMask(vk::AccessFlagBits::eShaderRead)
+                        .setSubresourceRange(
+                            vk::ImageSubresourceRange()
+                                .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                .setBaseMipLevel(i - 1)
+                                .setLevelCount(1)
+                                .setBaseArrayLayer(0)
+                                .setLayerCount(1)
+                        )
+                }
+            );
 
-          if (mipWidth > 1) mipWidth /= 2;
-          if (mipHeight > 1) mipHeight /= 2;
+            if (mipWidth > 1) mipWidth /= 2;
+            if (mipHeight > 1) mipHeight /= 2;
+          }
         }
 
         transferCommandBuffer.reference().pipelineBarrier(

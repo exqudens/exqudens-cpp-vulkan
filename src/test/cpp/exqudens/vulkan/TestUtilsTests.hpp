@@ -45,6 +45,57 @@ namespace exqudens::vulkan {
 
   TEST_F(TestUtilsTests, test1) {
     try {
+      uint64_t a = 123;
+      int64_t b = -123;
+      float_t c = 123.123f;
+
+      uint64_t x = 123;
+      int64_t y = -123;
+      float_t z = 123.123f;
+
+      size_t expected1 = 0;
+      size_t actual1 = 0;
+
+      TestUtils::hashCombine(expected1, a);
+      TestUtils::hashCombine(actual1, x);
+
+      std::cout << std::format("expected1: '{}'", expected1) << std::endl;
+      std::cout << std::format("  actual1: '{}'", actual1) << std::endl;
+
+      ASSERT_EQ(expected1, actual1);
+
+      size_t expected2 = 0;
+      size_t actual2 = 0;
+
+      TestUtils::hashCombine(expected2, a, b);
+      TestUtils::hashCombine(actual2, x, y);
+
+      std::cout << std::format("expected2: '{}'", expected2) << std::endl;
+      std::cout << std::format("  actual2: '{}'", actual2) << std::endl;
+
+      ASSERT_EQ(expected2, actual2);
+
+      size_t expected3 = 0;
+      size_t actual3 = 0;
+
+      TestUtils::hashCombine(expected3, a, b, c);
+      TestUtils::hashCombine(actual3, x, y, z);
+
+      std::cout << std::format("expected3: '{}'", expected3) << std::endl;
+      std::cout << std::format("  actual3: '{}'", actual3) << std::endl;
+
+      ASSERT_EQ(expected3, actual3);
+
+      ASSERT_NE(actual1, actual2);
+      ASSERT_NE(actual1, actual3);
+      ASSERT_NE(actual2, actual3);
+    } catch (const std::exception& e) {
+      FAIL() << TestUtils::toString(e);
+    }
+  }
+
+  TEST_F(TestUtilsTests, test2) {
+    try {
       RecordProperty("TestUtilsTests.test1.info1", "toString(const std::exception& e)");
       std::string thisFilePath = std::filesystem::path(__FILE__).make_preferred().string();
       std::ostringstream out;
@@ -65,7 +116,7 @@ namespace exqudens::vulkan {
     }
   }
 
-  TEST_F(TestUtilsTests, test2) {
+  TEST_F(TestUtilsTests, test3) {
     try {
       RecordProperty("TestUtilsTests.test2.info1", "readPng(const std::string& path)");
       RecordProperty(

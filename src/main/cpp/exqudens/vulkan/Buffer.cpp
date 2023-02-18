@@ -28,6 +28,26 @@ namespace exqudens::vulkan {
     }
   }
 
+  void Buffer::fill(const void* data, size_t offset, size_t size, vk::MemoryMapFlags flags) {
+    try {
+      void* tmpData = memoryReference().mapMemory(offset, size, flags);
+      std::memcpy(tmpData, data, size);
+      memoryReference().unmapMemory();
+    } catch (...) {
+      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+  }
+
+  void Buffer::fill(const void* data) {
+    try {
+      void* tmpData = memoryReference().mapMemory(0, createInfo.size, {});
+      std::memcpy(tmpData, data, static_cast<size_t>(createInfo.size));
+      memoryReference().unmapMemory();
+    } catch (...) {
+      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    }
+  }
+
   Buffer::Builder& Buffer::Builder::setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val) {
     physicalDevice = val;
     return *this;
