@@ -793,8 +793,8 @@ namespace exqudens::vulkan {
                   .setDevice(device.value)
                   .addAttachment(
                       vk::AttachmentDescription()
-                          .setFormat(swapchain.createInfo.imageFormat)
-                          .setSamples(physicalDeviceMsaaSamples)
+                          .setFormat(colorImage.createInfo.format)
+                          .setSamples(colorImage.createInfo.samples)
                           .setLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStoreOp(vk::AttachmentStoreOp::eDontCare)
@@ -805,7 +805,7 @@ namespace exqudens::vulkan {
                   .addAttachment(
                       vk::AttachmentDescription()
                           .setFormat(depthImage.createInfo.format)
-                          .setSamples(physicalDeviceMsaaSamples)
+                          .setSamples(depthImage.createInfo.samples)
                           .setLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
                           .setStoreOp(vk::AttachmentStoreOp::eDontCare)

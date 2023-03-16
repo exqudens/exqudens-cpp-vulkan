@@ -450,7 +450,6 @@ add_library("test-lib" INTERFACE
     "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
     "src/test/cpp/exqudens/vulkan/UiTests.hpp"
     "src/test/cpp/exqudens/vulkan/Ui1Tests.hpp"
-    "src/test/cpp/exqudens/vulkan/Ui2Tests.hpp"
 )
 target_include_directories("test-lib" INTERFACE
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"
