@@ -435,7 +435,7 @@ install(
     PATTERN "*.hpp"
 )
 
-add_library("test-lib" INTERFACE
+add_library("test-lib" STATIC
     "src/test/cpp/TestApplication.hpp"
     "src/test/cpp/TestConfiguration.hpp"
     "src/test/cpp/TestMacros.hpp"
@@ -443,19 +443,24 @@ add_library("test-lib" INTERFACE
     "src/test/cpp/exqudens/vulkan/Vertex.hpp"
     "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
     "src/test/cpp/exqudens/vulkan/Context.hpp"
-    "src/test/cpp/exqudens/vulkan/Functions.hpp"
+    "src/test/cpp/exqudens/vulkan/Context.cpp"
+    "src/test/cpp/exqudens/vulkan/DataContext.hpp"
+    "src/test/cpp/exqudens/vulkan/DataContext.cpp"
+    "src/test/cpp/exqudens/vulkan/CameraContext.hpp"
+    "src/test/cpp/exqudens/vulkan/CameraContext.cpp"
     "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
     "src/test/cpp/exqudens/vulkan/Tests.hpp"
+    "src/test/cpp/exqudens/vulkan/Tests1.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
     "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
     "src/test/cpp/exqudens/vulkan/UiTests.hpp"
-    "src/test/cpp/exqudens/vulkan/Ui1Tests.hpp"
+    "src/test/cpp/exqudens/vulkan/UiTests1.hpp"
 )
-target_include_directories("test-lib" INTERFACE
+target_include_directories("test-lib" PUBLIC
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"
     "$<INSTALL_INTERFACE:include>"
 )
-target_link_libraries("test-lib" INTERFACE
+target_link_libraries("test-lib" PUBLIC
     "${PROJECT_NAME}"
     "GTest::gmock"
     "GTest::gtest"

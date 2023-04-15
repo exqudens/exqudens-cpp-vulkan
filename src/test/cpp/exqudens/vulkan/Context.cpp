@@ -1,43 +1,12 @@
-#pragma once
+#include "exqudens/vulkan/Context.hpp"
+#include "TestMacros.hpp"
 
-#include <chrono>
 #include <functional>
 #include <stdexcept>
 
-#include "exqudens/vulkan/all.hpp"
-#include "exqudens/vulkan/Vertex.hpp"
-#include "exqudens/vulkan/UniformBufferObject.hpp"
-#include "exqudens/vulkan/Context.hpp"
-
 namespace exqudens::vulkan {
 
-  class Functions {
-
-    public:
-
-      inline static void init(
-          Context& context,
-          const std::vector<const char*>& enabledExtensionNames,
-          const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
-          const uint32_t& queryPoolSize,
-          const uint32_t& width,
-          const uint32_t& height
-      );
-
-      inline static void initSwapchain(
-          Context& context,
-          const uint32_t& width,
-          const uint32_t& height
-      );
-
-  };
-
-}
-
-namespace exqudens::vulkan {
-
-  void Functions::init(
-      Context& context,
+  void Context::init(
       const std::vector<const char*>& enabledExtensionNames,
       const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
       const uint32_t& queryPoolSize,
@@ -45,7 +14,7 @@ namespace exqudens::vulkan {
       const uint32_t& height
   ) {
     try {
-      context.instance = Instance::builder()
+      instance = Instance::builder()
           .addEnabledLayerName("VK_LAYER_KHRONOS_validation")
           .setEnabledExtensionNames(enabledExtensionNames)
           .setApplicationInfo(
@@ -67,15 +36,15 @@ namespace exqudens::vulkan {
                   .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
                   .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
           )
-      .build();
+          .build();
 
       if (createSurfaceFunction) {
-        auto vkInstance = static_cast<VkInstance>(*context.instance.reference());
+        auto vkInstance = static_cast<VkInstance>(*instance.reference());
         VkSurfaceKHR vkSurface = createSurfaceFunction(vkInstance);
-        context.surface = Surface::builder()
-            .setInstance(context.instance.value)
+        surface = Surface::builder()
+            .setInstance(instance.value)
             .setVkSurface(vkSurface)
-        .build();
+            .build();
       }
 
       vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures> tmpPhysicalDeviceFeatures = {
@@ -88,15 +57,13 @@ namespace exqudens::vulkan {
           vk::PhysicalDeviceHostQueryResetFeatures()
               .setHostQueryReset(true)
       };
-      context.physicalDeviceFeatures = tmpPhysicalDeviceFeatures;
+      physicalDeviceFeatures = tmpPhysicalDeviceFeatures;
 
-      context.physicalDevice = PhysicalDevice::builder()
-          .setInstance(context.instance.value)
-          .setSurface(context.surface.value)
-          .addEnabledExtensionName(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+      PhysicalDevice::Builder physicalDeviceBuilder = PhysicalDevice::builder()
+          .setInstance(instance.value)
           .addEnabledExtensionName(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME)
           .addQueuePriority(1.0f)
-          .setIsSuitableFunction([&context](const vk::raii::PhysicalDevice& p) {
+          .setIsSuitableFunction([this](const vk::raii::PhysicalDevice& p) {
             bool result = false;
             std::vector<vk::QueueFamilyProperties> properties = p.getQueueFamilyProperties();
             bool computeValid = false;
@@ -113,7 +80,9 @@ namespace exqudens::vulkan {
               if (properties[i].queueFlags & vk::QueueFlagBits::eGraphics && properties[i].timestampValidBits > 0) {
                 graphicsValid = true;
               }
-              if (context.surface.value && p.getSurfaceSupportKHR(static_cast<uint32_t>(i), *context.surface.reference())) {
+              if (surface.value) {
+                presentValid = p.getSurfaceSupportKHR(static_cast<uint32_t>(i), *surface.reference());
+              } else {
                 presentValid = true;
               }
 
@@ -139,76 +108,83 @@ namespace exqudens::vulkan {
               return result;
             }
             return result;
-          })
-      .build();
+          });
+      if (surface.value) {
+        physicalDeviceBuilder = physicalDeviceBuilder
+            .setSurface(surface.value)
+            .addEnabledExtensionName(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+      }
+      physicalDevice = physicalDeviceBuilder.build();
 
-      context.physicalDeviceTimestampPeriod = context.physicalDevice.reference().getProperties().limits.timestampPeriod;
+      physicalDeviceTimestampPeriod = physicalDevice.reference().getProperties().limits.timestampPeriod;
 
-      context.physicalDeviceMsaaSamples = Utility::getMaxUsableSampleCount(
+      physicalDeviceMsaaSamples = Utility::getMaxUsableSampleCount(
           {
-              context.physicalDevice.reference().getProperties().limits.framebufferColorSampleCounts,
-              context.physicalDevice.reference().getProperties().limits.framebufferDepthSampleCounts
+              physicalDevice.reference().getProperties().limits.framebufferColorSampleCounts,
+              physicalDevice.reference().getProperties().limits.framebufferDepthSampleCounts
           }
       );
 
-      context.device = Device::builder()
-          .setPhysicalDevice(context.physicalDevice.value)
+      device = Device::builder()
+          .setPhysicalDevice(physicalDevice.value)
           .setCreateInfo(
               vk::DeviceCreateInfo()
-                  .setQueueCreateInfos(context.physicalDevice.uniqueQueueCreateInfos)
-                      //.setPEnabledFeatures(&physicalDevice.features)
-                  .setPEnabledExtensionNames(context.physicalDevice.enabledExtensionNames)
-                  .setPEnabledLayerNames(context.instance.enabledLayerNames)
-                      //.setPNext(physicalDevice.hostQueryResetFeatures.has_value() ? &physicalDevice.hostQueryResetFeatures.value() : nullptr)
-                  .setPNext(&context.physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>())
+                  .setQueueCreateInfos(physicalDevice.uniqueQueueCreateInfos)
+                  //.setPEnabledFeatures(&physicalDevice.features)
+                  .setPEnabledExtensionNames(physicalDevice.enabledExtensionNames)
+                  .setPEnabledLayerNames(instance.enabledLayerNames)
+                  //.setPNext(physicalDevice.hostQueryResetFeatures.has_value() ? &physicalDevice.hostQueryResetFeatures.value() : nullptr)
+                  .setPNext(&physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>())
           )
-      .build();
+          .build();
 
-      context.transferQueue = Queue::builder()
-          .setDevice(context.device.value)
-          .setFamilyIndex(context.physicalDevice.transferQueueCreateInfos.front().queueFamilyIndex)
-      .build();
+      transferQueue = Queue::builder()
+          .setDevice(device.value)
+          .setFamilyIndex(physicalDevice.transferQueueCreateInfos.front().queueFamilyIndex)
+          .build();
 
-      context.graphicsQueue = Queue::builder()
-          .setDevice(context.device.value)
-          .setFamilyIndex(context.physicalDevice.graphicsQueueCreateInfos.front().queueFamilyIndex)
-      .build();
+      graphicsQueue = Queue::builder()
+          .setDevice(device.value)
+          .setFamilyIndex(physicalDevice.graphicsQueueCreateInfos.front().queueFamilyIndex)
+          .build();
 
-      context.presentQueue = Queue::builder()
-          .setDevice(context.device.value)
-          .setFamilyIndex(context.physicalDevice.presentQueueCreateInfos.front().queueFamilyIndex)
-      .build();
+      if (surface.value) {
+        presentQueue = Queue::builder()
+            .setDevice(device.value)
+            .setFamilyIndex(physicalDevice.presentQueueCreateInfos.front().queueFamilyIndex)
+            .build();
+      }
 
-      context.transferCommandPool = CommandPool::builder()
-          .setDevice(context.device.value)
+      transferCommandPool = CommandPool::builder()
+          .setDevice(device.value)
           .setCreateInfo(
               vk::CommandPoolCreateInfo()
                   .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                  .setQueueFamilyIndex(context.transferQueue.familyIndex)
+                  .setQueueFamilyIndex(transferQueue.familyIndex)
           )
-      .build();
+          .build();
 
-      context.graphicsCommandPool = CommandPool::builder()
-          .setDevice(context.device.value)
+      graphicsCommandPool = CommandPool::builder()
+          .setDevice(device.value)
           .setCreateInfo(
               vk::CommandPoolCreateInfo()
                   .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                  .setQueueFamilyIndex(context.graphicsQueue.familyIndex)
+                  .setQueueFamilyIndex(graphicsQueue.familyIndex)
           )
-      .build();
+          .build();
 
-      context.transferCommandBuffer = CommandBuffer::builder()
-          .setDevice(context.device.value)
+      transferCommandBuffer = CommandBuffer::builder()
+          .setDevice(device.value)
           .setCreateInfo(
               vk::CommandBufferAllocateInfo()
-                  .setCommandPool(*context.transferCommandPool.reference())
+                  .setCommandPool(*transferCommandPool.reference())
                   .setCommandBufferCount(1)
                   .setLevel(vk::CommandBufferLevel::ePrimary)
           )
-      .build();
+          .build();
 
-      context.descriptorSetLayout = DescriptorSetLayout::builder()
-          .setDevice(context.device.value)
+      descriptorSetLayout = DescriptorSetLayout::builder()
+          .setDevice(device.value)
           .addBinding(
               vk::DescriptorSetLayoutBinding()
                   .setBinding(0)
@@ -216,71 +192,105 @@ namespace exqudens::vulkan {
                   .setDescriptorCount(1)
                   .setStageFlags(vk::ShaderStageFlagBits::eFragment)
           )
-      .build();
+          .build();
 
-      context.queryPool = QueryPool::builder()
-          .setDevice(context.device.value)
+      queryPool = QueryPool::builder()
+          .setDevice(device.value)
           .setCreateInfo(
               vk::QueryPoolCreateInfo()
                   /*.setPipelineStatistics(vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations)*/
                   .setQueryType(vk::QueryType::eTimestamp)
                   .setQueryCount(queryPoolSize)
           )
-      .build();
+          .build();
 
-      initSwapchain(context, width, height/*, textureWidth, textureHeight, textureDepth*/);
+      initSwapchain(width, height);
     } catch (...) {
       std::throw_with_nested(std::runtime_error(CALL_INFO()));
     }
   }
 
-  void Functions::initSwapchain(
-      Context& context,
-      const uint32_t& width,
-      const uint32_t& height
-  ) {
+  void Context::initSwapchain(const uint32_t& width, const uint32_t& height) {
     try {
-      context.device.reference().waitIdle();
+      device.reference().waitIdle();
 
-      context.inFlightFences.clear();
-      context.renderFinishedSemaphores.clear();
-      context.imageAvailableSemaphores.clear();
-      context.graphicsCommandBuffers.clear();
-      context.descriptorSets.clear();
-      context.sampler.value.reset();
-      context.descriptorPool.value.reset();
-      context.samplerImageViews.clear();
-      context.samplerImages.clear();
-      context.swapchainFramebuffers.clear();
-      context.pipeline.value.reset();
-      context.renderPass.value.reset();
-      context.swapchainImageViews.clear();
-      context.swapchain.value.reset();
+      inFlightFences.clear();
+      renderFinishedSemaphores.clear();
+      imageAvailableSemaphores.clear();
+      graphicsCommandBuffers.clear();
+      descriptorSets.clear();
+      sampler.value.reset();
+      descriptorPool.value.reset();
+      samplerImageViews.clear();
+      samplerImages.clear();
+      swapchainFramebuffers.clear();
+      pipeline.value.reset();
+      renderPass.value.reset();
+      swapchainImageViews.clear();
+      swapchainImages.clear();
+      swapchain.value.reset();
 
-      context.swapchain = Swapchain::builder()
-          .setDevice(context.device.value)
-          .addGraphicsQueueFamilyIndex(context.physicalDevice.graphicsQueueCreateInfos.front().queueFamilyIndex)
-          .addPresentQueueFamilyIndex(context.physicalDevice.presentQueueCreateInfos.front().queueFamilyIndex)
-          .setCreateInfo(
-              Utility::swapChainCreateInfo(
-                  context.physicalDevice.reference(),
-                  context.surface.reference(),
-                  width,
-                  height
-              )
-          )
-      .build();
+      if (surface.value) {
+        swapchain = Swapchain::builder()
+            .setDevice(device.value)
+            .addGraphicsQueueFamilyIndex(physicalDevice.graphicsQueueCreateInfos.front().queueFamilyIndex)
+            .addPresentQueueFamilyIndex(physicalDevice.presentQueueCreateInfos.front().queueFamilyIndex)
+            .setCreateInfo(
+                Utility::swapChainCreateInfo(
+                    physicalDevice.reference(),
+                    surface.reference(),
+                    width,
+                    height
+                )
+            )
+            .build();
+        swapchainImageViews.resize(swapchain.reference().getImages().size());
+      } else {
+        swapchainImages.resize(1);
+        swapchainImages.at(0) = Image::builder()
+            .setPhysicalDevice(physicalDevice.value)
+            .setDevice(device.value)
+            .setCreateInfo(
+                vk::ImageCreateInfo()
+                    .setExtent(
+                        vk::Extent3D()
+                            .setWidth(width)
+                            .setHeight(height)
+                            .setDepth(1)
+                    )
+                    .setFormat(vk::Format::eR8G8B8A8Srgb)
+                    .setImageType(vk::ImageType::e2D)
+                    .setMipLevels(1)
+                    .setArrayLayers(1)
+                    .setSamples(vk::SampleCountFlagBits::e1)
+                    .setTiling(vk::ImageTiling::eOptimal)
+                    .setUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc)
+                    .setSharingMode(vk::SharingMode::eExclusive)
+                    .setInitialLayout(vk::ImageLayout::eUndefined)
+            )
+            .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
+            .build();
+        swapchainImageViews.resize(swapchainImages.size());
+      }
 
-      context.swapchainImageViews.resize(context.swapchain.reference().getImages().size());
-      for (size_t i = 0; i < context.swapchainImageViews.size(); i++) {
-        context.swapchainImageViews.at(i) = ImageView::builder()
-            .setDevice(context.device.value)
+      for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+        vk::Image image = {};
+        vk::Format format = {};
+        if (swapchain.value) {
+          image = static_cast<vk::Image>(swapchain.reference().getImages().at(i));
+          format = swapchain.createInfo.imageFormat;
+        } else {
+          image = static_cast<vk::Image>(*swapchainImages.at(i).reference());
+          format = swapchainImages.at(i).createInfo.format;
+        }
+        swapchainImageViews.at(i) = ImageView::builder()
+            .setDevice(device.value)
             .setCreateInfo(
                 vk::ImageViewCreateInfo()
                     .setFlags({})
-                    .setImage(static_cast<vk::Image>(context.swapchain.reference().getImages().at(i)))
+                    .setImage(image)
                     .setViewType(vk::ImageViewType::e2D)
-                    .setFormat(context.swapchain.createInfo.imageFormat)
+                    .setFormat(format)
                     .setComponents({})
                     .setSubresourceRange(
                         vk::ImageSubresourceRange()
@@ -291,21 +301,28 @@ namespace exqudens::vulkan {
                             .setLayerCount(1)
                     )
             )
-        .build();
+            .build();
       }
 
-      context.renderPass = RenderPass::builder()
-          .setDevice(context.device.value)
+      vk::ImageLayout renderPassFinalLayout = {};
+      if (surface.value) {
+        renderPassFinalLayout = vk::ImageLayout::ePresentSrcKHR;
+      } else {
+        renderPassFinalLayout = vk::ImageLayout::eTransferSrcOptimal;
+      }
+
+      renderPass = RenderPass::builder()
+          .setDevice(device.value)
           .addAttachment(
               vk::AttachmentDescription()
-                  .setFormat(context.swapchain.createInfo.imageFormat)
+                  .setFormat(swapchain.value ? swapchain.createInfo.imageFormat : swapchainImages.at(0).createInfo.format)
                   .setSamples(vk::SampleCountFlagBits::e1)
                   .setLoadOp(vk::AttachmentLoadOp::eClear)
                   .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
                   .setStoreOp(vk::AttachmentStoreOp::eStore)
                   .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
                   .setInitialLayout(vk::ImageLayout::eUndefined)
-                  .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
+                  .setFinalLayout(renderPassFinalLayout)
           )
           .addSubpass(
               SubpassDescription()
@@ -325,17 +342,17 @@ namespace exqudens::vulkan {
                   .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
                   .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
           )
-      .build();
+          .build();
 
-      context.pipeline = Pipeline::builder()
-          .setDevice(context.device.value)
+      pipeline = Pipeline::builder()
+          .setDevice(device.value)
           .addPath("resources/shader/shader-10.vert.spv")
           //.addStage(TestUtils::createStage(context.device, shaders, "resources/shader/shader-4.vert.spv"))
           .addPath("resources/shader/shader-10.frag.spv")
-          .addSetLayout(*context.descriptorSetLayout.reference())
+          .addSetLayout(*descriptorSetLayout.reference())
           .setGraphicsCreateInfo(
               GraphicsPipelineCreateInfo()
-                  .setRenderPass(*context.renderPass.reference())
+                  .setRenderPass(*renderPass.reference())
                   .setSubpass(0)
                   .setVertexInputState(
                       PipelineVertexInputStateCreateInfo()
@@ -349,8 +366,8 @@ namespace exqudens::vulkan {
                       PipelineViewportStateCreateInfo()
                           .addViewport(
                               vk::Viewport()
-                                  .setWidth((float) context.swapchain.createInfo.imageExtent.width)
-                                  .setHeight((float) context.swapchain.createInfo.imageExtent.height)
+                                  .setWidth((float) width)
+                                  .setHeight((float) height)
                                   .setMinDepth(0.0)
                                   .setMaxDepth(1.0)
                                   .setX(0.0)
@@ -365,8 +382,8 @@ namespace exqudens::vulkan {
                                   )
                                   .setExtent(
                                       vk::Extent2D()
-                                          .setWidth(context.swapchain.createInfo.imageExtent.width)
-                                          .setHeight(context.swapchain.createInfo.imageExtent.height)
+                                          .setWidth(width)
+                                          .setHeight(height)
                                   )
                           )
                   )
@@ -388,8 +405,8 @@ namespace exqudens::vulkan {
                           .setRasterizationSamples(vk::SampleCountFlagBits::e1)
                           .setSampleShadingEnable(false)
                           .setMinSampleShading(1.0)
-                          //.setSampleShadingEnable(true)
-                          //.setMinSampleShading(0.2f)
+                              //.setSampleShadingEnable(true)
+                              //.setMinSampleShading(0.2f)
                           .setPSampleMask(nullptr)
                           .setAlphaToCoverageEnable(false)
                           .setAlphaToOneEnable(false)
@@ -412,36 +429,36 @@ namespace exqudens::vulkan {
                           )
                   )
           )
-      .build();
+          .build();
 
-      context.swapchainFramebuffers.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.swapchainFramebuffers.size(); i++) {
-        context.swapchainFramebuffers.at(i) = Framebuffer::builder()
-            .setDevice(context.device.value)
-            .addAttachment(*context.swapchainImageViews.at(i).reference())
+      swapchainFramebuffers.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
+        swapchainFramebuffers.at(i) = Framebuffer::builder()
+            .setDevice(device.value)
+            .addAttachment(*swapchainImageViews.at(i).reference())
             .setCreateInfo(
                 vk::FramebufferCreateInfo()
-                    .setRenderPass(*context.renderPass.reference())
-                    .setWidth(context.swapchain.createInfo.imageExtent.width)
-                    .setHeight(context.swapchain.createInfo.imageExtent.height)
+                    .setRenderPass(*renderPass.reference())
+                    .setWidth(width)
+                    .setHeight(height)
                     .setLayers(1)
             )
-        .build();
+            .build();
       }
 
-      context.samplerImages.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.swapchainImageViews.size(); i++) {
-        context.samplerImages.at(i) = Image::builder()
-            .setPhysicalDevice(context.physicalDevice.value)
-            .setDevice(context.device.value)
+      samplerImages.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+        samplerImages.at(i) = Image::builder()
+            .setPhysicalDevice(physicalDevice.value)
+            .setDevice(device.value)
             .setCreateInfo(
                 vk::ImageCreateInfo()
                     .setImageType(vk::ImageType::e2D)
                     .setFormat(vk::Format::eR8G8B8A8Srgb)
                     .setExtent(
                         vk::Extent3D()
-                            .setWidth(/*textureWidth*/ context.swapchain.createInfo.imageExtent.width)
-                            .setHeight(/*textureHeight*/ context.swapchain.createInfo.imageExtent.height)
+                            .setWidth(width)
+                            .setHeight(height)
                             .setDepth(1)
                     )
                     .setMipLevels(1)
@@ -456,14 +473,14 @@ namespace exqudens::vulkan {
             .build();
       }
 
-      context.samplerImageViews.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.swapchainImageViews.size(); i++) {
-        context.samplerImageViews.at(i) = ImageView::builder()
-            .setDevice(context.device.value)
+      samplerImageViews.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+        samplerImageViews.at(i) = ImageView::builder()
+            .setDevice(device.value)
             .setCreateInfo(
                 vk::ImageViewCreateInfo()
-                    .setImage(*context.samplerImages.at(i).reference())
-                    .setFormat(context.samplerImages.at(i).createInfo.format)
+                    .setImage(*samplerImages.at(i).reference())
+                    .setFormat(samplerImages.at(i).createInfo.format)
                     .setViewType(vk::ImageViewType::e2D)
                     .setFlags({})
                     .setComponents({})
@@ -471,7 +488,7 @@ namespace exqudens::vulkan {
                         vk::ImageSubresourceRange()
                             .setAspectMask(vk::ImageAspectFlagBits::eColor)
                             .setBaseMipLevel(0)
-                            .setLevelCount(context.samplerImages.at(i).createInfo.mipLevels)
+                            .setLevelCount(samplerImages.at(i).createInfo.mipLevels)
                             .setBaseArrayLayer(0)
                             .setLayerCount(1)
                     )
@@ -479,30 +496,30 @@ namespace exqudens::vulkan {
             .build();
       }
 
-      context.descriptorPool = DescriptorPool::builder()
-          .setDevice(context.device.value)
+      descriptorPool = DescriptorPool::builder()
+          .setDevice(device.value)
           .addPoolSize(
               vk::DescriptorPoolSize()
                   .setType(vk::DescriptorType::eCombinedImageSampler)
-                  .setDescriptorCount(context.swapchainImageViews.size())
+                  .setDescriptorCount(swapchainImageViews.size())
           )
           .setCreateInfo(
               vk::DescriptorPoolCreateInfo()
                   .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                  .setMaxSets(context.swapchainImageViews.size())
+                  .setMaxSets(swapchainImageViews.size())
           )
           .build();
 
-      context.sampler = Sampler::builder()
-          .setDevice(context.device.value)
+      sampler = Sampler::builder()
+          .setDevice(device.value)
           .setCreateInfo(
               vk::SamplerCreateInfo()
                   .setMagFilter(vk::Filter::eLinear)
                   .setMinFilter(vk::Filter::eLinear)
                   .setMipmapMode(vk::SamplerMipmapMode::eLinear)
                   .setMinLod(0.0f)
-                      //.setMinLod((float) textureImage.createInfo.mipLevels / 2)
-                  .setMaxLod((float) context.samplerImages.at(0).createInfo.mipLevels)
+                  //.setMinLod((float) textureImage.createInfo.mipLevels / 2)
+                  .setMaxLod((float) samplerImages.at(0).createInfo.mipLevels)
                   .setMipLodBias(0.0f)
                   .setAddressModeU(vk::SamplerAddressMode::eRepeat)
                   .setAddressModeV(vk::SamplerAddressMode::eRepeat)
@@ -511,19 +528,19 @@ namespace exqudens::vulkan {
                   .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
                   .setUnnormalizedCoordinates(false)
                   .setCompareEnable(false)
-                  .setAnisotropyEnable(context.physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy)
-                  .setMaxAnisotropy(context.physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy ? context.physicalDevice.reference().getProperties().limits.maxSamplerAnisotropy : 0)
+                  .setAnisotropyEnable(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy)
+                  .setMaxAnisotropy(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy ? physicalDevice.reference().getProperties().limits.maxSamplerAnisotropy : 0)
           )
           .build();
 
-      context.descriptorSets.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.swapchainImageViews.size(); i++) {
-        context.descriptorSets.at(i) = DescriptorSet::builder()
-            .setDevice(context.device.value)
-            .addSetLayout(*context.descriptorSetLayout.reference())
+      descriptorSets.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < swapchainImageViews.size(); i++) {
+        descriptorSets.at(i) = DescriptorSet::builder()
+            .setDevice(device.value)
+            .addSetLayout(*descriptorSetLayout.reference())
             .setCreateInfo(
                 vk::DescriptorSetAllocateInfo()
-                    .setDescriptorPool(*context.descriptorPool.reference())
+                    .setDescriptorPool(*descriptorPool.reference())
                     .setDescriptorSetCount(1)
             )
             .addWrite(
@@ -534,41 +551,41 @@ namespace exqudens::vulkan {
                     .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
                     .addImageInfo(
                         vk::DescriptorImageInfo()
-                            .setSampler(*context.sampler.reference())
-                            .setImageView(*context.samplerImageViews.at(i).reference())
+                            .setSampler(*sampler.reference())
+                            .setImageView(*samplerImageViews.at(i).reference())
                             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
                     )
             )
             .build();
       }
 
-      context.graphicsCommandBuffers.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.graphicsCommandBuffers.size(); i++) {
-        context.graphicsCommandBuffers.at(i) = CommandBuffer::builder()
-            .setDevice(context.device.value)
+      graphicsCommandBuffers.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < graphicsCommandBuffers.size(); i++) {
+        graphicsCommandBuffers.at(i) = CommandBuffer::builder()
+            .setDevice(device.value)
             .setCreateInfo(
                 vk::CommandBufferAllocateInfo()
-                    .setCommandPool(*context.graphicsCommandPool.reference())
+                    .setCommandPool(*graphicsCommandPool.reference())
                     .setCommandBufferCount(1)
                     .setLevel(vk::CommandBufferLevel::ePrimary)
             )
-        .build();
+            .build();
       }
 
-      context.imageAvailableSemaphores.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.imageAvailableSemaphores.size(); i++) {
-        context.imageAvailableSemaphores.at(i) = Semaphore::builder().setDevice(context.device.value).build();
+      imageAvailableSemaphores.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
+        imageAvailableSemaphores.at(i) = Semaphore::builder().setDevice(device.value).build();
       }
 
-      context.renderFinishedSemaphores.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.renderFinishedSemaphores.size(); i++) {
-        context.renderFinishedSemaphores.at(i) = Semaphore::builder().setDevice(context.device.value).build();
+      renderFinishedSemaphores.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+        renderFinishedSemaphores.at(i) = Semaphore::builder().setDevice(device.value).build();
       }
 
-      context.inFlightFences.resize(context.swapchainImageViews.size());
-      for (size_t i = 0; i < context.inFlightFences.size(); i++) {
-        context.inFlightFences.at(i) = Fence::builder()
-            .setDevice(context.device.value)
+      inFlightFences.resize(swapchainImageViews.size());
+      for (size_t i = 0; i < inFlightFences.size(); i++) {
+        inFlightFences.at(i) = Fence::builder()
+            .setDevice(device.value)
             .setCreateInfo(
                 vk::FenceCreateInfo()
                     .setFlags(vk::FenceCreateFlagBits::eSignaled)
@@ -577,10 +594,10 @@ namespace exqudens::vulkan {
       }
 
       std::vector<vk::SubmitInfo> submits;
-      submits.resize(context.graphicsCommandBuffers.size());
-      for (size_t i = 0; i < context.graphicsCommandBuffers.size(); i++) {
-        context.graphicsCommandBuffers.at(i).reference().begin({});
-        context.graphicsCommandBuffers.at(i).reference().pipelineBarrier(
+      submits.resize(graphicsCommandBuffers.size());
+      for (size_t i = 0; i < graphicsCommandBuffers.size(); i++) {
+        graphicsCommandBuffers.at(i).reference().begin({});
+        graphicsCommandBuffers.at(i).reference().pipelineBarrier(
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::DependencyFlags(0),
@@ -590,7 +607,7 @@ namespace exqudens::vulkan {
                 vk::ImageMemoryBarrier()
                     .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                    .setImage(*context.samplerImages.at(i).reference())
+                    .setImage(*samplerImages.at(i).reference())
                     .setOldLayout(vk::ImageLayout::eUndefined)
                     .setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
                     .setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
@@ -605,13 +622,13 @@ namespace exqudens::vulkan {
                     )
             }
         );
-        context.graphicsCommandBuffers.at(i).reference().end();
+        graphicsCommandBuffers.at(i).reference().end();
         submits.at(i) = vk::SubmitInfo()
             .setCommandBufferCount(1)
-            .setPCommandBuffers(&(*context.graphicsCommandBuffers.at(i).reference()));
+            .setPCommandBuffers(&(*graphicsCommandBuffers.at(i).reference()));
       }
-      context.graphicsQueue.reference().submit(submits);
-      context.graphicsQueue.reference().waitIdle();
+      graphicsQueue.reference().submit(submits);
+      graphicsQueue.reference().waitIdle();
     } catch (...) {
       std::throw_with_nested(std::runtime_error(CALL_INFO()));
     }

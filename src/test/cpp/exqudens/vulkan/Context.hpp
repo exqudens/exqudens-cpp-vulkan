@@ -23,7 +23,9 @@ namespace exqudens::vulkan {
     CommandBuffer transferCommandBuffer = {};
     DescriptorSetLayout descriptorSetLayout = {};
     QueryPool queryPool = {};
+
     Swapchain swapchain = {};
+    std::vector<Image> swapchainImages = {};
     std::vector<ImageView> swapchainImageViews = {};
     RenderPass renderPass = {};
     Pipeline pipeline = {};
@@ -37,6 +39,19 @@ namespace exqudens::vulkan {
     std::vector<Semaphore> imageAvailableSemaphores = {};
     std::vector<Semaphore> renderFinishedSemaphores = {};
     std::vector<Fence> inFlightFences = {};
+
+    void init(
+        const std::vector<const char*>& enabledExtensionNames,
+        const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
+        const uint32_t& queryPoolSize,
+        const uint32_t& width,
+        const uint32_t& height
+    );
+
+    void initSwapchain(
+        const uint32_t& width,
+        const uint32_t& height
+    );
 
   };
 

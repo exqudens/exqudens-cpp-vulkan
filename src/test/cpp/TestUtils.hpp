@@ -21,6 +21,7 @@
 #include "TestConfiguration.hpp"
 #include "exqudens/vulkan/all.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
+#include "exqudens/vulkan/UniformBufferObject.hpp"
 
 class TestUtils {
 
@@ -151,7 +152,7 @@ class TestUtils {
         unsigned int error = lodepng::decode(dataIn, widthIn, heightIn, path);
         if (error) {
           throw std::runtime_error(
-              CALL_INFO() + ": failed to read image '" + std::to_string(error) + "': " + lodepng_error_text(error)
+              CALL_INFO() + ": failed to read image '" + std::to_string(error) + "': " + lodepng_error_text(error) + ": '" + path + "'"
           );
         }
         width = widthIn;
@@ -205,7 +206,7 @@ class TestUtils {
         unsigned int error = lodepng::encode(path, data, widthIn, heightIn);
         if (error) {
           throw std::runtime_error(
-              CALL_INFO() + ": failed to write image '" + std::to_string(error) + "': " + lodepng_error_text(error)
+              CALL_INFO() + ": failed to write image '" + std::to_string(error) + "': " + lodepng_error_text(error) + ": '" + path + "'"
           );
         }
       } catch (...) {
@@ -565,6 +566,206 @@ class TestUtils {
                     )
             }
         );
+      } catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      }
+    }
+
+    static void updateUniformBuffer(
+        exqudens::vulkan::Buffer& uniformBuffer,
+        float& angleLeft,
+        float& angleUp,
+        const uint32_t& width,
+        const uint32_t& height,
+        const std::string& animate,
+        const bool& left,
+        const bool& right,
+        const bool& up,
+        const bool& down
+    ) {
+      try {
+        float angle1 = 0.0f;
+        glm::vec3 axis1 = glm::vec3(0.0f, 0.0f, 1.0f);
+
+        float angle2 = 0.0f;
+        glm::vec3 axis2 = glm::vec3(0.0f, 1.0f, 0.0f);
+
+        if (animate == std::string("auto")) {
+          static auto startTime = std::chrono::high_resolution_clock::now();
+
+          auto currentTime = std::chrono::high_resolution_clock::now();
+          float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+          angle1 = time * glm::radians(90.0f);
+          angle2 = 0.0f;
+        } else if(animate == std::string("control")) {
+          if (left) {
+            float tmpMod = angleLeft + 0.01f;
+            if (tmpMod >= 1.0f) {
+              tmpMod = 0.0f;
+            }
+            angleLeft = tmpMod;
+          } else if (right) {
+            float tmpMod = angleLeft - 0.01f;
+            if (tmpMod <= 0.0f) {
+              tmpMod = 1.0f;
+            }
+            angleLeft = tmpMod;
+          }
+
+          angle1 = angleLeft * glm::radians(360.0f);
+
+          if (up) {
+            float tmpMod = angleUp + 0.01f;
+            if (tmpMod >= 1.0f) {
+              tmpMod = 0.0f;
+            }
+            angleUp = tmpMod;
+          } else if (down) {
+            float tmpMod = angleUp - 0.01f;
+            if (tmpMod <= 0.0f) {
+              tmpMod = 1.0f;
+            }
+            angleUp = tmpMod;
+          }
+
+          angle2 = angleUp * glm::radians(360.0f);
+        } else {
+          angle1 = 0.0f * glm::radians(360.0f); // min 0 max 360
+          angle2 = 0.0f;
+        }
+
+        glm::vec3 lightPos = glm::vec3();
+        float lightFOV = 45.0f;
+        float zNear = 1.0f;
+        float zFar = 96.0f;
+
+        exqudens::vulkan::UniformBufferObject shadowUbo = {};
+
+        shadowUbo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
+        shadowUbo.model = glm::rotate(shadowUbo.model, angle2, axis2);
+        shadowUbo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        shadowUbo.proj = glm::perspective(
+            glm::radians(45.0f),
+            (float) width / (float) height,
+            0.1f,
+            10.0f
+        );
+        shadowUbo.proj[1][1] *= -1;
+        shadowUbo.lightPos = glm::vec4(lightPos, 1.0f);
+        shadowUbo.lightSpace = glm::mat4(1.0f);
+        shadowUbo.zNear = zNear;
+        shadowUbo.zFar = zFar;
+
+        exqudens::vulkan::UniformBufferObject ubo = {};
+
+        ubo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
+        ubo.model = glm::rotate(ubo.model, angle2, axis2);
+        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj = glm::perspective(
+            glm::radians(45.0f),
+            (float) width / (float) height,
+            0.1f,
+            10.0f
+        );
+        ubo.proj[1][1] *= -1;
+
+        uniformBuffer.fill(&ubo);
+      } catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      }
+    }
+
+    static void copySwapchainImageToOutputImage(
+        exqudens::vulkan::CommandBuffer& transferCommandBuffer,
+        exqudens::vulkan::Image& swapchainImage,
+        exqudens::vulkan::Image& outputImage,
+        exqudens::vulkan::Queue& transferQueue
+    ) {
+      try {
+        transferCommandBuffer.reference().begin({});
+
+        transferCommandBuffer.reference().pipelineBarrier(
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::DependencyFlags(0),
+            {},
+            {},
+            {
+                vk::ImageMemoryBarrier()
+                    .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .setImage(*outputImage.reference())
+                    .setOldLayout(vk::ImageLayout::eUndefined)
+                    .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
+                    .setSrcAccessMask(vk::AccessFlagBits::eNone)
+                    .setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
+                    .setSubresourceRange(
+                        vk::ImageSubresourceRange()
+                            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                            .setBaseMipLevel(0)
+                            .setLevelCount(1)
+                            .setBaseArrayLayer(0)
+                            .setLayerCount(1)
+                    )
+            }
+        );
+
+        transferCommandBuffer.reference().copyImage(
+            *swapchainImage.reference(),
+            vk::ImageLayout::eTransferSrcOptimal,
+            *outputImage.reference(),
+            vk::ImageLayout::eTransferDstOptimal,
+            {
+                vk::ImageCopy()
+                    .setExtent(outputImage.createInfo.extent)
+                    .setSrcSubresource(
+                        vk::ImageSubresourceLayers()
+                            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                            .setLayerCount(1)
+                    )
+                    .setDstSubresource(
+                        vk::ImageSubresourceLayers()
+                            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                            .setLayerCount(1)
+                    )
+            }
+        );
+
+        transferCommandBuffer.reference().pipelineBarrier(
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::DependencyFlags(0),
+            {},
+            {},
+            {
+                vk::ImageMemoryBarrier()
+                    .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                    .setImage(*outputImage.reference())
+                    .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
+                    .setNewLayout(vk::ImageLayout::eGeneral)
+                    .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+                    .setDstAccessMask(vk::AccessFlagBits::eMemoryRead)
+                    .setSubresourceRange(
+                        vk::ImageSubresourceRange()
+                            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                            .setBaseMipLevel(0)
+                            .setLevelCount(1)
+                            .setBaseArrayLayer(0)
+                            .setLayerCount(1)
+                    )
+            }
+        );
+
+        transferCommandBuffer.reference().end();
+        transferQueue.reference().submit(
+            {
+                vk::SubmitInfo()
+                    .setCommandBufferCount(1)
+                    .setPCommandBuffers(&(*transferCommandBuffer.reference()))
+            }
+        );
+        transferQueue.reference().waitIdle();
       } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO()));
       }

@@ -8,8 +8,9 @@
 #include "exqudens/vulkan/TestUtilsTests.hpp"
 #include "exqudens/vulkan/TinyObjLoaderTests.hpp"
 #include "exqudens/vulkan/Tests.hpp"
+#include "exqudens/vulkan/Tests1.hpp"
 #include "exqudens/vulkan/UiTests.hpp"
-#include "exqudens/vulkan/Ui1Tests.hpp"
+#include "exqudens/vulkan/UiTests1.hpp"
 
 class TestApplication {
 
