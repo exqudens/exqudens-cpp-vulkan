@@ -437,9 +437,12 @@ install(
 
 add_library("test-lib" STATIC
     "src/test/cpp/TestApplication.hpp"
+    "src/test/cpp/TestApplication.cpp"
     "src/test/cpp/TestConfiguration.hpp"
+    "src/test/cpp/TestConfiguration.cpp"
     "src/test/cpp/TestMacros.hpp"
     "src/test/cpp/TestUtils.hpp"
+    "src/test/cpp/TestUtils.cpp"
     "src/test/cpp/exqudens/vulkan/Vertex.hpp"
     "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
     "src/test/cpp/exqudens/vulkan/Context.hpp"
@@ -473,6 +476,24 @@ target_link_libraries("test-lib" PUBLIC
 )
 set_target_properties("test-lib" PROPERTIES
     CXX_STANDARD 23
+
+    RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/bin"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/bin"
+
+    ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
+
+    LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
+    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
+    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
 )
 
 add_custom_command(

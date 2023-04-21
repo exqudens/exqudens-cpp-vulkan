@@ -3,6 +3,8 @@
 #include <string>
 #include <any>
 #include <map>
+#include <iostream>
+#include <format>
 
 #include <gtest/gtest.h>
 
@@ -18,8 +20,8 @@ namespace exqudens::vulkan {
       int expected = 123;
       int actual = 123;
 
-      PRINTLN(expected);
-      PRINTLN(actual);
+      std::cout << std::format("expected: '{}'", expected) << std::endl;
+      std::cout << std::format("actual: '{}'", actual) << std::endl;
 
       ASSERT_EQ(expected, actual);
     } catch (const std::exception& e) {

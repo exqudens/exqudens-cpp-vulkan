@@ -2,11 +2,11 @@
 
 #include <string>
 #include <optional>
-#include <filesystem>
+#include <utility>
 
 class TestConfiguration {
 
-  friend class TestApplication;
+    friend class TestApplication;
 
   private:
 
@@ -15,20 +15,12 @@ class TestConfiguration {
 
   public:
 
-    static std::string getExecutableFile() {
-      return executableFile.value_or("");
-    }
+    static std::string getExecutableFile();
 
-    static std::string getExecutableDir() {
-      return executableDir.value_or("");
-    }
+    static std::string getExecutableDir();
 
   private:
 
-    static void setExecutableFile(const char* value) {
-      std::filesystem::path path = std::filesystem::path(std::string(value)).make_preferred();
-      TestConfiguration::executableFile = path.string();
-      TestConfiguration::executableDir = path.parent_path().string();
-    }
+    static std::pair<int, std::string> setExecutableFile(const char* value);
 
 };

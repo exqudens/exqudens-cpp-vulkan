@@ -5,10 +5,6 @@
 #include <unordered_map>
 
 #include <gtest/gtest.h>
-#ifndef TINYOBJLOADER_IMPLEMENTATION
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-#endif
 
 #include "TestUtils.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
