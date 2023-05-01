@@ -20,7 +20,7 @@ namespace exqudens::vulkan {
 
     RenderPass renderPass = {};
     Pipeline pipeline = {};
-    std::vector<Framebuffer> swapchainFramebuffers = {};
+    std::vector<Framebuffer> framebuffers = {};
 
     void init(
         Context& root,

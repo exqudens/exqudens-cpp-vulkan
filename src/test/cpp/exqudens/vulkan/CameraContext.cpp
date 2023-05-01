@@ -123,7 +123,7 @@ namespace exqudens::vulkan {
       const std::vector<std::string> paths
   ) {
     try {
-      swapchainFramebuffers.clear();
+      framebuffers.clear();
       pipeline.value.reset();
       renderPass.value.reset();
       depthImageView.value.reset();
@@ -405,9 +405,9 @@ namespace exqudens::vulkan {
           )
           .build();
 
-      swapchainFramebuffers.resize(root.swapchainImageViews.size());
-      for (size_t i = 0; i < swapchainFramebuffers.size(); i++) {
-        swapchainFramebuffers.at(i) = Framebuffer::builder()
+      framebuffers.resize(root.swapchainImageViews.size());
+      for (size_t i = 0; i < framebuffers.size(); i++) {
+        framebuffers.at(i) = Framebuffer::builder()
             .setDevice(root.device.value)
             .addAttachment(*colorImageView.reference())
             .addAttachment(*depthImageView.reference())

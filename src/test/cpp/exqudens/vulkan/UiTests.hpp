@@ -253,7 +253,7 @@ namespace exqudens::vulkan {
               std::cout << std::format("camera.depthImageView: '{}'", (bool) camera.depthImageView.value) << std::endl;
               std::cout << std::format("camera.renderPass: '{}'", (bool) camera.renderPass.value) << std::endl;
               std::cout << std::format("camera.pipeline: '{}'", (bool) camera.pipeline.value) << std::endl;
-              std::ranges::for_each(camera.swapchainFramebuffers, [](const auto& o1) {std::cout << std::format("camera.swapchainFramebuffer: '{}'", (bool) o1.value) << std::endl;});
+              std::ranges::for_each(camera.framebuffers, [](const auto& o1) {std::cout << std::format("camera.swapchainFramebuffer: '{}'", (bool) o1.value) << std::endl;});
 
               root.transferCommandBuffer.reference().begin({});
               TestUtils::insertDepthImagePipelineBarrier(root.transferCommandBuffer, camera.depthImage);
@@ -336,7 +336,7 @@ namespace exqudens::vulkan {
               root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
                   vk::RenderPassBeginInfo()
                       .setRenderPass(*camera.renderPass.reference())
-                      .setFramebuffer(*camera.swapchainFramebuffers.at(swapchainNextImage.second).reference())
+                      .setFramebuffer(*camera.framebuffers.at(swapchainNextImage.second).reference())
                       .setRenderArea(
                           vk::Rect2D()
                               .setOffset(
