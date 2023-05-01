@@ -22,134 +22,66 @@
 #include "exqudens/vulkan/all.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
 #include "exqudens/vulkan/UniformBufferObject.hpp"
+#include "exqudens/vulkan/Context.hpp"
+#include "exqudens/vulkan/DataContext.hpp"
+#include "exqudens/vulkan/CameraContext.hpp"
 
 namespace exqudens::vulkan {
 
-  class Tests : public testing::Test {};
+  class Tests : public testing::Test {
 
-  TEST_F(Tests, test1) {
-    try {
-      std::vector<Vertex> vertexVector = {};
-      std::vector<uint16_t> indexVector = {};
+    protected:
 
-      Instance instance = {};
-      vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures> physicalDeviceFeatures = {};
-      PhysicalDevice physicalDevice = {};
-      Device device = {};
-      Queue transferQueue = {};
-      Queue graphicsQueue = {};
-      Queue presentQueue = {};
-      CommandPool transferCommandPool = {};
-      CommandPool graphicsCommandPool = {};
-      CommandBuffer transferCommandBuffer = {};
-      CommandBuffer graphicsCommandBuffer = {};
-      DescriptorSetLayout descriptorSetLayout = {};
-      Image swapchainImage = {};
-      ImageView swapchainImageView = {};
-      Image depthImage = {};
-      ImageView depthImageView = {};
-      Image colorImage = {};
-      ImageView colorImageView = {};
-      RenderPass renderPass = {};
-      std::map<std::string, std::pair<vk::ShaderModuleCreateInfo, std::shared_ptr<vk::raii::ShaderModule>>> shaders;
-      Pipeline pipeline = {};
-      Framebuffer swapchainFramebuffer = {};
-      Buffer textureBuffer = {};
-      Image textureImage = {};
-      ImageView textureImageView = {};
-      Buffer vertexStagingBuffer = {};
-      Buffer vertexBuffer = {};
-      Buffer indexStagingBuffer = {};
-      Buffer indexBuffer = {};
-      Buffer uniformBuffer = {};
-      Sampler sampler = {};
-      DescriptorPool descriptorPool = {};
-      DescriptorSet descriptorSet = {};
-      QueryPool queryPool = {};
+      uint32_t width = 800;
+      uint32_t height = 600;
+      Context root = {};
+      DataContext data = {};
+      CameraContext camera = {};
       Image outputImage = {};
+      size_t currentFrame = 0;
 
-      float physicalDeviceTimestampPeriod = 0;
-      vk::SampleCountFlagBits physicalDeviceMsaaSamples = {};
-
-      std::function<void()> updateUniformBuffer;
-      std::function<void(Device&, CommandBuffer&, Queue&, const std::chrono::seconds&)> submitBlocking;
-      std::function<void()> drawFrame;
-      std::function<void()> copySwapchainImageToOutputImage;
-
-      std::vector<std::vector<std::vector<unsigned char>>> outputImageVector;
-
-      updateUniformBuffer = [&swapchainImage, &uniformBuffer]() {
+      void reCreateSwapchain(uint32_t width, uint32_t height) {
         try {
-          float angle1 = 0.0f * glm::radians(360.0f); // min 0 max 360
-          float angle2 = 0.0f;
-          glm::vec3 axis1 = glm::vec3(0.0f, 0.0f, 1.0f);
-          glm::vec3 axis2 = glm::vec3(0.0f, 1.0f, 0.0f);
-          UniformBufferObject ubo = {};
-          ubo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
-          ubo.model = glm::rotate(ubo.model, angle2, axis2);
-          ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-          ubo.proj = glm::perspective(
-              glm::radians(45.0f),
-              (float) swapchainImage.createInfo.extent.width / (float) swapchainImage.createInfo.extent.height,
-              0.1f,
-              10.0f
-          );
-          ubo.proj[1][1] *= -1;
-          uniformBuffer.fill(&ubo);
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      };
+          std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
 
-      submitBlocking = [](Device& device, CommandBuffer& commandBuffer, Queue& queue, const std::chrono::seconds& timeout) {
-        try {
-          Fence fence = Fence::builder()
-              .setDevice(device.value)
-              .setCreateInfo(vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled))
-              .build();
+          root.initSwapchain(width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
-          device.reference().resetFences({*fence.reference()});
+          root.device.reference().waitIdle();
 
-          queue.reference().submit(
+          camera.initSwapchain(root, {"resources/shader/shader-2.vert.spv", "resources/shader/shader-2.frag.spv"});
+
+          std::cout << std::format("camera.colorImage: '{}'", (bool) camera.colorImage.value) << std::endl;
+          std::cout << std::format("camera.colorImageView: '{}'", (bool) camera.colorImageView.value) << std::endl;
+          std::cout << std::format("camera.depthImage: '{}'", (bool) camera.depthImage.value) << std::endl;
+          std::cout << std::format("camera.depthImageView: '{}'", (bool) camera.depthImageView.value) << std::endl;
+          std::cout << std::format("camera.renderPass: '{}'", (bool) camera.renderPass.value) << std::endl;
+          std::cout << std::format("camera.pipeline: '{}'", (bool) camera.pipeline.value) << std::endl;
+          std::ranges::for_each(camera.swapchainFramebuffers, [](const auto& o1) {std::cout << std::format("camera.swapchainFramebuffer: '{}'", (bool) o1.value) << std::endl;});
+
+          root.transferCommandBuffer.reference().begin({});
+          TestUtils::insertDepthImagePipelineBarrier(root.transferCommandBuffer, camera.depthImage);
+          root.transferCommandBuffer.reference().end();
+          root.transferQueue.reference().submit(
               {
                   vk::SubmitInfo()
                       .setCommandBufferCount(1)
-                      .setPCommandBuffers(&(*commandBuffer.reference()))
-              },
-              *fence.reference()
+                      .setPCommandBuffers(&(*root.transferCommandBuffer.reference()))
+              }
           );
+          root.transferQueue.reference().waitIdle();
 
-          uint64_t timeoutConverted = std::chrono::duration<uint64_t, std::nano>(timeout).count();
-          vk::Result result = device.reference().waitForFences({*fence.reference()}, true, /*UINT64_MAX*/ timeoutConverted);
-
-          if (vk::Result::eSuccess != result) {
-            throw std::runtime_error(CALL_INFO() + ": failed to 'device.waitForFences(...)'!");
-          }
+          std::cout << std::format("{} ... done", CALL_INFO()) << std::endl;
         } catch (...) {
           std::throw_with_nested(std::runtime_error(CALL_INFO()));
         }
-      };
+      }
 
-      drawFrame = [
-          &submitBlocking,
-          &physicalDevice,
-          &device,
-          &graphicsQueue,
-          &graphicsCommandBuffer,
-          &queryPool,
-          &renderPass,
-          &swapchainFramebuffer,
-          &swapchainImage,
-          &pipeline,
-          &vertexBuffer,
-          &indexBuffer,
-          &descriptorSet,
-          &indexVector
-      ]() {
+      void drawFrame(uint8_t& timeDiffCounter, const uint32_t& width, const uint32_t& height, const std::vector<uint16_t>& indexVector) {
         try {
-          graphicsCommandBuffer.reference().reset();
+          root.device.reference().resetFences({*root.inFlightFences.at(currentFrame).reference()});
+          root.graphicsCommandBuffers.at(currentFrame).reference().reset();
 
-          graphicsCommandBuffer.reference().begin({});
+          root.graphicsCommandBuffers.at(currentFrame).reference().begin({});
           std::vector<vk::ClearValue> clearValues = {
               vk::ClearValue()
                   .setColor(
@@ -161,15 +93,20 @@ namespace exqudens::vulkan {
                       vk::ClearDepthStencilValue()
                           .setDepth(1.0f)
                           .setStencil(0)
+                  ),
+              vk::ClearValue()
+                  .setColor(
+                      vk::ClearColorValue()
+                          .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
                   )
           };
 
-          graphicsCommandBuffer.reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *queryPool.reference(), 0);
+          root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *root.queryPool.reference(), 0);
 
-          graphicsCommandBuffer.reference().beginRenderPass(
+          root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
               vk::RenderPassBeginInfo()
-                  .setRenderPass(*renderPass.reference())
-                  .setFramebuffer(*swapchainFramebuffer.reference())
+                  .setRenderPass(*camera.renderPass.reference())
+                  .setFramebuffer(*camera.swapchainFramebuffers.at(0).reference())
                   .setRenderArea(
                       vk::Rect2D()
                           .setOffset(
@@ -179,30 +116,60 @@ namespace exqudens::vulkan {
                           )
                           .setExtent(
                               vk::Extent2D()
-                                  .setWidth(swapchainImage.createInfo.extent.width)
-                                  .setHeight(swapchainImage.createInfo.extent.height)
+                                  .setWidth(root.samplerImages.at(0).createInfo.extent.width)
+                                  .setHeight(root.samplerImages.at(0).createInfo.extent.height)
                           )
                   )
                   .setClearValues(clearValues),
               vk::SubpassContents::eInline
           );
 
-          graphicsCommandBuffer.reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.reference());
-          graphicsCommandBuffer.reference().bindVertexBuffers(0, {*vertexBuffer.reference()}, {0});
-          graphicsCommandBuffer.reference().bindIndexBuffer(*indexBuffer.reference(), 0, vk::IndexType::eUint16);
-          graphicsCommandBuffer.reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipeline.layoutReference(), 0, {*descriptorSet.reference()}, {});
-          graphicsCommandBuffer.reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
+          /*root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *camera.pipeline.reference());
+          root.graphicsCommandBuffers.at(currentFrame).reference().draw(3, 1, 0, 0);*/
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *camera.pipeline.reference());
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindVertexBuffers(0, {*data.vertexBuffer.reference()}, {0});
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindIndexBuffer(*data.indexBuffer.reference(), 0, vk::IndexType::eUint16);
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *camera.pipeline.layoutReference(), 0, {*camera.descriptorSets.at(currentFrame).reference()}, {});
+          root.graphicsCommandBuffers.at(currentFrame).reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
 
-          graphicsCommandBuffer.reference().endRenderPass();
+          root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
 
-          graphicsCommandBuffer.reference().writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, *queryPool.reference(), 1);
+          root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
+              vk::RenderPassBeginInfo()
+                  .setRenderPass(*root.renderPass.reference())
+                  .setFramebuffer(*root.swapchainFramebuffers.at(0).reference())
+                  .setRenderArea(
+                      vk::Rect2D()
+                          .setOffset(
+                              vk::Offset2D()
+                                  .setX(0)
+                                  .setY(0)
+                          )
+                          .setExtent(root.swapchain.createInfo.imageExtent)
+                  )
+                  .setClearValues(clearValues),
+              vk::SubpassContents::eInline
+          );
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *root.pipeline.reference());
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *root.pipeline.layoutReference(), 0, {*root.descriptorSets.at(currentFrame).reference()}, {});
+          root.graphicsCommandBuffers.at(currentFrame).reference().draw(3, 1, 0, 0);
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, *root.queryPool.reference(), 1);
 
           try {
-            std::pair<vk::Result, std::vector<uint64_t>> queryResults = queryPool.reference().getResults<uint64_t>(0, 1, sizeof(uint64_t) * 2, sizeof(uint64_t), vk::QueryResultFlagBits::e64);
+            std::pair<vk::Result, std::vector<uint64_t>> queryResults = root.queryPool.reference().getResults<uint64_t>(0, 1, sizeof(uint64_t) * 2, sizeof(uint64_t), vk::QueryResultFlagBits::e64);
             if (vk::Result::eNotReady == queryResults.first || vk::Result::eSuccess == queryResults.first) {
               if (vk::Result::eSuccess == queryResults.first && queryResults.second.size() > 1) {
-                float timeDiff = physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second.at(1) - queryResults.second.at(0));
-                std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
+                if (timeDiffCounter == 9) {
+                  float timeDiff = root.physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second.at(1) - queryResults.second.at(0));
+                  //std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
+                  timeDiffCounter = 0;
+                } else {
+                  timeDiffCounter++;
+                }
               }
             } else {
               throw std::runtime_error("failed to 'queryPool.getResults(...)'!");
@@ -211,115 +178,48 @@ namespace exqudens::vulkan {
             std::throw_with_nested(std::runtime_error(CALL_INFO() + ": exception in 'queryPool.getResults(...)'!"));
           }
 
-          queryPool.reference().reset(0, 2);
+          root.queryPool.reference().reset(0, 2);
 
-          graphicsCommandBuffer.reference().end();
+          root.graphicsCommandBuffers.at(currentFrame).reference().end();
 
-          submitBlocking(device, graphicsCommandBuffer, graphicsQueue, std::chrono::seconds(10));
+          root.graphicsQueue.reference().submit(
+              {
+                  vk::SubmitInfo()
+                      .setCommandBufferCount(1)
+                      .setPCommandBuffers(&(*root.graphicsCommandBuffers.at(currentFrame).reference()))
+              }
+          );
+          root.graphicsQueue.reference().waitIdle();
+          root.device.reference().waitIdle();
         } catch (...) {
           std::throw_with_nested(std::runtime_error(CALL_INFO()));
         }
-      };
+      }
 
-      copySwapchainImageToOutputImage = [
-          &transferCommandBuffer,
-          &swapchainImage,
-          &outputImage
-      ]() {
-        try {
-          transferCommandBuffer.reference().pipelineBarrier(
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::DependencyFlags(0),
-              {},
-              {},
-              {
-                  vk::ImageMemoryBarrier()
-                      .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setImage(*outputImage.reference())
-                      .setOldLayout(vk::ImageLayout::eUndefined)
-                      .setNewLayout(vk::ImageLayout::eTransferDstOptimal)
-                      .setSrcAccessMask(vk::AccessFlagBits::eNone)
-                      .setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
-                      .setSubresourceRange(
-                          vk::ImageSubresourceRange()
-                              .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                              .setBaseMipLevel(0)
-                              .setLevelCount(1)
-                              .setBaseArrayLayer(0)
-                              .setLayerCount(1)
-                      )
-              }
-          );
+  };
 
-          transferCommandBuffer.reference().copyImage(
-              *swapchainImage.reference(),
-              vk::ImageLayout::eTransferSrcOptimal,
-              *outputImage.reference(),
-              vk::ImageLayout::eTransferDstOptimal,
-              {
-                  vk::ImageCopy()
-                      .setExtent(outputImage.createInfo.extent)
-                      .setSrcSubresource(
-                          vk::ImageSubresourceLayers()
-                              .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                              .setLayerCount(1)
-                      )
-                      .setDstSubresource(
-                          vk::ImageSubresourceLayers()
-                              .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                              .setLayerCount(1)
-                      )
-              }
-          );
+  TEST_F(Tests, test1) {
+    try {
+      std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
 
-          transferCommandBuffer.reference().pipelineBarrier(
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::PipelineStageFlagBits::eTransfer,
-              vk::DependencyFlags(0),
-              {},
-              {},
-              {
-                  vk::ImageMemoryBarrier()
-                      .setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                      .setImage(*outputImage.reference())
-                      .setOldLayout(vk::ImageLayout::eTransferDstOptimal)
-                      .setNewLayout(vk::ImageLayout::eGeneral)
-                      .setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
-                      .setDstAccessMask(vk::AccessFlagBits::eMemoryRead)
-                      .setSubresourceRange(
-                          vk::ImageSubresourceRange()
-                              .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                              .setBaseMipLevel(0)
-                              .setLevelCount(1)
-                              .setBaseArrayLayer(0)
-                              .setLayerCount(1)
-                      )
-              }
-          );
-        } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
-        }
-      };
-
+      std::vector<Vertex> vertexVector = {};
+      std::vector<uint16_t> indexVector = {};
       TestUtils::readObj(
           std::filesystem::path(TestUtils::getExecutableDir()).append("resources").append("obj").append("viking_room.obj").make_preferred().string(),
           vertexVector,
           indexVector
       );
 
-      unsigned int tmpImageWidth, tmpImageHeight, tmpImageDepth, tmpImageMipLevels;
-      std::vector<unsigned char> tmpImageData;
+      unsigned int textureWidth, textureHeight, textureDepth, textureMipLevels;
+      std::vector<unsigned char> textureVector;
       TestUtils::readPng(
           std::filesystem::path(TestUtils::getExecutableDir()).append("resources").append("png").append("viking_room.png").make_preferred().string(),
-          tmpImageWidth,
-          tmpImageHeight,
-          tmpImageDepth,
-          tmpImageData
+          textureWidth,
+          textureHeight,
+          textureDepth,
+          textureVector
       );
-      tmpImageMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(tmpImageWidth, tmpImageHeight)))) + 1;
+      textureMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1;
 
       Utility::setEnvironmentVariable("VK_LAYER_PATH", TestUtils::getExecutableDir());
 
@@ -327,781 +227,120 @@ namespace exqudens::vulkan {
       enabledExtensionNames.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       enabledExtensionNames.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
-      instance = Instance::builder()
-          .addEnabledLayerName("VK_LAYER_KHRONOS_validation")
-          .setEnabledExtensionNames(enabledExtensionNames)
-          .setApplicationInfo(
-              vk::ApplicationInfo()
-                  .setPApplicationName("Exqudens Application")
-                  .setApplicationVersion(VK_MAKE_VERSION(1, 0, 0))
-                  .setPEngineName("Exqudens Engine")
-                  .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
-                  .setApiVersion(VK_API_VERSION_1_0)
-          )
-          .setMessengerCreateInfo(
-              MessengerCreateInfo()
-                  .setExceptionSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
-                  //.setOutSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose)
-                  .setToStringFunction(&Utility::toString)
-          )
-          .setDebugUtilsMessengerCreateInfo(
-              vk::DebugUtilsMessengerCreateInfoEXT()
-                  .setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError)
-                  .setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance)
-          )
-      .build();
-      std::cout << std::format("instance: '{}'", (bool) instance.value) << std::endl;
+      root.init(enabledExtensionNames, {}, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
-      vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures> tmpPhysicalDeviceFeatures = {
-          vk::PhysicalDeviceFeatures2()
-              .setFeatures(
-                  vk::PhysicalDeviceFeatures()
-                      .setSamplerAnisotropy(true)
-                      .setSampleRateShading(true)
-              ),
-          vk::PhysicalDeviceHostQueryResetFeatures()
-              .setHostQueryReset(true)
-      };
-      physicalDeviceFeatures = tmpPhysicalDeviceFeatures;
-      physicalDevice = PhysicalDevice::builder()
-          .setInstance(instance.value)
-          .addEnabledExtensionName(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME)
-          .addQueuePriority(1.0f)
-          .setIsSuitableFunction([this](const vk::raii::PhysicalDevice& p) {
-            bool result = false;
-            std::vector<vk::QueueFamilyProperties> properties = p.getQueueFamilyProperties();
-            bool computeValid = false;
-            bool transferValid = false;
-            bool graphicsValid = false;
-            for (size_t i = 0; i < properties.size(); i++) {
-              if (properties[i].queueFlags & vk::QueueFlagBits::eCompute) {
-                computeValid = true;
-              }
-              if (properties[i].queueFlags & vk::QueueFlagBits::eTransfer) {
-                transferValid = true;
-              }
-              if (properties[i].queueFlags & vk::QueueFlagBits::eGraphics && properties[i].timestampValidBits > 0) {
-                graphicsValid = true;
-              }
+      std::cout << std::format("root.instance: '{}'", (bool) root.instance.value) << std::endl;
+      std::cout << std::format("root.surface: '{}'", (bool) root.surface.value) << std::endl;
+      std::cout << std::format("root.physicalDevice: '{}'", (bool) root.physicalDevice.value) << std::endl;
+      std::cout << std::format("root.physicalDeviceTimestampPeriod: '{}'", root.physicalDeviceTimestampPeriod) << std::endl;
+      std::cout << std::format("root.physicalDeviceMsaaSamples: '{}'", vk::to_string(root.physicalDeviceMsaaSamples)) << std::endl;
+      std::cout << std::format("root.device: '{}'", (bool) root.device.value) << std::endl;
+      std::cout << std::format("root.transferQueue: '{}'", (bool) root.transferQueue.value) << std::endl;
+      std::cout << std::format("root.graphicsQueue: '{}'", (bool) root.graphicsQueue.value) << std::endl;
+      std::cout << std::format("root.presentQueue: '{}'", (bool) root.presentQueue.value) << std::endl;
+      std::cout << std::format("root.transferCommandPool: '{}'", (bool) root.transferCommandPool.value) << std::endl;
+      std::cout << std::format("root.graphicsCommandPool: '{}'", (bool) root.graphicsCommandPool.value) << std::endl;
+      std::cout << std::format("root.transferCommandBuffer: '{}'", (bool) root.transferCommandBuffer.value) << std::endl;
+      std::cout << std::format("root.descriptorSetLayout: '{}'", (bool) root.descriptorSetLayout.value) << std::endl;
+      std::cout << std::format("root.queryPool: '{}'", (bool) root.queryPool.value) << std::endl;
+      std::cout << std::format("root.swapchain: '{}'", (bool) root.swapchain.value) << std::endl;
+      std::cout << std::format("root.swapchain.images.size: '{}'", root.swapchain.value ? root.swapchain.reference().getImages().size() : 0) << std::endl;
+      std::ranges::for_each(root.swapchainImages, [](const auto& o1) {std::cout << std::format("root.swapchainImage: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.swapchainImageViews, [](const auto& o1) {std::cout << std::format("root.swapchainImageView: '{}'", (bool) o1.value) << std::endl;});
+      std::cout << std::format("root.renderPass: '{}'", (bool) root.renderPass.value) << std::endl;
+      std::cout << std::format("root.pipeline: '{}'", (bool) root.pipeline.value) << std::endl;
+      std::ranges::for_each(root.swapchainFramebuffers, [](const auto& o1) {std::cout << std::format("root.swapchainFramebuffer: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.samplerImages, [](auto& o1) {std::cout << std::format("root.samplerImage: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.samplerImageViews, [](auto& o1) {std::cout << std::format("root.samplerImageView: '{}'", (bool) o1.value) << std::endl;});
+      std::cout << std::format("root.descriptorPool: '{}'", (bool) root.descriptorPool.value) << std::endl;
+      std::cout << std::format("root.sampler: '{}'", (bool) root.sampler.value) << std::endl;
+      std::ranges::for_each(root.descriptorSets, [](auto& o1) {std::cout << std::format("root.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.graphicsCommandBuffers, [](const auto& o1) {std::cout << std::format("root.graphicsCommandBuffer: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.imageAvailableSemaphores, [](auto& o1) {std::cout << std::format("root.imageAvailableSemaphore: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.renderFinishedSemaphores, [](auto& o1) {std::cout << std::format("root.renderFinishedSemaphore: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(root.inFlightFences, [](auto& o1) {std::cout << std::format("root.inFlightFence: '{}'", (bool) o1.value) << std::endl;});
 
-              result = computeValid && transferValid && graphicsValid;
-              if (result) {
-                break;
-              }
-            }
-            if (!result) {
-              return result;
-            }
-            auto f = p.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceHostQueryResetFeatures>();
-            result = f.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy;
-            if (!result) {
-              return result;
-            }
-            result = f.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading;
-            if (!result) {
-              return result;
-            }
-            result = f.get<vk::PhysicalDeviceHostQueryResetFeatures>().hostQueryReset;
-            if (!result) {
-              return result;
-            }
-            return result;
-          })
-      .build();
-      std::cout << std::format("physicalDevice: '{}'", (bool) physicalDevice.value) << std::endl;
+      data.init(root, vertexVector, indexVector, textureWidth, textureHeight, textureDepth, textureMipLevels);
 
-      physicalDeviceTimestampPeriod = physicalDevice.reference().getProperties().limits.timestampPeriod;
-      std::cout << std::format("physicalDeviceTimestampPeriod: '{}'", physicalDeviceTimestampPeriod) << std::endl;
+      std::cout << std::format("data.vertexStagingBuffer: '{}'", (bool) data.vertexStagingBuffer.value) << std::endl;
+      std::cout << std::format("data.vertexBuffer: '{}'", (bool) data.vertexBuffer.value) << std::endl;
+      std::cout << std::format("data.indexStagingBuffer: '{}'", (bool) data.indexStagingBuffer.value) << std::endl;
+      std::cout << std::format("data.indexBuffer: '{}'", (bool) data.indexBuffer.value) << std::endl;
+      std::cout << std::format("data.textureBuffer: '{}'", (bool) data.textureBuffer.value) << std::endl;
+      std::cout << std::format("data.textureImage: '{}'", (bool) data.textureImage.value) << std::endl;
+      std::cout << std::format("data.textureImageView: '{}'", (bool) data.textureImageView.value) << std::endl;
+      std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << std::format("data.uniformBuffer: '{}'", (bool) o1.value) << std::endl;});
 
-      physicalDeviceMsaaSamples = Utility::getMaxUsableSampleCount({
-          physicalDevice.reference().getProperties().limits.framebufferColorSampleCounts,
-          physicalDevice.reference().getProperties().limits.framebufferDepthSampleCounts
-      });
-      std::cout << std::format("physicalDeviceMsaaSamples: '{}'", vk::to_string(physicalDeviceMsaaSamples)) << std::endl;
+      camera.init(root, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
 
-      device = Device::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setCreateInfo(
-              vk::DeviceCreateInfo()
-                  .setQueueCreateInfos(physicalDevice.uniqueQueueCreateInfos)
-                  //.setPEnabledFeatures(&physicalDevice.features)
-                  .setPEnabledExtensionNames(physicalDevice.enabledExtensionNames)
-                  .setPEnabledLayerNames(instance.enabledLayerNames)
-                  //.setPNext(physicalDevice.hostQueryResetFeatures.has_value() ? &physicalDevice.hostQueryResetFeatures.value() : nullptr)
-                  .setPNext(&physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>())
-          )
-      .build();
-      std::cout << std::format("device: '{}'", (bool) device.value) << std::endl;
+      std::cout << std::format("camera.descriptorSetLayout: '{}'", (bool) camera.descriptorSetLayout.value) << std::endl;
+      std::cout << std::format("camera.sampler: '{}'", (bool) camera.sampler.value) << std::endl;
+      std::cout << std::format("camera.descriptorPool: '{}'", (bool) camera.descriptorPool.value) << std::endl;
+      std::ranges::for_each(camera.descriptorSets, [](auto& o1) {std::cout << std::format("camera.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
 
-      transferQueue = Queue::builder()
-          .setDevice(device.value)
-          .setFamilyIndex(physicalDevice.transferQueueCreateInfos.front().queueFamilyIndex)
-      .build();
-      std::cout << std::format("transferQueue: '{}'", (bool) transferQueue.value) << std::endl;
-      graphicsQueue = Queue::builder()
-          .setDevice(device.value)
-          .setFamilyIndex(physicalDevice.graphicsQueueCreateInfos.front().queueFamilyIndex)
-      .build();
-      std::cout << std::format("graphicsQueue: '{}'", (bool) graphicsQueue.value) << std::endl;
+      data.vertexStagingBuffer.fill(vertexVector.data());
+      data.indexStagingBuffer.fill(indexVector.data());
+      data.textureBuffer.fill(textureVector.data());
 
-      transferCommandPool = CommandPool::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::CommandPoolCreateInfo()
-                  .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                  .setQueueFamilyIndex(transferQueue.familyIndex)
-          )
-      .build();
-      std::cout << std::format("transferCommandPool: '{}'", (bool) transferCommandPool.value) << std::endl;
-      graphicsCommandPool = CommandPool::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::CommandPoolCreateInfo()
-                  .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                  .setQueueFamilyIndex(graphicsQueue.familyIndex)
-          )
-      .build();
-      std::cout << std::format("graphicsCommandPool: '{}'", (bool) graphicsCommandPool.value) << std::endl;
-
-      transferCommandBuffer = CommandBuffer::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::CommandBufferAllocateInfo()
-                  .setCommandPool(*transferCommandPool.reference())
+      root.transferCommandBuffer.reference().begin({});
+      root.transferCommandBuffer.reference().copyBuffer(
+          *data.vertexStagingBuffer.reference(),
+          *data.vertexBuffer.reference(),
+          {vk::BufferCopy().setSize(data.vertexStagingBuffer.createInfo.size)}
+      );
+      root.transferCommandBuffer.reference().copyBuffer(
+          *data.indexStagingBuffer.reference(),
+          *data.indexBuffer.reference(),
+          {vk::BufferCopy().setSize(data.indexStagingBuffer.createInfo.size)}
+      );
+      TestUtils::copyBufferToImageAndGenerateMipmaps(root.physicalDevice, root.transferCommandBuffer, data.textureBuffer, data.textureImage);
+      root.transferCommandBuffer.reference().end();
+      root.transferQueue.reference().submit(
+          {
+              vk::SubmitInfo()
                   .setCommandBufferCount(1)
-                  .setLevel(vk::CommandBufferLevel::ePrimary)
-          )
-      .build();
-      std::cout << std::format("transferCommandBuffer: '{}'", (bool) transferCommandBuffer.value) << std::endl;
-      graphicsCommandBuffer = CommandBuffer::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::CommandBufferAllocateInfo()
-                  .setCommandPool(*graphicsCommandPool.reference())
-                  .setCommandBufferCount(1)
-                  .setLevel(vk::CommandBufferLevel::ePrimary)
-          )
-      .build();
-      std::cout << std::format("graphicsCommandBuffer: '{}'", (bool) graphicsCommandBuffer.value) << std::endl;
+                  .setPCommandBuffers(&(*root.transferCommandBuffer.reference()))
+          }
+      );
+      root.transferQueue.reference().waitIdle();
 
-      descriptorSetLayout = DescriptorSetLayout::builder()
-          .setDevice(device.value)
-          .addBinding(
-              vk::DescriptorSetLayoutBinding()
-                  .setBinding(0)
-                  .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                  .setDescriptorCount(1)
-                  .setStageFlags(vk::ShaderStageFlagBits::eVertex)
-          )
-          .addBinding(
-              vk::DescriptorSetLayoutBinding()
-                  .setBinding(1)
-                  .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-                  .setDescriptorCount(1)
-                  .setStageFlags(vk::ShaderStageFlagBits::eFragment)
-          )
-      .build();
-      std::cout << std::format("descriptorSetLayout: '{}'", (bool) descriptorSetLayout.value) << std::endl;
-
-      swapchainImage = Image::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageCreateInfo()
-                  .setExtent(
-                      vk::Extent3D()
-                          .setWidth(800)
-                          .setHeight(600)
-                          .setDepth(1)
-                  )
-                  .setFormat(vk::Format::eR8G8B8A8Srgb)
-                  .setImageType(vk::ImageType::e2D)
-                  .setMipLevels(1)
-                  .setArrayLayers(1)
-                  .setSamples(vk::SampleCountFlagBits::e1)
-                  .setTiling(vk::ImageTiling::eOptimal)
-                  .setUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-                  .setInitialLayout(vk::ImageLayout::eUndefined)
-          )
-          .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
-      .build();
-      std::cout << std::format("swapchainImage: '{}'", (bool) swapchainImage.value) << std::endl;
-
-      swapchainImageView = ImageView::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageViewCreateInfo()
-                  .setImage(*swapchainImage.reference())
-                  .setFormat(swapchainImage.createInfo.format)
-                  .setViewType(vk::ImageViewType::e2D)
-                  .setSubresourceRange(
-                      vk::ImageSubresourceRange()
-                          .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                          .setBaseMipLevel(0)
-                          .setLevelCount(1)
-                          .setBaseArrayLayer(0)
-                          .setLayerCount(1)
-                  )
-          )
-      .build();
-      std::cout << std::format("swapchainImageView: '{}'", (bool) swapchainImageView.value) << std::endl;
-
-      depthImage = Image::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageCreateInfo()
-                  .setImageType(vk::ImageType::e2D)
-                  .setFormat(Utility::imageDepthFormat(physicalDevice.reference()))
-                  .setExtent(
-                      vk::Extent3D()
-                          .setWidth(swapchainImage.createInfo.extent.width)
-                          .setHeight(swapchainImage.createInfo.extent.height)
-                          .setDepth(1)
-                  )
-                  .setMipLevels(1)
-                  .setArrayLayers(1)
-                  .setSamples(physicalDeviceMsaaSamples)
-                  .setTiling(vk::ImageTiling::eOptimal)
-                  .setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-                  .setQueueFamilyIndices({})
-                  .setInitialLayout(vk::ImageLayout::eUndefined)
-          )
-          .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
-      .build();
-      std::cout << std::format("depthImage: '{}'", (bool) depthImage.value) << std::endl;
-
-      depthImageView = ImageView::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageViewCreateInfo()
-                  .setImage(*depthImage.reference())
-                  .setFormat(depthImage.createInfo.format)
-                  .setViewType(vk::ImageViewType::e2D)
-                  .setFlags({})
-                  .setComponents({})
-                  .setSubresourceRange(
-                      vk::ImageSubresourceRange()
-                          .setAspectMask(vk::ImageAspectFlagBits::eDepth)
-                          .setBaseMipLevel(0)
-                          .setLevelCount(1)
-                          .setBaseArrayLayer(0)
-                          .setLayerCount(1)
-                  )
-          )
-      .build();
-      std::cout << std::format("depthImageView: '{}'", (bool) depthImageView.value) << std::endl;
-
-      colorImage = Image::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageCreateInfo()
-                  .setImageType(vk::ImageType::e2D)
-                  .setFormat(swapchainImage.createInfo.format)
-                  .setExtent(
-                      vk::Extent3D()
-                          .setWidth(swapchainImage.createInfo.extent.width)
-                          .setHeight(swapchainImage.createInfo.extent.height)
-                          .setDepth(1)
-                  )
-                  .setMipLevels(1)
-                  .setArrayLayers(1)
-                  .setSamples(physicalDeviceMsaaSamples)
-                  .setTiling(vk::ImageTiling::eOptimal)
-                  .setUsage(vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-                  .setQueueFamilyIndices({})
-                  .setInitialLayout(vk::ImageLayout::eUndefined)
-          )
-          .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
-      .build();
-      std::cout << std::format("colorImage: '{}'", (bool) colorImage.value) << std::endl;
-
-      colorImageView = ImageView::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageViewCreateInfo()
-                  .setImage(*colorImage.reference())
-                  .setFormat(colorImage.createInfo.format)
-                  .setViewType(vk::ImageViewType::e2D)
-                  .setFlags({})
-                  .setComponents({})
-                  .setSubresourceRange(
-                      vk::ImageSubresourceRange()
-                          .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                          .setBaseMipLevel(0)
-                          .setLevelCount(1)
-                          .setBaseArrayLayer(0)
-                          .setLayerCount(1)
-                  )
-          )
-      .build();
-      std::cout << std::format("colorImageView: '{}'", (bool) colorImageView.value) << std::endl;
-
-      renderPass = RenderPass::builder()
-          .setDevice(device.value)
-          .addAttachment(
-              vk::AttachmentDescription()
-                  .setFormat(swapchainImage.createInfo.format)
-                  .setSamples(physicalDeviceMsaaSamples)
-                  .setLoadOp(vk::AttachmentLoadOp::eClear)
-                  .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
-                  .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-                  .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                  .setInitialLayout(vk::ImageLayout::eUndefined)
-                  .setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal)
-          )
-          .addAttachment(
-              vk::AttachmentDescription()
-                  .setFormat(depthImage.createInfo.format)
-                  .setSamples(physicalDeviceMsaaSamples)
-                  .setLoadOp(vk::AttachmentLoadOp::eClear)
-                  .setStencilLoadOp(vk::AttachmentLoadOp::eClear)
-                  .setStoreOp(vk::AttachmentStoreOp::eDontCare)
-                  .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                  .setInitialLayout(vk::ImageLayout::eUndefined)
-                  .setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-          )
-          .addAttachment(
-              vk::AttachmentDescription()
-                  .setFormat(swapchainImage.createInfo.format)
-                  .setSamples(vk::SampleCountFlagBits::e1)
-                  .setLoadOp(vk::AttachmentLoadOp::eDontCare)
-                  .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-                  .setStoreOp(vk::AttachmentStoreOp::eStore)
-                  .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                  .setInitialLayout(vk::ImageLayout::eUndefined)
-                  .setFinalLayout(vk::ImageLayout::eTransferSrcOptimal)
-          )
-          .addSubpass(
-              SubpassDescription()
-                  .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-                  .addColorAttachment(
-                      vk::AttachmentReference()
-                          .setAttachment(0)
-                          .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-                  )
-                  .setDepthStencilAttachment(
-                      vk::AttachmentReference()
-                          .setAttachment(1)
-                          .setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal)
-                  )
-                  .addResolveAttachment(
-                      vk::AttachmentReference()
-                          .setAttachment(2)
-                          .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-                  )
-          )
-          .addDependency(
-              vk::SubpassDependency()
-                  .setSrcSubpass(VK_SUBPASS_EXTERNAL)
-                  .setDstSubpass(0)
-                  .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
-                  .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests)
-                  .setSrcAccessMask(vk::AccessFlagBits::eNoneKHR)
-                  .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite)
-          )
-      .build();
-      std::cout << std::format("renderPass: '{}'", (bool) renderPass.value) << std::endl;
-
-      pipeline = Pipeline::builder()
-          .setDevice(device.value)
-          .addStage(TestUtils::createStage(device, shaders, "resources/shader/shader-4.vert.spv"))
-          .addPath("resources/shader/shader-4.frag.spv")
-          .addSetLayout(*descriptorSetLayout.reference())
-          .setGraphicsCreateInfo(
-              GraphicsPipelineCreateInfo()
-                  .setRenderPass(*renderPass.reference())
-                  .setSubpass(0)
-                  .setVertexInputState(
-                      PipelineVertexInputStateCreateInfo()
-                          .setVertexBindingDescriptions({Vertex::getBindingDescription()})
-                          .setVertexAttributeDescriptions(Vertex::getAttributeDescriptions())
-                  )
-                  .setInputAssemblyState(
-                      vk::PipelineInputAssemblyStateCreateInfo()
-                          .setTopology(vk::PrimitiveTopology::eTriangleList)
-                          .setPrimitiveRestartEnable(false)
-                  )
-                  .setViewportState(
-                      PipelineViewportStateCreateInfo()
-                          .addViewport(
-                              vk::Viewport()
-                                  .setWidth((float) swapchainImage.createInfo.extent.width)
-                                  .setHeight((float) swapchainImage.createInfo.extent.height)
-                                  .setMinDepth(0.0)
-                                  .setMaxDepth(1.0)
-                                  .setX(0.0)
-                                  .setY(0.0)
-                          )
-                          .addScissor(
-                              vk::Rect2D()
-                                  .setOffset({0, 0})
-                                  .setExtent(
-                                      vk::Extent2D()
-                                          .setHeight(swapchainImage.createInfo.extent.height)
-                                          .setWidth(swapchainImage.createInfo.extent.width)
-                                  )
-                          )
-                  )
-                  .setRasterizationState(
-                      vk::PipelineRasterizationStateCreateInfo()
-                          .setDepthClampEnable(false)
-                          .setRasterizerDiscardEnable(false)
-                          .setPolygonMode(vk::PolygonMode::eFill)
-                          .setCullMode(vk::CullModeFlagBits::eBack)
-                          .setFrontFace(vk::FrontFace::eCounterClockwise)
-                          .setLineWidth(1.0)
-                          .setDepthBiasEnable(false)
-                          .setDepthBiasConstantFactor(0.0)
-                          .setDepthBiasClamp(0.0)
-                          .setDepthBiasSlopeFactor(0.0)
-                  )
-                  .setMultisampleState(
-                      vk::PipelineMultisampleStateCreateInfo()
-                          .setRasterizationSamples(physicalDeviceMsaaSamples)
-                          .setSampleShadingEnable(false)
-                          .setMinSampleShading(1.0)
-                              //.setSampleShadingEnable(true)
-                              //.setMinSampleShading(0.2f)
-                          .setPSampleMask(nullptr)
-                          .setAlphaToCoverageEnable(false)
-                          .setAlphaToOneEnable(false)
-                  )
-                  .setDepthStencilState(
-                      vk::PipelineDepthStencilStateCreateInfo()
-                          .setDepthTestEnable(true)
-                          .setDepthWriteEnable(true)
-                          .setDepthCompareOp(vk::CompareOp::eLess)
-                          .setDepthBoundsTestEnable(false)
-                          .setStencilTestEnable(false)
-                          .setFront({})
-                          .setBack({})
-                          .setMinDepthBounds(0.0)
-                          .setMaxDepthBounds(1.0)
-                  )
-                  .setColorBlendState(
-                      PipelineColorBlendStateCreateInfo()
-                          .setLogicOpEnable(false)
-                          .setLogicOp(vk::LogicOp::eCopy)
-                          .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f})
-                          .addAttachment(
-                              vk::PipelineColorBlendAttachmentState()
-                                  .setBlendEnable(false)
-                                  .setColorBlendOp(vk::BlendOp::eAdd)
-                                  .setSrcColorBlendFactor(vk::BlendFactor::eOne)
-                                  .setDstColorBlendFactor(vk::BlendFactor::eZero)
-                                  .setAlphaBlendOp(vk::BlendOp::eAdd)
-                                  .setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
-                                  .setDstAlphaBlendFactor(vk::BlendFactor::eZero)
-                                  .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
-                          )
-                  )
-          )
-      .build();
-      std::cout << std::format("pipeline: '{}'", (bool) pipeline.value) << std::endl;
-
-      swapchainFramebuffer = Framebuffer::builder()
-          .setDevice(device.value)
-          .addAttachment(*colorImageView.reference())
-          .addAttachment(*depthImageView.reference())
-          .addAttachment(*swapchainImageView.reference())
-          .setCreateInfo(
-              vk::FramebufferCreateInfo()
-                  .setRenderPass(*renderPass.reference())
-                  .setWidth(swapchainImage.createInfo.extent.width)
-                  .setHeight(swapchainImage.createInfo.extent.height)
-                  .setLayers(1)
-          )
-      .build();
-      std::cout << std::format("swapchainFramebuffer: '{}'", (bool) swapchainFramebuffer.value) << std::endl;
-
-      textureBuffer = Buffer::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::BufferCreateInfo()
-                  .setSize(tmpImageWidth * tmpImageHeight * tmpImageDepth)
-                  .setUsage(vk::BufferUsageFlagBits::eTransferSrc)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-          )
-          .setMemoryCreateInfo(
-              vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-          )
-      .build();
-      std::cout << std::format("textureBuffer: '{}'", (bool) textureBuffer.value) << std::endl;
-      textureImage = Image::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageCreateInfo()
-                  .setImageType(vk::ImageType::e2D)
-                  .setFormat(vk::Format::eR8G8B8A8Srgb)
-                  .setExtent(
-                      vk::Extent3D()
-                          .setWidth(tmpImageWidth)
-                          .setHeight(tmpImageHeight)
-                          .setDepth(1)
-                  )
-                  .setMipLevels(tmpImageMipLevels)
-                  .setArrayLayers(1)
-                  .setSamples(vk::SampleCountFlagBits::e1)
-                  .setTiling(vk::ImageTiling::eOptimal)
-                  .setUsage(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-                  .setQueueFamilyIndices({})
-          )
-          .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
-      .build();
-      std::cout << std::format("textureImage: '{}'", (bool) textureImage.value) << std::endl;
-      textureImageView = ImageView::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::ImageViewCreateInfo()
-                  .setImage(*textureImage.reference())
-                  .setFormat(textureImage.createInfo.format)
-                  .setViewType(vk::ImageViewType::e2D)
-                  .setFlags({})
-                  .setComponents({})
-                  .setSubresourceRange(
-                      vk::ImageSubresourceRange()
-                          .setAspectMask(vk::ImageAspectFlagBits::eColor)
-                          .setBaseMipLevel(0)
-                          .setLevelCount(textureImage.createInfo.mipLevels)
-                          .setBaseArrayLayer(0)
-                          .setLayerCount(1)
-                  )
-          )
-      .build();
-      std::cout << std::format("textureImageView: '{}'", (bool) textureImageView.value) << std::endl;
-
-      vertexStagingBuffer = Buffer::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::BufferCreateInfo()
-                  .setSize(sizeof(vertexVector[0]) * vertexVector.size())
-                  .setUsage(vk::BufferUsageFlagBits::eTransferSrc)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-          )
-          .setMemoryCreateInfo(
-              vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-          )
-      .build();
-      std::cout << std::format("vertexStagingBuffer: '{}'", (bool) vertexStagingBuffer.value) << std::endl;
-      vertexBuffer = Buffer::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::BufferCreateInfo()
-                  .setSize(vertexStagingBuffer.createInfo.size)
-                  .setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-          )
-          .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
-      .build();
-      std::cout << std::format("vertexBuffer: '{}'", (bool) vertexBuffer.value) << std::endl;
-
-      indexStagingBuffer = Buffer::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::BufferCreateInfo()
-                  .setSize(sizeof(indexVector[0]) * indexVector.size())
-                  .setUsage(vk::BufferUsageFlagBits::eTransferSrc)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-          )
-          .setMemoryCreateInfo(
-              vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-          )
-      .build();
-      std::cout << std::format("indexStagingBuffer: '{}'", (bool) indexStagingBuffer.value) << std::endl;
-      indexBuffer = Buffer::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::BufferCreateInfo()
-                  .setSize(indexStagingBuffer.createInfo.size)
-                  .setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-          )
-          .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eDeviceLocal)
-      .build();
-      std::cout << std::format("indexBuffer: '{}'", (bool) indexBuffer.value) << std::endl;
-
-      uniformBuffer = Buffer::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::BufferCreateInfo()
-                  .setSize(sizeof(UniformBufferObject) * /*MAX_FRAMES_IN_FLIGHT*/ /*uniformBuffers.size()*/ 1)
-                  .setUsage(vk::BufferUsageFlagBits::eUniformBuffer)
-                  .setSharingMode(vk::SharingMode::eExclusive)
-          )
-          .setMemoryCreateInfo(
-              vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-          )
-      .build();
-      std::cout << std::format("uniformBuffer: '{}'", (bool) uniformBuffer.value) << std::endl;
-
-      sampler = Sampler::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::SamplerCreateInfo()
-                  .setMagFilter(vk::Filter::eLinear)
-                  .setMinFilter(vk::Filter::eLinear)
-                  .setMipmapMode(vk::SamplerMipmapMode::eLinear)
-                  .setMinLod(0.0f)
-                  //.setMinLod((float) textureImage.createInfo.mipLevels / 2)
-                  .setMaxLod((float) textureImage.createInfo.mipLevels)
-                  .setMipLodBias(0.0f)
-                  .setAddressModeU(vk::SamplerAddressMode::eRepeat)
-                  .setAddressModeV(vk::SamplerAddressMode::eRepeat)
-                  .setAddressModeW(vk::SamplerAddressMode::eRepeat)
-                  .setCompareOp(vk::CompareOp::eAlways)
-                  .setBorderColor(vk::BorderColor::eIntOpaqueBlack)
-                  .setUnnormalizedCoordinates(false)
-                  .setCompareEnable(false)
-                  .setAnisotropyEnable(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy)
-                  .setMaxAnisotropy(physicalDeviceFeatures.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy ? physicalDevice.reference().getProperties().limits.maxSamplerAnisotropy : 0)
-          )
-      .build();
-      std::cout << std::format("sampler: '{}'", (bool) sampler.value) << std::endl;
-
-      descriptorPool = DescriptorPool::builder()
-          .setDevice(device.value)
-          .addPoolSize(
-              vk::DescriptorPoolSize()
-                  .setType(vk::DescriptorType::eUniformBuffer)
-                  .setDescriptorCount(/*MAX_FRAMES_IN_FLIGHT*/ 1)
-          )
-          .addPoolSize(
-              vk::DescriptorPoolSize()
-                  .setType(vk::DescriptorType::eCombinedImageSampler)
-                  .setDescriptorCount(/*MAX_FRAMES_IN_FLIGHT*/ 1)
-          )
-          .setCreateInfo(
-              vk::DescriptorPoolCreateInfo()
-                  .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                  .setMaxSets(/*MAX_FRAMES_IN_FLIGHT*/ 1)
-          )
-      .build();
-      std::cout << std::format("descriptorPool: '{}'", (bool) descriptorPool.value) << std::endl;
-
-      descriptorSet = DescriptorSet::builder()
-          .setDevice(device.value)
-          .addSetLayout(*descriptorSetLayout.reference())
-          .setCreateInfo(
-              vk::DescriptorSetAllocateInfo()
-                  .setDescriptorPool(*descriptorPool.reference())
-                  .setDescriptorSetCount(1)
-          )
-          .addWrite(
-              WriteDescriptorSet()
-                  .setDstBinding(0)
-                  .setDstArrayElement(0)
-                  .setDescriptorCount(1)
-                  .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                  .addBufferInfo(
-                      vk::DescriptorBufferInfo()
-                          .setBuffer(*uniformBuffer.reference())
-                          .setOffset(0)
-                          .setRange(sizeof(UniformBufferObject))
-                  )
-          )
-          .addWrite(
-              WriteDescriptorSet()
-                  .setDstBinding(1)
-                  .setDstArrayElement(0)
-                  .setDescriptorCount(1)
-                  .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-                  .addImageInfo(
-                      vk::DescriptorImageInfo()
-                          .setSampler(*sampler.reference())
-                          .setImageView(*textureImageView.reference())
-                          .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
-                  )
-          )
-      .build();
-      std::cout << std::format("descriptorSet: '{}'", (bool) descriptorSet.value) << std::endl;
-
-      queryPool = QueryPool::builder()
-          .setDevice(device.value)
-          .setCreateInfo(
-              vk::QueryPoolCreateInfo()
-                  /*.setPipelineStatistics(vk::QueryPipelineStatisticFlagBits::eVertexShaderInvocations)*/
-                  .setQueryType(vk::QueryType::eTimestamp)
-                  .setQueryCount(2)
-          )
-      .build();
-      std::cout << std::format("queryPool: '{}'", (bool) queryPool.value) << std::endl;
+      reCreateSwapchain(width, height);
 
       outputImage = Image::builder()
-          .setPhysicalDevice(physicalDevice.value)
-          .setDevice(device.value)
+          .setPhysicalDevice(root.physicalDevice.value)
+          .setDevice(root.device.value)
           .setCreateInfo(
               vk::ImageCreateInfo()
-                  .setExtent(swapchainImage.createInfo.extent)
-                  .setFormat(swapchainImage.createInfo.format)
-                  .setImageType(swapchainImage.createInfo.imageType)
-                  .setMipLevels(swapchainImage.createInfo.mipLevels)
-                  .setArrayLayers(swapchainImage.createInfo.arrayLayers)
-                  .setSamples(swapchainImage.createInfo.samples)
-                  .setSharingMode(swapchainImage.createInfo.sharingMode)
+                  .setExtent(root.swapchainImages.at(0).createInfo.extent)
+                  .setFormat(root.swapchainImages.at(0).createInfo.format)
+                  .setImageType(root.swapchainImages.at(0).createInfo.imageType)
+                  .setMipLevels(root.swapchainImages.at(0).createInfo.mipLevels)
+                  .setArrayLayers(root.swapchainImages.at(0).createInfo.arrayLayers)
+                  .setSamples(root.swapchainImages.at(0).createInfo.samples)
+                  .setSharingMode(root.swapchainImages.at(0).createInfo.sharingMode)
                   .setTiling(vk::ImageTiling::eLinear)
                   .setUsage(vk::ImageUsageFlagBits::eTransferDst)
                   .setInitialLayout(vk::ImageLayout::eUndefined)
           )
           .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
-      .build();
+          .build();
       std::cout << std::format("outputImage: '{}'", (bool) outputImage.value) << std::endl;
 
-      textureBuffer.fill(tmpImageData.data());
-      vertexStagingBuffer.fill(vertexVector.data());
-      indexStagingBuffer.fill(indexVector.data());
+      float angleLeft = 0.0f;
+      float angleUp = 0.0f;
+      std::string animate = "";
+      bool left = false;
+      bool right = false;
+      bool up = false;
+      bool down = false;
 
-      transferCommandBuffer.reference().begin({});
+      TestUtils::updateUniformBuffer(data.uniformBuffers.at(currentFrame), angleLeft, angleUp, width, height, animate, left, right, up, down);
 
-      TestUtils::insertDepthImagePipelineBarrier(transferCommandBuffer, depthImage);
+      uint8_t timeDiffCounter = 9;
 
-      TestUtils::copyBufferToImageAndGenerateMipmaps(physicalDevice, transferCommandBuffer, textureBuffer, textureImage);
+      drawFrame(timeDiffCounter, width, height, indexVector);
 
-      transferCommandBuffer.reference().copyBuffer(
-          *vertexStagingBuffer.reference(),
-          *vertexBuffer.reference(),
-          {
-              vk::BufferCopy()
-                  .setSize(vertexStagingBuffer.createInfo.size)
-          }
-      );
-
-      transferCommandBuffer.reference().copyBuffer(
-          *indexStagingBuffer.reference(),
-          *indexBuffer.reference(),
-          {
-              vk::BufferCopy()
-                  .setSize(indexStagingBuffer.createInfo.size)
-          }
-      );
-
-      transferCommandBuffer.reference().end();
-      submitBlocking(device, transferCommandBuffer, transferQueue, std::chrono::seconds(10));
-
-      updateUniformBuffer();
-
-      drawFrame();
-
-      device.reference().waitIdle();
-
-      transferCommandBuffer.reference().begin({});
-
-      copySwapchainImageToOutputImage();
-
-      transferCommandBuffer.reference().end();
-      submitBlocking(device, transferCommandBuffer, transferQueue, std::chrono::seconds(10));
+      TestUtils::copySwapchainImageToOutputImage(root.transferCommandBuffer, root.swapchainImages.at(currentFrame), outputImage, root.transferQueue);
 
       vk::SubresourceLayout outputImageSubresourceLayout = outputImage.reference().getSubresourceLayout(
           vk::ImageSubresource()
@@ -1113,6 +352,7 @@ namespace exqudens::vulkan {
       size_t outputImageHeight = outputImage.createInfo.extent.height;
       size_t outputImageWidth = outputImage.createInfo.extent.width;
       size_t outputImageDepth = 4;
+      std::vector<std::vector<std::vector<unsigned char>>> outputImageVector;
       outputImageVector.resize(outputImageHeight);
       for (uint32_t y = 0; y < outputImageHeight; y++) {
         outputImageVector[y].resize(outputImageWidth);
@@ -1143,7 +383,7 @@ namespace exqudens::vulkan {
       );
       outputImage.memoryReference().unmapMemory();
 
-      device.reference().waitIdle();
+      root.device.reference().waitIdle();
 
       std::vector<std::vector<std::vector<unsigned char>>> expected = TestUtils::readPng(
           std::filesystem::path(TestUtils::getExecutableDir())
@@ -1175,6 +415,8 @@ namespace exqudens::vulkan {
       ASSERT_EQ(expected[0].size(), actual[0].size());
       ASSERT_EQ(expected[0][0].size(), actual[0][0].size());
       ASSERT_EQ(expected, actual);
+
+      std::cout << std::format("{} ... done", CALL_INFO()) << std::endl;
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }

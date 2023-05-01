@@ -45,12 +45,14 @@ namespace exqudens::vulkan {
         const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
         const uint32_t& queryPoolSize,
         const uint32_t& width,
-        const uint32_t& height
+        const uint32_t& height,
+        const std::vector<std::string> paths
     );
 
     void initSwapchain(
         const uint32_t& width,
-        const uint32_t& height
+        const uint32_t& height,
+        const std::vector<std::string> paths
     );
 
   };

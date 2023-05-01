@@ -453,11 +453,9 @@ add_library("test-lib" STATIC
     "src/test/cpp/exqudens/vulkan/CameraContext.cpp"
     "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
     "src/test/cpp/exqudens/vulkan/Tests.hpp"
-    "src/test/cpp/exqudens/vulkan/Tests1.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
     "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
     "src/test/cpp/exqudens/vulkan/UiTests.hpp"
-    "src/test/cpp/exqudens/vulkan/UiTests1.hpp"
 )
 target_include_directories("test-lib" PUBLIC
     "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"

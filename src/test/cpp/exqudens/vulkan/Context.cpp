@@ -11,7 +11,8 @@ namespace exqudens::vulkan {
       const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
       const uint32_t& queryPoolSize,
       const uint32_t& width,
-      const uint32_t& height
+      const uint32_t& height,
+      const std::vector<std::string> paths
   ) {
     try {
       instance = Instance::builder()
@@ -204,13 +205,17 @@ namespace exqudens::vulkan {
           )
           .build();
 
-      initSwapchain(width, height);
+      initSwapchain(width, height, paths);
     } catch (...) {
       std::throw_with_nested(std::runtime_error(CALL_INFO()));
     }
   }
 
-  void Context::initSwapchain(const uint32_t& width, const uint32_t& height) {
+  void Context::initSwapchain(
+      const uint32_t& width,
+      const uint32_t& height,
+      const std::vector<std::string> paths
+  ) {
     try {
       device.reference().waitIdle();
 
@@ -346,9 +351,9 @@ namespace exqudens::vulkan {
 
       pipeline = Pipeline::builder()
           .setDevice(device.value)
-          .addPath("resources/shader/shader-10.vert.spv")
-          //.addStage(TestUtils::createStage(context.device, shaders, "resources/shader/shader-4.vert.spv"))
-          .addPath("resources/shader/shader-10.frag.spv")
+          .addPath(paths.at(0))
+          //.addStage(TestUtils::createStage(context.device, shaders, paths.at(0)))
+          .addPath(paths.at(1))
           .addSetLayout(*descriptorSetLayout.reference())
           .setGraphicsCreateInfo(
               GraphicsPipelineCreateInfo()

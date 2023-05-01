@@ -119,7 +119,8 @@ namespace exqudens::vulkan {
   }
 
   void CameraContext::initSwapchain(
-      Context& root
+      Context& root,
+      const std::vector<std::string> paths
   ) {
     try {
       swapchainFramebuffers.clear();
@@ -305,9 +306,9 @@ namespace exqudens::vulkan {
 
       pipeline = Pipeline::builder()
           .setDevice(root.device.value)
-          .addPath("resources/shader/shader-3.vert.spv")
-          //.addStage(TestUtils::createStage(device, shaders, "resources/shader/shader-3.vert.spv"))
-          .addPath("resources/shader/shader-3.frag.spv")
+          .addPath(paths.at(0))
+          //.addStage(TestUtils::createStage(device, shaders, paths.at(0)))
+          .addPath(paths.at(1))
           .addSetLayout(*descriptorSetLayout.reference())
           .setGraphicsCreateInfo(
               GraphicsPipelineCreateInfo()

@@ -4,9 +4,7 @@
 #include "exqudens/vulkan/TestUtilsTests.hpp"
 #include "exqudens/vulkan/TinyObjLoaderTests.hpp"
 #include "exqudens/vulkan/Tests.hpp"
-#include "exqudens/vulkan/Tests1.hpp"
 #include "exqudens/vulkan/UiTests.hpp"
-#include "exqudens/vulkan/UiTests1.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
