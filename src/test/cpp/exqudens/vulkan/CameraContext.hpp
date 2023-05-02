@@ -31,7 +31,7 @@ namespace exqudens::vulkan {
 
     void initSwapchain(
         Context& root,
-        const std::vector<std::string> paths
+        const std::vector<std::string>& paths
     );
 
   };

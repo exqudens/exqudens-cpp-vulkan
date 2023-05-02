@@ -46,13 +46,13 @@ namespace exqudens::vulkan {
         const uint32_t& queryPoolSize,
         const uint32_t& width,
         const uint32_t& height,
-        const std::vector<std::string> paths
+        const std::vector<std::string>& paths
     );
 
     void initSwapchain(
         const uint32_t& width,
         const uint32_t& height,
-        const std::vector<std::string> paths
+        const std::vector<std::string>& paths
     );
 
   };

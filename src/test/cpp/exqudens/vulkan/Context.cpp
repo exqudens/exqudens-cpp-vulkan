@@ -12,7 +12,7 @@ namespace exqudens::vulkan {
       const uint32_t& queryPoolSize,
       const uint32_t& width,
       const uint32_t& height,
-      const std::vector<std::string> paths
+      const std::vector<std::string>& paths
   ) {
     try {
       instance = Instance::builder()
@@ -214,7 +214,7 @@ namespace exqudens::vulkan {
   void Context::initSwapchain(
       const uint32_t& width,
       const uint32_t& height,
-      const std::vector<std::string> paths
+      const std::vector<std::string>& paths
   ) {
     try {
       device.reference().waitIdle();

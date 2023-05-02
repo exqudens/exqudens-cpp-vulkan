@@ -120,7 +120,7 @@ namespace exqudens::vulkan {
 
   void CameraContext::initSwapchain(
       Context& root,
-      const std::vector<std::string> paths
+      const std::vector<std::string>& paths
   ) {
     try {
       framebuffers.clear();
