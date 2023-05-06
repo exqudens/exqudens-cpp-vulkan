@@ -24,6 +24,7 @@
 #include "exqudens/vulkan/UniformBufferObject.hpp"
 #include "exqudens/vulkan/Context.hpp"
 #include "exqudens/vulkan/DataContext.hpp"
+#include "exqudens/vulkan/LightContext.hpp"
 #include "exqudens/vulkan/CameraContext.hpp"
 
 namespace exqudens::vulkan {
@@ -36,6 +37,7 @@ namespace exqudens::vulkan {
       uint32_t height = 600;
       Context root = {};
       DataContext data = {};
+      LightContext light = {};
       CameraContext camera = {};
       Image outputImage = {};
       size_t currentFrame = 0;
@@ -271,7 +273,7 @@ namespace exqudens::vulkan {
       std::cout << std::format("data.textureImageView: '{}'", (bool) data.textureImageView.value) << std::endl;
       std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << std::format("data.uniformBuffer: '{}'", (bool) o1.value) << std::endl;});
 
-      camera.init(root, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
+      camera.init(root, light, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
 
       std::cout << std::format("camera.descriptorSetLayout: '{}'", (bool) camera.descriptorSetLayout.value) << std::endl;
       std::cout << std::format("camera.sampler: '{}'", (bool) camera.sampler.value) << std::endl;
@@ -333,8 +335,22 @@ namespace exqudens::vulkan {
       bool right = false;
       bool up = false;
       bool down = false;
+      std::chrono::time_point<std::chrono::high_resolution_clock> startTime = std::chrono::high_resolution_clock::now();
 
-      TestUtils::updateUniformBuffer(data.uniformBuffers.at(currentFrame), angleLeft, angleUp, width, height, animate, left, right, up, down);
+      TestUtils::updateUniformBuffer(
+          data.shadowUniformBuffers.at(currentFrame),
+          data.uniformBuffers.at(currentFrame),
+          startTime,
+          angleLeft,
+          angleUp,
+          width,
+          height,
+          animate,
+          left,
+          right,
+          up,
+          down
+      );
 
       uint8_t timeDiffCounter = 9;
 

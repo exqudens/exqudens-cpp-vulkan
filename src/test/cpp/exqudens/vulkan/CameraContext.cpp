@@ -10,6 +10,7 @@ namespace exqudens::vulkan {
 
   void CameraContext::init(
       Context& root,
+      LightContext& light,
       uint32_t& mipLevels,
       std::vector<Buffer>& uniformBuffers,
       ImageView& textureImageView
@@ -27,6 +28,13 @@ namespace exqudens::vulkan {
           .addBinding(
               vk::DescriptorSetLayoutBinding()
                   .setBinding(1)
+                  .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                  .setDescriptorCount(1)
+                  .setStageFlags(vk::ShaderStageFlagBits::eFragment)
+          )
+          .addBinding(
+              vk::DescriptorSetLayoutBinding()
+                  .setBinding(2)
                   .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
                   .setDescriptorCount(1)
                   .setStageFlags(vk::ShaderStageFlagBits::eFragment)
@@ -68,10 +76,15 @@ namespace exqudens::vulkan {
                   .setType(vk::DescriptorType::eCombinedImageSampler)
                   .setDescriptorCount(root.swapchainImageViews.size())
           )
+          .addPoolSize(
+              vk::DescriptorPoolSize()
+                  .setType(vk::DescriptorType::eCombinedImageSampler)
+                  .setDescriptorCount(root.swapchainImageViews.size())
+          )
           .setCreateInfo(
               vk::DescriptorPoolCreateInfo()
                   .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                  .setMaxSets(root.swapchainImageViews.size())
+                  .setMaxSets(3u)
           )
           .build();
 
@@ -108,6 +121,19 @@ namespace exqudens::vulkan {
                         vk::DescriptorImageInfo()
                             .setSampler(*sampler.reference())
                             .setImageView(*textureImageView.reference())
+                            .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
+                    )
+            )
+            .addWrite(
+                WriteDescriptorSet()
+                    .setDstBinding(2)
+                    .setDstArrayElement(0)
+                    .setDescriptorCount(1)
+                    .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+                    .addImageInfo(
+                        vk::DescriptorImageInfo()
+                            .setSampler(*light.sampler.reference())
+                            .setImageView(*light.shadowImageViews.at(i).reference())
                             .setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
                     )
             )

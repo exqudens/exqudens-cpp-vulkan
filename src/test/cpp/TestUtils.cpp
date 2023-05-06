@@ -555,7 +555,9 @@ void TestUtils::copyBufferToImageAndGenerateMipmaps(
 }
 
 void TestUtils::updateUniformBuffer(
+    exqudens::vulkan::Buffer& shadowUniformBuffer,
     exqudens::vulkan::Buffer& uniformBuffer,
+    std::chrono::time_point<std::chrono::high_resolution_clock>& startTime,
     float& angleLeft,
     float& angleUp,
     const uint32_t& width,
@@ -574,8 +576,6 @@ void TestUtils::updateUniformBuffer(
     glm::vec3 axis2 = glm::vec3(0.0f, 1.0f, 0.0f);
 
     if (animate == std::string("auto")) {
-      static auto startTime = std::chrono::high_resolution_clock::now();
-
       auto currentTime = std::chrono::high_resolution_clock::now();
       float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
       angle1 = time * glm::radians(90.0f);
@@ -617,28 +617,6 @@ void TestUtils::updateUniformBuffer(
       angle2 = 0.0f;
     }
 
-    glm::vec3 lightPos = glm::vec3();
-    float lightFOV = 45.0f;
-    float zNear = 1.0f;
-    float zFar = 96.0f;
-
-    exqudens::vulkan::UniformBufferObject shadowUbo = {};
-
-    shadowUbo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
-    shadowUbo.model = glm::rotate(shadowUbo.model, angle2, axis2);
-    shadowUbo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    shadowUbo.proj = glm::perspective(
-        glm::radians(45.0f),
-        (float) width / (float) height,
-        0.1f,
-        10.0f
-    );
-    shadowUbo.proj[1][1] *= -1;
-    shadowUbo.lightPos = glm::vec4(lightPos, 1.0f);
-    shadowUbo.lightSpace = glm::mat4(1.0f);
-    shadowUbo.zNear = zNear;
-    shadowUbo.zFar = zFar;
-
     exqudens::vulkan::UniformBufferObject ubo = {};
 
     ubo.model = glm::rotate(glm::mat4(1.0f), angle1, axis1);
@@ -652,6 +630,34 @@ void TestUtils::updateUniformBuffer(
     );
     ubo.proj[1][1] *= -1;
 
+    // ---
+    glm::vec3 lightPos = glm::vec3();
+    float lightFOV = 45.0f;
+    float zNear = 1.0f;
+    float zFar = 96.0f;
+
+    // Animate the light source
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float timer = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() / 4;
+    lightPos.x = cos(glm::radians(timer * 360.0f)) * 40.0f;
+    lightPos.y = -50.0f + sin(glm::radians(timer * 360.0f)) * 20.0f;
+    lightPos.z = 25.0f + sin(glm::radians(timer * 360.0f)) * 5.0f;
+
+    glm::mat4 depthProjectionMatrix = glm::perspective(glm::radians(lightFOV), 1.0f, zNear, zFar);
+    glm::mat4 depthViewMatrix = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0, 1, 0));
+    glm::mat4 depthModelMatrix = glm::mat4(1.0f);
+
+    exqudens::vulkan::UniformBufferObject shadowUbo = {};
+
+    shadowUbo.lightSpace = depthProjectionMatrix * depthViewMatrix * depthModelMatrix;
+
+    ubo.lightPos = glm::vec4(lightPos, 1.0f);
+    ubo.lightSpace = shadowUbo.lightSpace;
+    ubo.zNear = zNear;
+    ubo.zFar = zFar;
+    // ---
+
+    shadowUniformBuffer.fill(&shadowUbo);
     uniformBuffer.fill(&ubo);
   } catch (...) {
     std::throw_with_nested(std::runtime_error(CALL_INFO()));

@@ -18,6 +18,7 @@ namespace exqudens::vulkan {
     Buffer textureBuffer = {};
     Image textureImage = {};
     ImageView textureImageView = {};
+    std::vector<Buffer> shadowUniformBuffers = {};
     std::vector<Buffer> uniformBuffers = {};
 
     void init(

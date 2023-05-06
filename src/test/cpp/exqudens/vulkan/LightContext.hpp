@@ -4,35 +4,24 @@
 
 #include "exqudens/vulkan/all.hpp"
 #include "exqudens/vulkan/Context.hpp"
-#include "exqudens/vulkan/LightContext.hpp"
 
 namespace exqudens::vulkan {
 
-  struct CameraContext {
+  struct LightContext {
 
-    DescriptorSetLayout descriptorSetLayout = {};
+    std::vector<Image> shadowImages = {};
+    std::vector<ImageView> shadowImageViews = {};
     Sampler sampler = {};
+    DescriptorSetLayout descriptorSetLayout = {};
     DescriptorPool descriptorPool = {};
     std::vector<DescriptorSet> descriptorSets = {};
-
-    Image colorImage = {};
-    ImageView colorImageView = {};
-    Image depthImage = {};
-    ImageView depthImageView = {};
     RenderPass renderPass = {};
     Pipeline pipeline = {};
     std::vector<Framebuffer> framebuffers = {};
 
     void init(
         Context& root,
-        LightContext& light,
-        uint32_t& mipLevels,
         std::vector<Buffer>& uniformBuffers,
-        ImageView& textureImageView
-    );
-
-    void initSwapchain(
-        Context& root,
         const std::vector<std::string>& paths
     );
 

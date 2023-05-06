@@ -451,6 +451,8 @@ add_library("test-lib" STATIC
     "src/test/cpp/exqudens/vulkan/DataContext.cpp"
     "src/test/cpp/exqudens/vulkan/CameraContext.hpp"
     "src/test/cpp/exqudens/vulkan/CameraContext.cpp"
+    "src/test/cpp/exqudens/vulkan/LightContext.hpp"
+    "src/test/cpp/exqudens/vulkan/LightContext.cpp"
     "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
     "src/test/cpp/exqudens/vulkan/Tests.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"

@@ -84,7 +84,9 @@ class TestUtils {
     );
 
     static void updateUniformBuffer(
+        exqudens::vulkan::Buffer& shadowUniformBuffer,
         exqudens::vulkan::Buffer& uniformBuffer,
+        std::chrono::time_point<std::chrono::high_resolution_clock>& startTime,
         float& angleLeft,
         float& angleUp,
         const uint32_t& width,
