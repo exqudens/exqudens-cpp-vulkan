@@ -53,9 +53,9 @@ namespace exqudens::vulkan {
           std::chrono::time_point<std::chrono::high_resolution_clock> startTime = std::chrono::high_resolution_clock::now();
 
         private:
-          inline static const std::string OBJ_FILE_PATH = "";
-          inline static const std::string PNG_FILE_PATH = "";
-          inline static const std::string ANIMATE = "control"; // "", "auto", "control"
+          inline static const std::string OBJ_FILE_PATH = ""; // "", "viking_room.obj", "object-1.obj"
+          inline static const std::string PNG_FILE_PATH = ""; // "", "viking_room.png"
+          inline static const std::string ANIMATE = ""; // "", "auto", "control"
 
           std::vector<Vertex> vertexVector = {};
           std::vector<uint16_t> indexVector = {};
@@ -110,7 +110,11 @@ namespace exqudens::vulkan {
                     .make_preferred()
                     .string();
               } else {
-                objFilePath = std::filesystem::path(objFilePath).make_preferred().string();
+                objFilePath = std::filesystem::path(arguments.front())
+                    .append("resources")
+                    .append("obj")
+                    .append(objFilePath)
+                    .make_preferred().string();
               }
               TestUtils::readObj(
                   objFilePath,
@@ -127,7 +131,12 @@ namespace exqudens::vulkan {
                     .make_preferred()
                     .string();
               } else {
-                pngFilePath = std::filesystem::path(pngFilePath).make_preferred().string();
+                pngFilePath = std::filesystem::path(arguments.front())
+                    .append("resources")
+                    .append("png")
+                    .append(pngFilePath)
+                    .make_preferred()
+                    .string();
               }
               unsigned int textureMipLevels;
               TestUtils::readPng(
@@ -679,6 +688,21 @@ namespace exqudens::vulkan {
   TEST_F(UiTests, test1) {
     try {
       std::string executableDir = TestUtils::getExecutableDir();
+      std::filesystem::path srcResourcesDir = std::filesystem::path(executableDir)
+          .append("..")
+          .append("..")
+          .append("..")
+          .append("..")
+          .append("src")
+          .append("test")
+          .append("resources")
+          .make_preferred();
+      std::filesystem::path dstResourcesDir = std::filesystem::path(executableDir)
+          .append("resources")
+          .make_preferred();
+      std::filesystem::path srcObjDir = std::filesystem::path(srcResourcesDir).append("obj").make_preferred();
+      std::filesystem::path dstObjDir = std::filesystem::path(dstResourcesDir).append("obj").make_preferred();
+      std::filesystem::copy(srcObjDir, dstObjDir, std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
       std::vector<char*> arguments = {executableDir.data()};
       int argc = static_cast<int>(arguments.size());
       char** argv = &arguments[0];
