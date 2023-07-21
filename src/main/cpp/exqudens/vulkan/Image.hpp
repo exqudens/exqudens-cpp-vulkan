@@ -14,16 +14,16 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::ImageCreateInfo createInfo;
     std::shared_ptr<vk::raii::Image> value;
     vk::MemoryPropertyFlags memoryCreateInfo;
     std::shared_ptr<vk::raii::DeviceMemory> memory;
 
-    vk::raii::Image& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Image& reference();
 
-    vk::raii::DeviceMemory& memoryReference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::DeviceMemory& memoryReference();
 
   };
 
@@ -43,11 +43,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Image::Builder& setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Image::Builder& setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val);
 
-      Image::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Image::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Image::Builder& setMemoryTypeIndexFunction(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Image::Builder& setMemoryTypeIndexFunction(
           const std::function<uint32_t(
               vk::raii::PhysicalDevice&,
               const uint32_t&,
@@ -55,11 +55,11 @@ namespace exqudens::vulkan {
           )>& val
       );
 
-      Image::Builder& setCreateInfo(const vk::ImageCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Image::Builder& setCreateInfo(const vk::ImageCreateInfo& val);
 
-      Image::Builder& setMemoryCreateInfo(const vk::MemoryPropertyFlags& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Image::Builder& setMemoryCreateInfo(const vk::MemoryPropertyFlags& val);
 
-      Image build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Image build();
 
   };
 

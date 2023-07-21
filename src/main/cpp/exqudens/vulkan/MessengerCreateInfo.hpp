@@ -21,11 +21,11 @@ namespace exqudens::vulkan {
         std::string
     )> toStringFunction;
 
-    MessengerCreateInfo& setExceptionSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES MessengerCreateInfo& setExceptionSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value);
 
-    MessengerCreateInfo& setOutSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES MessengerCreateInfo& setOutSeverity(const vk::DebugUtilsMessageSeverityFlagsEXT& value);
 
-    MessengerCreateInfo& setToStringFunction(
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES MessengerCreateInfo& setToStringFunction(
         const std::function<std::string(
             vk::DebugUtilsMessageSeverityFlagsEXT,
             vk::DebugUtilsMessageTypeFlagsEXT,

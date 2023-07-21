@@ -14,20 +14,20 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::BufferCreateInfo createInfo;
     std::shared_ptr<vk::raii::Buffer> value;
     vk::MemoryPropertyFlags memoryCreateInfo;
     std::shared_ptr<vk::raii::DeviceMemory> memory;
 
-    vk::raii::Buffer& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Buffer& reference();
 
-    vk::raii::DeviceMemory& memoryReference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::DeviceMemory& memoryReference();
 
-    void fill(const void* data, size_t offset, size_t size, vk::MemoryMapFlags flags);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES void fill(const void* data, size_t offset, size_t size, vk::MemoryMapFlags flags);
 
-    void fill(const void* data);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES void fill(const void* data);
 
   };
 
@@ -47,11 +47,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Buffer::Builder& setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Buffer::Builder& setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val);
 
-      Buffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Buffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Buffer::Builder& setMemoryTypeIndexFunction(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Buffer::Builder& setMemoryTypeIndexFunction(
           const std::function<uint32_t(
               vk::raii::PhysicalDevice&,
               const uint32_t&,
@@ -59,11 +59,11 @@ namespace exqudens::vulkan {
           )>& val
       );
 
-      Buffer::Builder& setCreateInfo(const vk::BufferCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Buffer::Builder& setCreateInfo(const vk::BufferCreateInfo& val);
 
-      Buffer::Builder& setMemoryCreateInfo(const vk::MemoryPropertyFlags& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Buffer::Builder& setMemoryCreateInfo(const vk::MemoryPropertyFlags& val);
 
-      Buffer build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Buffer build();
 
   };
 

@@ -13,13 +13,13 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::vector<vk::DescriptorSetLayoutBinding> bindings;
     vk::DescriptorSetLayoutCreateInfo createInfo;
     std::shared_ptr<vk::raii::DescriptorSetLayout> value;
 
-    vk::raii::DescriptorSetLayout& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::DescriptorSetLayout& reference();
 
   };
 
@@ -33,15 +33,15 @@ namespace exqudens::vulkan {
 
     public:
 
-      DescriptorSetLayout::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorSetLayout::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      DescriptorSetLayout::Builder& addBinding(const vk::DescriptorSetLayoutBinding& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorSetLayout::Builder& addBinding(const vk::DescriptorSetLayoutBinding& val);
 
-      DescriptorSetLayout::Builder& setBindings(const std::vector<vk::DescriptorSetLayoutBinding>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorSetLayout::Builder& setBindings(const std::vector<vk::DescriptorSetLayoutBinding>& val);
 
-      DescriptorSetLayout::Builder& setCreateInfo(const vk::DescriptorSetLayoutCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorSetLayout::Builder& setCreateInfo(const vk::DescriptorSetLayoutCreateInfo& val);
 
-      DescriptorSetLayout build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorSetLayout build();
 
   };
 

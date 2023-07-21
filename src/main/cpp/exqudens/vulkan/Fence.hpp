@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::FenceCreateInfo createInfo;
     std::shared_ptr<vk::raii::Fence> value;
 
-    vk::raii::Fence& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Fence& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Fence::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Fence::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Fence::Builder& setCreateInfo(const vk::FenceCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Fence::Builder& setCreateInfo(const vk::FenceCreateInfo& val);
 
-      Fence build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Fence build();
 
   };
 

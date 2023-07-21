@@ -13,11 +13,11 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::shared_ptr<vk::raii::SurfaceKHR> value;
 
-    vk::raii::SurfaceKHR& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::SurfaceKHR& reference();
 
   };
 
@@ -30,11 +30,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Surface::Builder& setInstance(const std::weak_ptr<vk::raii::Instance>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Surface::Builder& setInstance(const std::weak_ptr<vk::raii::Instance>& val);
 
-      Surface::Builder& setVkSurface(const VkSurfaceKHR& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Surface::Builder& setVkSurface(const VkSurfaceKHR& val);
 
-      Surface build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Surface build();
 
   };
 

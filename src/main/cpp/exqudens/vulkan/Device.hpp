@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::DeviceCreateInfo createInfo;
     std::shared_ptr<vk::raii::Device> value;
 
-    vk::raii::Device& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Device& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Device::Builder& setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Device::Builder& setPhysicalDevice(const std::weak_ptr<vk::raii::PhysicalDevice>& val);
 
-      Device::Builder& setCreateInfo(const vk::DeviceCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Device::Builder& setCreateInfo(const vk::DeviceCreateInfo& val);
 
-      Device build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Device build();
 
   };
 

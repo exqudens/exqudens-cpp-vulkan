@@ -16,7 +16,7 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::shared_ptr<vk::raii::Context> context;
     std::vector<const char*> enabledLayerNames;
@@ -29,13 +29,13 @@ namespace exqudens::vulkan {
     vk::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo;
     std::shared_ptr<vk::raii::DebugUtilsMessengerEXT> debugUtilsMessenger;
 
-    vk::raii::Context& contextReference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Context& contextReference();
 
-    vk::raii::Instance& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Instance& reference();
 
-    Messenger& messengerReference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Messenger& messengerReference();
 
-    vk::raii::DebugUtilsMessengerEXT& debugUtilsMessengerReference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::DebugUtilsMessengerEXT& debugUtilsMessengerReference();
 
   };
 
@@ -53,29 +53,29 @@ namespace exqudens::vulkan {
 
     public:
 
-      Instance::Builder& addEnabledLayerName(const char* val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& addEnabledLayerName(const char* val);
 
-      Instance::Builder& addEnabledLayerName(const std::string& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& addEnabledLayerName(const std::string& val);
 
-      Instance::Builder& setEnabledLayerNames(const std::vector<const char*>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setEnabledLayerNames(const std::vector<const char*>& val);
 
-      Instance::Builder& addEnabledExtensionName(const char* val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& addEnabledExtensionName(const char* val);
 
-      Instance::Builder& addEnabledExtensionName(const std::string& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& addEnabledExtensionName(const std::string& val);
 
-      Instance::Builder& setEnabledExtensionNames(const std::vector<const char*>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setEnabledExtensionNames(const std::vector<const char*>& val);
 
-      Instance::Builder& setApplicationInfo(const vk::ApplicationInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setApplicationInfo(const vk::ApplicationInfo& val);
 
-      Instance::Builder& setCreateInfo(const vk::InstanceCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setCreateInfo(const vk::InstanceCreateInfo& val);
 
-      Instance::Builder& setMessengerCreateInfo(const MessengerCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setMessengerCreateInfo(const MessengerCreateInfo& val);
 
-      Instance::Builder& setDebugUtilsMessengerCreateInfo(const vk::DebugUtilsMessengerCreateInfoEXT& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setDebugUtilsMessengerCreateInfo(const vk::DebugUtilsMessengerCreateInfoEXT& val);
 
-      Instance::Builder& setOut(std::ostream& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance::Builder& setOut(std::ostream& val);
 
-      Instance build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Instance build();
 
   };
 

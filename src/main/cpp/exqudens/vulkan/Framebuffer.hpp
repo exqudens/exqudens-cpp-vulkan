@@ -14,13 +14,13 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::vector<vk::ImageView> attachments;
     vk::FramebufferCreateInfo createInfo;
     std::shared_ptr<vk::raii::Framebuffer> value;
 
-    vk::raii::Framebuffer& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Framebuffer& reference();
 
   };
 
@@ -34,15 +34,15 @@ namespace exqudens::vulkan {
 
     public:
 
-      Framebuffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Framebuffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Framebuffer::Builder& addAttachment(const vk::ImageView& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Framebuffer::Builder& addAttachment(const vk::ImageView& val);
 
-      Framebuffer::Builder& setAttachments(const std::vector<vk::ImageView>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Framebuffer::Builder& setAttachments(const std::vector<vk::ImageView>& val);
 
-      Framebuffer::Builder& setCreateInfo(const vk::FramebufferCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Framebuffer::Builder& setCreateInfo(const vk::FramebufferCreateInfo& val);
 
-      Framebuffer build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Framebuffer build();
 
   };
 

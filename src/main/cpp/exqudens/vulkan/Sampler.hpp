@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::SamplerCreateInfo createInfo;
     std::shared_ptr<vk::raii::Sampler> value;
 
-    vk::raii::Sampler& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Sampler& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Sampler::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Sampler::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Sampler::Builder& setCreateInfo(const vk::SamplerCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Sampler::Builder& setCreateInfo(const vk::SamplerCreateInfo& val);
 
-      Sampler build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Sampler build();
 
   };
 

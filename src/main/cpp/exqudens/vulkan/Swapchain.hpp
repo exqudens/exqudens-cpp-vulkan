@@ -15,13 +15,13 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::vector<uint32_t> queueFamilyIndices;
     vk::SwapchainCreateInfoKHR createInfo;
     std::shared_ptr<vk::raii::SwapchainKHR> value;
 
-    vk::raii::SwapchainKHR& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::SwapchainKHR& reference();
 
   };
 
@@ -35,19 +35,19 @@ namespace exqudens::vulkan {
 
     public:
 
-      Swapchain::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Swapchain::Builder& addGraphicsQueueFamilyIndex(const uint32_t& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain::Builder& addGraphicsQueueFamilyIndex(const uint32_t& val);
 
-      Swapchain::Builder& addPresentQueueFamilyIndex(const uint32_t& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain::Builder& addPresentQueueFamilyIndex(const uint32_t& val);
 
-      Swapchain::Builder& addQueueFamilyIndex(const uint32_t& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain::Builder& addQueueFamilyIndex(const uint32_t& val);
 
-      Swapchain::Builder& setQueueFamilyIndices(const std::vector<uint32_t>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain::Builder& setQueueFamilyIndices(const std::vector<uint32_t>& val);
 
-      Swapchain::Builder& setCreateInfo(const vk::SwapchainCreateInfoKHR& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain::Builder& setCreateInfo(const vk::SwapchainCreateInfoKHR& val);
 
-      Swapchain build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Swapchain build();
 
   };
 

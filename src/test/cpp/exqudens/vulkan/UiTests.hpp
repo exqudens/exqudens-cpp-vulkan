@@ -465,14 +465,6 @@ namespace exqudens::vulkan {
 
               root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
 
-              clearValues = {
-                  vk::ClearValue()
-                      .setColor(
-                          vk::ClearColorValue()
-                              .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
-                      )
-              };
-
               root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eBottomOfPipe, *root.queryPool.reference(), 1);
 
               try {
