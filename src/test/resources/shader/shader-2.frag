@@ -45,8 +45,8 @@ float filterPCF(vec4 sc) {
 }
 
 void main() {
-    //float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
-    float shadow = filterPCF(inShadowCoord / inShadowCoord.w);
+    float shadow = textureProj(inShadowCoord / inShadowCoord.w, vec2(0.0));
+    //float shadow = filterPCF(inShadowCoord / inShadowCoord.w);
 
     vec3 N = normalize(inNormal);
     vec3 L = normalize(inLightVec);

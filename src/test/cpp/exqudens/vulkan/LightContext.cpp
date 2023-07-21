@@ -25,8 +25,8 @@ namespace exqudens::vulkan {
                     .setFormat(Utility::imageDepthFormat(root.physicalDevice.reference()))
                     .setExtent(
                         vk::Extent3D()
-                            .setWidth(2048)
-                            .setHeight(2048)
+                            .setWidth(8192) // 32768, 16384, 8192, 4096, 2048, 1024
+                            .setHeight(8192)
                             .setDepth(1)
                     )
                     .setMipLevels(1)
