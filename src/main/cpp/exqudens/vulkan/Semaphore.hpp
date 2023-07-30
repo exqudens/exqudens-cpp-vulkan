@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::SemaphoreCreateInfo createInfo;
     std::shared_ptr<vk::raii::Semaphore> value;
 
-    vk::raii::Semaphore& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Semaphore& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      Semaphore::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Semaphore::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Semaphore::Builder& setCreateInfo(const vk::SemaphoreCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Semaphore::Builder& setCreateInfo(const vk::SemaphoreCreateInfo& val);
 
-      Semaphore build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Semaphore build();
 
   };
 

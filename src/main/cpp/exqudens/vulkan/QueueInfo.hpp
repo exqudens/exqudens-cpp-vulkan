@@ -17,19 +17,19 @@ namespace exqudens::vulkan {
     bool presentType;
     bool timestampSupported;
 
-    QueueInfo& setFamilyIndex(const uint32_t& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& setFamilyIndex(const uint32_t& val);
 
-    QueueInfo& addPriority(const float& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& addPriority(const float& val);
 
-    QueueInfo& setPriorities(const std::vector<float>& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& setPriorities(const std::vector<float>& val);
 
-    QueueInfo& addType(const vk::QueueFlagBits& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& addType(const vk::QueueFlagBits& val);
 
-    QueueInfo& setTypes(const std::set<vk::QueueFlagBits>& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& setTypes(const std::set<vk::QueueFlagBits>& val);
 
-    QueueInfo& setPresentType(const bool& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& setPresentType(const bool& val);
 
-    QueueInfo& setTimestampSupported(const bool& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueueInfo& setTimestampSupported(const bool& val);
 
   };
 

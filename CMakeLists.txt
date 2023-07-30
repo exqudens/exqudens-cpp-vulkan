@@ -2,46 +2,48 @@ cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 block()
     set(fileName "util.cmake")
-    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../${fileName}")
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/${fileName}")
         file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}")
         file(DOWNLOAD
             "https://raw.githubusercontent.com/exqudens/exqudens-cmake/master/src/main/cmake/${fileName}"
             "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}"
-            EXPECTED_MD5 "3ed544e138fcaa4dd18a6b20413070af"
+            EXPECTED_MD5 "3db5a119eb1167ae992e88a4ca554079"
             STATUS downloadStatus
         )
         if("${downloadStatus}" STREQUAL "0;\"No error\"")
-            file(COPY "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/..")
+            file(COPY "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/../cmake")
         else()
             message(FATAL_ERROR "downloadStatus: '${downloadStatus}'")
         endif()
     endif()
 endblock()
 
-include("${CMAKE_CURRENT_BINARY_DIR}/../util.cmake")
+include("${CMAKE_CURRENT_BINARY_DIR}/../cmake/util.cmake")
 
 string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
 if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS)
-    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../msvc-16-x64-x64-toolchain.cmake")
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/msvc-16-x64-x64-toolchain.cmake")
         set_msvc_toolchain_content(TOOLCHAIN_CONTENT
             PROCESSOR "x86_64"
             OS "${CMAKE_HOST_SYSTEM_NAME}"
             VERSION "16"
             HOST "x64"
             TARGET "x64"
+            NO_CACHE "FALSE"
         )
-        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/../msvc-16-x64-x64-toolchain.cmake" "${TOOLCHAIN_CONTENT}")
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/../cmake/msvc-16-x64-x64-toolchain.cmake" "${TOOLCHAIN_CONTENT}")
     endif()
     find_program(CONAN_COMMAND NAMES "conan.exe" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
 elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS)
-    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../gcc-toolchain.cmake")
+    if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake")
         find_file(COMPILER_PATH NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
         set_gnu_toolchain_content(TOOLCHAIN_CONTENT
             PROCESSOR "x86_64"
             OS "${CMAKE_HOST_SYSTEM_NAME}"
             PATH "${COMPILER_PATH}"
+            NO_CACHE "FALSE"
         )
-        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/../gcc-toolchain.cmake" "${TOOLCHAIN_CONTENT}")
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake" "${TOOLCHAIN_CONTENT}")
     endif()
     find_program(CONAN_COMMAND NAMES "conan" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
 endif()
@@ -231,20 +233,20 @@ endforeach()
 set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
 if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
     foreach(package ${NOT_FOUND_PACKAGE_NAMES})
-        message(WARNING "${package}_FOUND: '${${package}_FOUND}'")
+        message(SEND_ERROR "${package}_FOUND: '${${package}_FOUND}' ${package}_NOT_FOUND_MESSAGE: '${${package}_NOT_FOUND_MESSAGE}'")
     endforeach()
-    return()
+    message(FATAL_ERROR "Some package not found!")
 endif()
 
-set(INTERFACE_INLINE_DEF_NAME "EXQUDENS_VULKAN_INTERFACE_INLINE")
-set(INTERFACE_INLINE_DEFINE "#define ${INTERFACE_INLINE_DEF_NAME}")
+set(FUNCTION_ATTRIBUTES_DEFINE_NAME "EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES")
+set(FUNCTION_ATTRIBUTES_DEFINE "#define ${FUNCTION_ATTRIBUTES_DEFINE_NAME}")
 if("${INTERFACE_ONLY}")
-    set(INTERFACE_INLINE_DEFINE "#define ${INTERFACE_INLINE_DEF_NAME} inline")
+    set(FUNCTION_ATTRIBUTES_DEFINE "#define ${FUNCTION_ATTRIBUTES_DEFINE_NAME} inline")
 endif()
-string(JOIN "\n" INTERFACE_INLINE_CONTENT
-    "#ifndef ${INTERFACE_INLINE_DEF_NAME}"
-    "${INTERFACE_INLINE_DEFINE}"
-    "#endif /* ${INTERFACE_INLINE_DEF_NAME} */\n"
+string(JOIN "\n" FUNCTION_ATTRIBUTES_DEFINE_CONTENT
+    "#ifndef ${FUNCTION_ATTRIBUTES_DEFINE_NAME}"
+    "${FUNCTION_ATTRIBUTES_DEFINE}"
+    "#endif /* ${FUNCTION_ATTRIBUTES_DEFINE_NAME} */\n"
 )
 
 if("${INTERFACE_ONLY}")
@@ -252,8 +254,8 @@ if("${INTERFACE_ONLY}")
         SRC_DIRECTORY "${PROJECT_SOURCE_DIR}"
         SRC_BASE_DIRECTORY "${PROJECT_SOURCE_DIR}/src/main/cpp"
         DST_BASE_DIRECTORY "${PROJECT_BINARY_DIR}/generated/src/main/cpp"
-        HEADER_FILES_EXPRESSION "**/*.hpp"
-        SOURCE_FILES_EXPRESSION "**/*.cpp"
+        HEADER_FILES_EXPRESSIONS "**/*.hpp"
+        SOURCE_FILES_EXPRESSIONS "**/*.cpp"
     )
 
     add_library("${PROJECT_NAME}" INTERFACE
@@ -267,7 +269,7 @@ if("${INTERFACE_ONLY}")
         "#define EXQUDENS_VULKAN_EXPORT\n"
         "#endif /* EXQUDENS_VULKAN_EXPORT */\n"
         "\n"
-        "${INTERFACE_INLINE_CONTENT}"
+        "${FUNCTION_ATTRIBUTES_DEFINE_CONTENT}"
         "\n"
         "#endif /* EXQUDENS_VULKAN_EXPORT_H */\n"
     )
@@ -355,7 +357,7 @@ else()
     generate_export_header("${PROJECT_NAME}"
         BASE_NAME "EXQUDENS_VULKAN"
         EXPORT_FILE_NAME "generated/src/main/cpp/exqudens/vulkan/export.hpp"
-        CUSTOM_CONTENT_FROM_VARIABLE "INTERFACE_INLINE_CONTENT"
+        CUSTOM_CONTENT_FROM_VARIABLE "FUNCTION_ATTRIBUTES_DEFINE_CONTENT"
     )
     if(NOT "${BUILD_SHARED_LIBS}")
         set_target_properties("${PROJECT_NAME}" PROPERTIES COMPILE_FLAGS -DEXQUDENS_VULKAN_STATIC_DEFINE)
@@ -451,6 +453,8 @@ add_library("test-lib" STATIC
     "src/test/cpp/exqudens/vulkan/DataContext.cpp"
     "src/test/cpp/exqudens/vulkan/CameraContext.hpp"
     "src/test/cpp/exqudens/vulkan/CameraContext.cpp"
+    "src/test/cpp/exqudens/vulkan/LightContext.hpp"
+    "src/test/cpp/exqudens/vulkan/LightContext.cpp"
     "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
     "src/test/cpp/exqudens/vulkan/Tests.hpp"
     "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"

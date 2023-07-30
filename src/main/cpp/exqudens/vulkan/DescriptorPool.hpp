@@ -13,13 +13,13 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::vector<vk::DescriptorPoolSize> poolSizes;
     vk::DescriptorPoolCreateInfo createInfo;
     std::shared_ptr<vk::raii::DescriptorPool> value;
 
-    vk::raii::DescriptorPool& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::DescriptorPool& reference();
 
   };
 
@@ -33,15 +33,15 @@ namespace exqudens::vulkan {
 
     public:
 
-      DescriptorPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      DescriptorPool::Builder& addPoolSize(const vk::DescriptorPoolSize& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorPool::Builder& addPoolSize(const vk::DescriptorPoolSize& val);
 
-      DescriptorPool::Builder& setPoolSizes(const std::vector<vk::DescriptorPoolSize>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorPool::Builder& setPoolSizes(const std::vector<vk::DescriptorPoolSize>& val);
 
-      DescriptorPool::Builder& setCreateInfo(const vk::DescriptorPoolCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorPool::Builder& setCreateInfo(const vk::DescriptorPoolCreateInfo& val);
 
-      DescriptorPool build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES DescriptorPool build();
 
   };
 

@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::CommandBufferAllocateInfo createInfo;
     std::shared_ptr<vk::raii::CommandBuffer> value;
 
-    vk::raii::CommandBuffer& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::CommandBuffer& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      CommandBuffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES CommandBuffer::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      CommandBuffer::Builder& setCreateInfo(const vk::CommandBufferAllocateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES CommandBuffer::Builder& setCreateInfo(const vk::CommandBufferAllocateInfo& val);
 
-      CommandBuffer build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES CommandBuffer build();
 
   };
 

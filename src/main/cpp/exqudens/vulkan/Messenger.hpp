@@ -14,7 +14,7 @@ namespace exqudens::vulkan {
 
   struct EXQUDENS_VULKAN_EXPORT Messenger {
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static VkBool32 callback(
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static VkBool32 callback(
         VkDebugUtilsMessageSeverityFlagBitsEXT cSeverity,
         VkDebugUtilsMessageTypeFlagsEXT cType,
         const VkDebugUtilsMessengerCallbackDataEXT* callbackData,
@@ -30,7 +30,7 @@ namespace exqudens::vulkan {
     )> toStringFunction;
     std::ostream* value;
 
-    Messenger(
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Messenger(
         std::ostream& out,
         const MessengerCreateInfo& createInfo
     );

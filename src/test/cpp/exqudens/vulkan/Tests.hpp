@@ -24,6 +24,7 @@
 #include "exqudens/vulkan/UniformBufferObject.hpp"
 #include "exqudens/vulkan/Context.hpp"
 #include "exqudens/vulkan/DataContext.hpp"
+#include "exqudens/vulkan/LightContext.hpp"
 #include "exqudens/vulkan/CameraContext.hpp"
 
 namespace exqudens::vulkan {
@@ -36,6 +37,7 @@ namespace exqudens::vulkan {
       uint32_t height = 600;
       Context root = {};
       DataContext data = {};
+      LightContext light = {};
       CameraContext camera = {};
       Image outputImage = {};
       size_t currentFrame = 0;
@@ -82,26 +84,18 @@ namespace exqudens::vulkan {
           root.graphicsCommandBuffers.at(currentFrame).reference().reset();
 
           root.graphicsCommandBuffers.at(currentFrame).reference().begin({});
-          std::vector<vk::ClearValue> clearValues = {
-              vk::ClearValue()
-                  .setColor(
-                      vk::ClearColorValue()
-                          .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
-                  ),
+          std::vector<vk::ClearValue> clearValues = {};
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *root.queryPool.reference(), 0);
+
+          /*clearValues = {
               vk::ClearValue()
                   .setDepthStencil(
                       vk::ClearDepthStencilValue()
                           .setDepth(1.0f)
                           .setStencil(0)
-                  ),
-              vk::ClearValue()
-                  .setColor(
-                      vk::ClearColorValue()
-                          .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
                   )
           };
-
-          root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *root.queryPool.reference(), 0);
 
           root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
               vk::RenderPassBeginInfo()
@@ -124,8 +118,115 @@ namespace exqudens::vulkan {
               vk::SubpassContents::eInline
           );
 
-          /*root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *camera.pipeline.reference());
-          root.graphicsCommandBuffers.at(currentFrame).reference().draw(3, 1, 0, 0);*/
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *camera.pipeline.reference());
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindVertexBuffers(0, {*data.vertexBuffer.reference()}, {0});
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindIndexBuffer(*data.indexBuffer.reference(), 0, vk::IndexType::eUint16);
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *camera.pipeline.layoutReference(), 0, {*camera.descriptorSets.at(currentFrame).reference()}, {});
+          root.graphicsCommandBuffers.at(currentFrame).reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
+              vk::RenderPassBeginInfo()
+                  .setRenderPass(*root.renderPass.reference())
+                  .setFramebuffer(*root.swapchainFramebuffers.at(0).reference())
+                  .setRenderArea(
+                      vk::Rect2D()
+                          .setOffset(
+                              vk::Offset2D()
+                                  .setX(0)
+                                  .setY(0)
+                          )
+                          .setExtent(root.swapchain.createInfo.imageExtent)
+                  )
+                  .setClearValues(clearValues),
+              vk::SubpassContents::eInline
+          );
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *root.pipeline.reference());
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *root.pipeline.layoutReference(), 0, {*root.descriptorSets.at(currentFrame).reference()}, {});
+          root.graphicsCommandBuffers.at(currentFrame).reference().draw(3, 1, 0, 0);
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();*/
+
+          clearValues = {
+              vk::ClearValue()
+                  .setDepthStencil(
+                      vk::ClearDepthStencilValue()
+                          .setDepth(1.0f)
+                          .setStencil(0)
+                  )
+          };
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
+              vk::RenderPassBeginInfo()
+                  .setRenderPass(*light.renderPass.reference())
+                  .setFramebuffer(*light.framebuffers.at(0).reference())
+                  .setRenderArea(
+                      vk::Rect2D()
+                          .setOffset(
+                              vk::Offset2D()
+                                  .setX(0)
+                                  .setY(0)
+                          )
+                          .setExtent(
+                              vk::Extent2D()
+                                  .setWidth(light.shadowImages.at(0).createInfo.extent.width)
+                                  .setHeight(light.shadowImages.at(0).createInfo.extent.height)
+                          )
+                  )
+                  .setClearValues(clearValues),
+              vk::SubpassContents::eInline
+          );
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *light.pipeline.reference());
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindVertexBuffers(0, {*data.vertexBuffer.reference()}, {0});
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindIndexBuffer(*data.indexBuffer.reference(), 0, vk::IndexType::eUint16);
+          root.graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *light.pipeline.layoutReference(), 0, {*light.descriptorSets.at(currentFrame).reference()}, {});
+          root.graphicsCommandBuffers.at(currentFrame).reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
+
+          clearValues = {
+              vk::ClearValue()
+                  .setColor(
+                      vk::ClearColorValue()
+                          .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
+                  ),
+              vk::ClearValue()
+                  .setDepthStencil(
+                      vk::ClearDepthStencilValue()
+                          .setDepth(1.0f)
+                          .setStencil(0)
+                  ),
+              vk::ClearValue()
+                  .setColor(
+                      vk::ClearColorValue()
+                          .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
+                  )
+          };
+
+          root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
+              vk::RenderPassBeginInfo()
+                  .setRenderPass(*camera.renderPass.reference())
+                  .setFramebuffer(*camera.framebuffers.at(0).reference())
+                  .setRenderArea(
+                      vk::Rect2D()
+                          .setOffset(
+                              vk::Offset2D()
+                                  .setX(0)
+                                  .setY(0)
+                          )
+                          .setExtent(
+                              vk::Extent2D()
+                                  .setWidth(root.samplerImages.at(0).createInfo.extent.width)
+                                  .setHeight(root.samplerImages.at(0).createInfo.extent.height)
+                          )
+                  )
+                  .setClearValues(clearValues),
+              vk::SubpassContents::eInline
+          );
+
           root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *camera.pipeline.reference());
           root.graphicsCommandBuffers.at(currentFrame).reference().bindVertexBuffers(0, {*data.vertexBuffer.reference()}, {0});
           root.graphicsCommandBuffers.at(currentFrame).reference().bindIndexBuffer(*data.indexBuffer.reference(), 0, vk::IndexType::eUint16);
@@ -271,7 +372,20 @@ namespace exqudens::vulkan {
       std::cout << std::format("data.textureImageView: '{}'", (bool) data.textureImageView.value) << std::endl;
       std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << std::format("data.uniformBuffer: '{}'", (bool) o1.value) << std::endl;});
 
-      camera.init(root, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
+      light.init(root, data.shadowUniformBuffers, {"resources/shader/shader-3.vert.spv", "resources/shader/shader-3.frag.spv"});
+
+      std::ranges::for_each(light.shadowImages, [](auto& o1) {std::cout << std::format("light.shadowImage: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(light.shadowImageViews, [](auto& o1) {std::cout << std::format("light.shadowImageView: '{}'", (bool) o1.value) << std::endl;});
+      std::cout << std::format("light.sampler: '{}'", (bool) light.sampler.value) << std::endl;
+      std::cout << std::format("light.descriptorSetLayout: '{}'", (bool) light.descriptorSetLayout.value) << std::endl;
+      std::cout << std::format("light.descriptorPool: '{}'", (bool) light.descriptorPool.value) << std::endl;
+      std::cout << std::format("light.descriptorPool: '{}'", (bool) light.descriptorPool.value) << std::endl;
+      std::ranges::for_each(light.descriptorSets, [](auto& o1) {std::cout << std::format("light.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
+      std::cout << std::format("light.renderPass: '{}'", (bool) light.renderPass.value) << std::endl;
+      std::cout << std::format("light.pipeline: '{}'", (bool) light.pipeline.value) << std::endl;
+      std::ranges::for_each(light.framebuffers, [](auto& o1) {std::cout << std::format("light.framebuffer: '{}'", (bool) o1.value) << std::endl;});
+
+      camera.init(root, light, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
 
       std::cout << std::format("camera.descriptorSetLayout: '{}'", (bool) camera.descriptorSetLayout.value) << std::endl;
       std::cout << std::format("camera.sampler: '{}'", (bool) camera.sampler.value) << std::endl;
@@ -333,8 +447,22 @@ namespace exqudens::vulkan {
       bool right = false;
       bool up = false;
       bool down = false;
+      std::chrono::time_point<std::chrono::high_resolution_clock> startTime = std::chrono::high_resolution_clock::now();
 
-      TestUtils::updateUniformBuffer(data.uniformBuffers.at(currentFrame), angleLeft, angleUp, width, height, animate, left, right, up, down);
+      TestUtils::updateUniformBuffer(
+          data.shadowUniformBuffers.at(currentFrame),
+          data.uniformBuffers.at(currentFrame),
+          startTime,
+          angleLeft,
+          angleUp,
+          width,
+          height,
+          animate,
+          left,
+          right,
+          up,
+          down
+      );
 
       uint8_t timeDiffCounter = 9;
 

@@ -17,7 +17,7 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::vector<const char*> enabledExtensionNames;
     std::vector<QueueInfo> queueInfos;
@@ -29,7 +29,7 @@ namespace exqudens::vulkan {
     std::vector<vk::DeviceQueueCreateInfo> uniqueQueueCreateInfos;
     std::shared_ptr<vk::raii::PhysicalDevice> value;
 
-    vk::raii::PhysicalDevice& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::PhysicalDevice& reference();
 
   };
 
@@ -45,25 +45,25 @@ namespace exqudens::vulkan {
 
     public:
 
-      PhysicalDevice::Builder& setInstance(const std::weak_ptr<vk::raii::Instance>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& setInstance(const std::weak_ptr<vk::raii::Instance>& val);
 
-      PhysicalDevice::Builder& addEnabledExtensionName(const char* val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& addEnabledExtensionName(const char* val);
 
-      PhysicalDevice::Builder& addEnabledExtensionName(const std::string& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& addEnabledExtensionName(const std::string& val);
 
-      PhysicalDevice::Builder& setEnabledExtensionNames(const std::vector<const char*>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& setEnabledExtensionNames(const std::vector<const char*>& val);
 
-      PhysicalDevice::Builder& setSurface(const vk::SurfaceKHR& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& setSurface(const vk::SurfaceKHR& val);
 
-      PhysicalDevice::Builder& setSurface(const std::weak_ptr<vk::raii::SurfaceKHR>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& setSurface(const std::weak_ptr<vk::raii::SurfaceKHR>& val);
 
-      PhysicalDevice::Builder& addQueuePriority(const float& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& addQueuePriority(const float& val);
 
-      PhysicalDevice::Builder& setQueuePriorities(const std::vector<float>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& setQueuePriorities(const std::vector<float>& val);
 
-      PhysicalDevice::Builder& setIsSuitableFunction(const std::function<bool(const vk::raii::PhysicalDevice&)>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice::Builder& setIsSuitableFunction(const std::function<bool(const vk::raii::PhysicalDevice&)>& val);
 
-      PhysicalDevice build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PhysicalDevice build();
 
   };
 

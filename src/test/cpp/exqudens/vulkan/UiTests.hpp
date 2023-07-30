@@ -28,6 +28,7 @@
 #include "exqudens/vulkan/UniformBufferObject.hpp"
 #include "exqudens/vulkan/Context.hpp"
 #include "exqudens/vulkan/DataContext.hpp"
+#include "exqudens/vulkan/LightContext.hpp"
 #include "exqudens/vulkan/CameraContext.hpp"
 
 namespace exqudens::vulkan {
@@ -49,10 +50,12 @@ namespace exqudens::vulkan {
           float angleLeft = 0.0f;
           float angleUp = 0.0f;
 
+          std::chrono::time_point<std::chrono::high_resolution_clock> startTime = std::chrono::high_resolution_clock::now();
+
         private:
-          inline static const std::string OBJ_FILE_PATH = "";
-          inline static const std::string PNG_FILE_PATH = "";
-          inline static const std::string ANIMATE = "control"; // "", "auto", "control"
+          inline static const std::string OBJ_FILE_PATH = ""; // "", "viking_room.obj", "object-1.obj"
+          inline static const std::string PNG_FILE_PATH = ""; // "", "viking_room.png"
+          inline static const std::string ANIMATE = ""; // "", "auto", "control"
 
           std::vector<Vertex> vertexVector = {};
           std::vector<uint16_t> indexVector = {};
@@ -62,9 +65,8 @@ namespace exqudens::vulkan {
           std::vector<unsigned char> textureVector = {};
 
           Context root = {};
-
           DataContext data = {};
-
+          LightContext light = {};
           CameraContext camera = {};
 
           size_t currentFrame = 0;
@@ -108,7 +110,11 @@ namespace exqudens::vulkan {
                     .make_preferred()
                     .string();
               } else {
-                objFilePath = std::filesystem::path(objFilePath).make_preferred().string();
+                objFilePath = std::filesystem::path(arguments.front())
+                    .append("resources")
+                    .append("obj")
+                    .append(objFilePath)
+                    .make_preferred().string();
               }
               TestUtils::readObj(
                   objFilePath,
@@ -125,7 +131,12 @@ namespace exqudens::vulkan {
                     .make_preferred()
                     .string();
               } else {
-                pngFilePath = std::filesystem::path(pngFilePath).make_preferred().string();
+                pngFilePath = std::filesystem::path(arguments.front())
+                    .append("resources")
+                    .append("png")
+                    .append(pngFilePath)
+                    .make_preferred()
+                    .string();
               }
               unsigned int textureMipLevels;
               TestUtils::readPng(
@@ -194,9 +205,23 @@ namespace exqudens::vulkan {
               std::cout << std::format("data.textureBuffer: '{}'", (bool) data.textureBuffer.value) << std::endl;
               std::cout << std::format("data.textureImage: '{}'", (bool) data.textureImage.value) << std::endl;
               std::cout << std::format("data.textureImageView: '{}'", (bool) data.textureImageView.value) << std::endl;
+              std::ranges::for_each(data.shadowUniformBuffers, [](auto& o1) {std::cout << std::format("data.shadowUniformBuffer: '{}'", (bool) o1.value) << std::endl;});
               std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << std::format("data.uniformBuffer: '{}'", (bool) o1.value) << std::endl;});
 
-              camera.init(root, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
+              light.init(root, data.shadowUniformBuffers, {"resources/shader/shader-3.vert.spv", "resources/shader/shader-3.frag.spv"});
+
+              std::ranges::for_each(light.shadowImages, [](auto& o1) {std::cout << std::format("light.shadowImage: '{}'", (bool) o1.value) << std::endl;});
+              std::ranges::for_each(light.shadowImageViews, [](auto& o1) {std::cout << std::format("light.shadowImageView: '{}'", (bool) o1.value) << std::endl;});
+              std::cout << std::format("light.sampler: '{}'", (bool) light.sampler.value) << std::endl;
+              std::cout << std::format("light.descriptorSetLayout: '{}'", (bool) light.descriptorSetLayout.value) << std::endl;
+              std::cout << std::format("light.descriptorPool: '{}'", (bool) light.descriptorPool.value) << std::endl;
+              std::cout << std::format("light.descriptorPool: '{}'", (bool) light.descriptorPool.value) << std::endl;
+              std::ranges::for_each(light.descriptorSets, [](auto& o1) {std::cout << std::format("light.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
+              std::cout << std::format("light.renderPass: '{}'", (bool) light.renderPass.value) << std::endl;
+              std::cout << std::format("light.pipeline: '{}'", (bool) light.pipeline.value) << std::endl;
+              std::ranges::for_each(light.framebuffers, [](auto& o1) {std::cout << std::format("light.framebuffer: '{}'", (bool) o1.value) << std::endl;});
+
+              camera.init(root, light, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
 
               std::cout << std::format("camera.descriptorSetLayout: '{}'", (bool) camera.descriptorSetLayout.value) << std::endl;
               std::cout << std::format("camera.sampler: '{}'", (bool) camera.sampler.value) << std::endl;
@@ -307,12 +332,67 @@ namespace exqudens::vulkan {
                 throw std::runtime_error("failed to 'swapChain.acquireNextImage(...)'!");
               }
 
-              TestUtils::updateUniformBuffer(data.uniformBuffers.at(currentFrame), angleLeft, angleUp, width, height, ANIMATE, left, right, up, down);
+              TestUtils::updateUniformBuffer(
+                  data.shadowUniformBuffers.at(currentFrame),
+                  data.uniformBuffers.at(currentFrame),
+                  startTime,
+                  angleLeft,
+                  angleUp,
+                  width,
+                  height,
+                  ANIMATE,
+                  left,
+                  right,
+                  up,
+                  down
+              );
               root.device.reference().resetFences({*root.inFlightFences.at(currentFrame).reference()});
               root.graphicsCommandBuffers.at(currentFrame).reference().reset();
 
               root.graphicsCommandBuffers.at(currentFrame).reference().begin({});
-              std::vector<vk::ClearValue> clearValues = {
+              std::vector<vk::ClearValue> clearValues = {};
+
+              root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *root.queryPool.reference(), 0);
+
+              clearValues = {
+                  vk::ClearValue()
+                      .setDepthStencil(
+                          vk::ClearDepthStencilValue()
+                              .setDepth(1.0f)
+                              .setStencil(0)
+                      )
+              };
+
+              root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
+                  vk::RenderPassBeginInfo()
+                      .setRenderPass(*light.renderPass.reference())
+                      .setFramebuffer(*light.framebuffers.at(swapchainNextImage.second).reference())
+                      .setRenderArea(
+                          vk::Rect2D()
+                              .setOffset(
+                                  vk::Offset2D()
+                                      .setX(0)
+                                      .setY(0)
+                              )
+                              .setExtent(
+                                  vk::Extent2D()
+                                      .setWidth(light.shadowImages.at(0).createInfo.extent.width)
+                                      .setHeight(light.shadowImages.at(0).createInfo.extent.height)
+                              )
+                      )
+                      .setClearValues(clearValues),
+                  vk::SubpassContents::eInline
+              );
+
+              root.graphicsCommandBuffers.at(currentFrame).reference().bindPipeline(vk::PipelineBindPoint::eGraphics, *light.pipeline.reference());
+              root.graphicsCommandBuffers.at(currentFrame).reference().bindVertexBuffers(0, {*data.vertexBuffer.reference()}, {0});
+              root.graphicsCommandBuffers.at(currentFrame).reference().bindIndexBuffer(*data.indexBuffer.reference(), 0, vk::IndexType::eUint16);
+              root.graphicsCommandBuffers.at(currentFrame).reference().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *light.pipeline.layoutReference(), 0, {*light.descriptorSets.at(currentFrame).reference()}, {});
+              root.graphicsCommandBuffers.at(currentFrame).reference().drawIndexed(indexVector.size(), 1, 0, 0, 0);
+
+              root.graphicsCommandBuffers.at(currentFrame).reference().endRenderPass();
+
+              clearValues = {
                   vk::ClearValue()
                       .setColor(
                           vk::ClearColorValue()
@@ -330,8 +410,6 @@ namespace exqudens::vulkan {
                               .setFloat32({0.0f, 0.0f, 0.0f, 1.0f})
                       )
               };
-
-              root.graphicsCommandBuffers.at(currentFrame).reference().writeTimestamp(vk::PipelineStageFlagBits::eTopOfPipe, *root.queryPool.reference(), 0);
 
               root.graphicsCommandBuffers.at(currentFrame).reference().beginRenderPass(
                   vk::RenderPassBeginInfo()
@@ -602,6 +680,21 @@ namespace exqudens::vulkan {
   TEST_F(UiTests, test1) {
     try {
       std::string executableDir = TestUtils::getExecutableDir();
+      std::filesystem::path srcResourcesDir = std::filesystem::path(executableDir)
+          .append("..")
+          .append("..")
+          .append("..")
+          .append("..")
+          .append("src")
+          .append("test")
+          .append("resources")
+          .make_preferred();
+      std::filesystem::path dstResourcesDir = std::filesystem::path(executableDir)
+          .append("resources")
+          .make_preferred();
+      std::filesystem::path srcObjDir = std::filesystem::path(srcResourcesDir).append("obj").make_preferred();
+      std::filesystem::path dstObjDir = std::filesystem::path(dstResourcesDir).append("obj").make_preferred();
+      std::filesystem::copy(srcObjDir, dstObjDir, std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive);
       std::vector<char*> arguments = {executableDir.data()};
       int argc = static_cast<int>(arguments.size());
       char** argv = &arguments[0];

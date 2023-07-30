@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::ImageViewCreateInfo createInfo;
     std::shared_ptr<vk::raii::ImageView> value;
 
-    vk::raii::ImageView& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::ImageView& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      ImageView::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES ImageView::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      ImageView::Builder& setCreateInfo(const vk::ImageViewCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES ImageView::Builder& setCreateInfo(const vk::ImageViewCreateInfo& val);
 
-      ImageView build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES ImageView build();
 
   };
 

@@ -11,19 +11,19 @@ namespace exqudens::vulkan {
 
   struct EXQUDENS_VULKAN_EXPORT PipelineColorBlendStateCreateInfo: vk::PipelineColorBlendStateCreateInfo {
 
-    PipelineColorBlendStateCreateInfo& setFlags(const vk::PipelineColorBlendStateCreateFlags& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineColorBlendStateCreateInfo& setFlags(const vk::PipelineColorBlendStateCreateFlags& val);
 
-    PipelineColorBlendStateCreateInfo& setLogicOpEnable(const bool& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineColorBlendStateCreateInfo& setLogicOpEnable(const bool& val);
 
-    PipelineColorBlendStateCreateInfo& setLogicOp(const vk::LogicOp& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineColorBlendStateCreateInfo& setLogicOp(const vk::LogicOp& val);
 
-    PipelineColorBlendStateCreateInfo& setBlendConstants(const std::array<float, 4>& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineColorBlendStateCreateInfo& setBlendConstants(const std::array<float, 4>& val);
 
     std::vector<vk::PipelineColorBlendAttachmentState> attachments;
 
-    PipelineColorBlendStateCreateInfo& addAttachment(const vk::PipelineColorBlendAttachmentState& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineColorBlendStateCreateInfo& addAttachment(const vk::PipelineColorBlendAttachmentState& val);
 
-    PipelineColorBlendStateCreateInfo& setAttachments(const std::vector<vk::PipelineColorBlendAttachmentState>& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineColorBlendStateCreateInfo& setAttachments(const std::vector<vk::PipelineColorBlendAttachmentState>& val);
 
   };
 

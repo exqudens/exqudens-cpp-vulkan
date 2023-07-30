@@ -13,12 +13,12 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     vk::QueryPoolCreateInfo createInfo;
     std::shared_ptr<vk::raii::QueryPool> value;
 
-    vk::raii::QueryPool& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::QueryPool& reference();
 
   };
 
@@ -31,11 +31,11 @@ namespace exqudens::vulkan {
 
     public:
 
-      QueryPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueryPool::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      QueryPool::Builder& setCreateInfo(const vk::QueryPoolCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueryPool::Builder& setCreateInfo(const vk::QueryPoolCreateInfo& val);
 
-      QueryPool build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES QueryPool build();
 
   };
 

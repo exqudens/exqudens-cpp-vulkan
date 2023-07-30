@@ -15,7 +15,7 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     std::vector<vk::AttachmentDescription> attachments;
     std::vector<SubpassDescription> subpasses;
@@ -23,7 +23,7 @@ namespace exqudens::vulkan {
     vk::RenderPassCreateInfo createInfo;
     std::shared_ptr<vk::raii::RenderPass> value;
 
-    vk::raii::RenderPass& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::RenderPass& reference();
 
   };
 
@@ -39,23 +39,23 @@ namespace exqudens::vulkan {
 
     public:
 
-      RenderPass::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      RenderPass::Builder& addAttachment(const vk::AttachmentDescription& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& addAttachment(const vk::AttachmentDescription& val);
 
-      RenderPass::Builder& setAttachments(const std::vector<vk::AttachmentDescription>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& setAttachments(const std::vector<vk::AttachmentDescription>& val);
 
-      RenderPass::Builder& addSubpass(const SubpassDescription& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& addSubpass(const SubpassDescription& val);
 
-      RenderPass::Builder& setSubpasses(const std::vector<SubpassDescription>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& setSubpasses(const std::vector<SubpassDescription>& val);
 
-      RenderPass::Builder& addDependency(const vk::SubpassDependency& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& addDependency(const vk::SubpassDependency& val);
 
-      RenderPass::Builder& setDependencies(const std::vector<vk::SubpassDependency>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& setDependencies(const std::vector<vk::SubpassDependency>& val);
 
-      RenderPass::Builder& setCreateInfo(const vk::RenderPassCreateInfo& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass::Builder& setCreateInfo(const vk::RenderPassCreateInfo& val);
 
-      RenderPass build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES RenderPass build();
 
   };
 

@@ -15,43 +15,43 @@ namespace exqudens::vulkan {
 
     public:
 
-      static void setEnvironmentVariable(const std::string& name, const std::string& value);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static void setEnvironmentVariable(const std::string& name, const std::string& value);
 
-      static std::optional<std::string> getEnvironmentVariable(const std::string& name);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static std::optional<std::string> getEnvironmentVariable(const std::string& name);
 
-      static std::string toString(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static std::string toString(
           vk::DebugUtilsMessageSeverityFlagsEXT severity,
           vk::DebugUtilsMessageTypeFlagsEXT type,
           const std::string& message
       );
 
-      static std::vector<char> readFileBytes(const std::string& path);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static std::vector<char> readFileBytes(const std::string& path);
 
-      static vk::SwapchainCreateInfoKHR swapChainCreateInfo(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static vk::SwapchainCreateInfoKHR swapChainCreateInfo(
           vk::raii::PhysicalDevice& physicalDevice,
           vk::raii::SurfaceKHR& surface,
           const uint32_t& width,
           const uint32_t& height
       );
 
-      static vk::Format imageDepthFormat(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static vk::Format imageDepthFormat(
           vk::raii::PhysicalDevice& physicalDevice,
           const std::vector<vk::Format>& formats,
           const vk::ImageTiling& tiling,
           const vk::FormatFeatureFlags& features
       );
 
-      static vk::Format imageDepthFormat(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static vk::Format imageDepthFormat(
           vk::raii::PhysicalDevice& physicalDevice
       );
 
-      static uint32_t memoryTypeIndex(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static uint32_t memoryTypeIndex(
           vk::raii::PhysicalDevice& physicalDevice,
           const uint32_t& typeBits,
           const vk::MemoryPropertyFlags& requirementsMask
       );
 
-      static vk::SampleCountFlagBits getMaxUsableSampleCount(
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static vk::SampleCountFlagBits getMaxUsableSampleCount(
           const std::vector<vk::SampleCountFlags>& flags
       );
 

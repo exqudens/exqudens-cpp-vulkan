@@ -126,6 +126,23 @@ namespace exqudens::vulkan {
           )
           .build();
 
+      shadowUniformBuffers.resize(root.swapchainImageViews.size());
+      for (auto& uniformBuffer : shadowUniformBuffers) {
+        uniformBuffer = Buffer::builder()
+            .setPhysicalDevice(root.physicalDevice.value)
+            .setDevice(root.device.value)
+            .setCreateInfo(
+                vk::BufferCreateInfo()
+                    .setSize(sizeof(UniformBufferObject) * shadowUniformBuffers.size())
+                    .setUsage(vk::BufferUsageFlagBits::eUniformBuffer)
+                    .setSharingMode(vk::SharingMode::eExclusive)
+            )
+            .setMemoryCreateInfo(
+                vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+            )
+            .build();
+      }
+
       uniformBuffers.resize(root.swapchainImageViews.size());
       for (auto& uniformBuffer : uniformBuffers) {
         uniformBuffer = Buffer::builder()

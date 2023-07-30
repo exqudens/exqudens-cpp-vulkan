@@ -13,13 +13,13 @@ namespace exqudens::vulkan {
     std::vector<vk::VertexInputBindingDescription> vertexBindingDescriptions;
     std::vector<vk::VertexInputAttributeDescription> vertexAttributeDescriptions;
 
-    PipelineVertexInputStateCreateInfo& addVertexBindingDescription(const vk::VertexInputBindingDescription& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineVertexInputStateCreateInfo& addVertexBindingDescription(const vk::VertexInputBindingDescription& val);
 
-    PipelineVertexInputStateCreateInfo& setVertexBindingDescriptions(const std::vector<vk::VertexInputBindingDescription>& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineVertexInputStateCreateInfo& setVertexBindingDescriptions(const std::vector<vk::VertexInputBindingDescription>& val);
 
-    PipelineVertexInputStateCreateInfo& addVertexAttributeDescription(const vk::VertexInputAttributeDescription& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineVertexInputStateCreateInfo& addVertexAttributeDescription(const vk::VertexInputAttributeDescription& val);
 
-    PipelineVertexInputStateCreateInfo& setVertexAttributeDescriptions(const std::vector<vk::VertexInputAttributeDescription>& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES PipelineVertexInputStateCreateInfo& setVertexAttributeDescriptions(const std::vector<vk::VertexInputAttributeDescription>& val);
 
   };
 

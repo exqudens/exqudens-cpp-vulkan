@@ -14,15 +14,15 @@ namespace exqudens::vulkan {
 
   struct EXQUDENS_VULKAN_EXPORT GraphicsPipelineCreateInfo: vk::GraphicsPipelineCreateInfo {
 
-    GraphicsPipelineCreateInfo& setFlags(const vk::PipelineCreateFlags& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setFlags(const vk::PipelineCreateFlags& val);
 
-    GraphicsPipelineCreateInfo& setRenderPass(const vk::RenderPass& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setRenderPass(const vk::RenderPass& val);
 
-    GraphicsPipelineCreateInfo& setSubpass(const uint32_t& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setSubpass(const uint32_t& val);
 
-    GraphicsPipelineCreateInfo& setBasePipelineIndex(const int32_t& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setBasePipelineIndex(const int32_t& val);
 
-    GraphicsPipelineCreateInfo& setBasePipelineHandle(const vk::Pipeline& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setBasePipelineHandle(const vk::Pipeline& val);
 
     std::optional<PipelineVertexInputStateCreateInfo> vertexInputState;
     std::optional<vk::PipelineInputAssemblyStateCreateInfo> inputAssemblyState;
@@ -34,23 +34,23 @@ namespace exqudens::vulkan {
     std::optional<PipelineColorBlendStateCreateInfo> colorBlendState;
     std::optional<vk::PipelineDynamicStateCreateInfo> dynamicState;
 
-    GraphicsPipelineCreateInfo& setVertexInputState(const PipelineVertexInputStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setVertexInputState(const PipelineVertexInputStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setInputAssemblyState(const vk::PipelineInputAssemblyStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setInputAssemblyState(const vk::PipelineInputAssemblyStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setTessellationState(const vk::PipelineTessellationStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setTessellationState(const vk::PipelineTessellationStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setViewportState(const PipelineViewportStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setViewportState(const PipelineViewportStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setRasterizationState(const vk::PipelineRasterizationStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setRasterizationState(const vk::PipelineRasterizationStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setMultisampleState(const vk::PipelineMultisampleStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setMultisampleState(const vk::PipelineMultisampleStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setDepthStencilState(const vk::PipelineDepthStencilStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setDepthStencilState(const vk::PipelineDepthStencilStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setColorBlendState(const PipelineColorBlendStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setColorBlendState(const PipelineColorBlendStateCreateInfo& val);
 
-    GraphicsPipelineCreateInfo& setDynamicState(const vk::PipelineDynamicStateCreateInfo& val);
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES GraphicsPipelineCreateInfo& setDynamicState(const vk::PipelineDynamicStateCreateInfo& val);
 
   };
 

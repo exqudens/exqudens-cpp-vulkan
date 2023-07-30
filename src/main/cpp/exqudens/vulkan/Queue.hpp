@@ -13,13 +13,13 @@ namespace exqudens::vulkan {
 
     class Builder;
 
-    EXQUDENS_VULKAN_INTERFACE_INLINE static Builder builder();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES static Builder builder();
 
     uint32_t familyIndex;
     uint32_t index;
     std::shared_ptr<vk::raii::Queue> value;
 
-    vk::raii::Queue& reference();
+    EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES vk::raii::Queue& reference();
 
   };
 
@@ -33,13 +33,13 @@ namespace exqudens::vulkan {
 
     public:
 
-      Queue::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Queue::Builder& setDevice(const std::weak_ptr<vk::raii::Device>& val);
 
-      Queue::Builder& setFamilyIndex(const uint32_t& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Queue::Builder& setFamilyIndex(const uint32_t& val);
 
-      Queue::Builder& setIndex(const uint32_t& val);
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Queue::Builder& setIndex(const uint32_t& val);
 
-      Queue build();
+      EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES Queue build();
 
   };
 
