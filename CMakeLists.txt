@@ -156,6 +156,27 @@ if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")
     message("CONAN_SETTINGS: '${CONAN_SETTINGS}'")
     message("CONAN_OPTIONS: '${CONAN_OPTIONS}'")
     execute_process(
+        COMMAND "${CONAN_COMMAND}" install "shaderc/2021.1@"
+                --settings arch=x86_64
+                --settings os=Windows
+                --settings "compiler=Visual Studio"
+                --settings compiler.version=16
+                --settings build_type=Release
+                --settings compiler.runtime=MD
+        COMMAND_ECHO "STDERR"
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ENCODING "UTF-8"
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    execute_process(
+        COMMAND "${CONAN_COMMAND}" info "shaderc/2021.1@" --paths
+                --json "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json"
+        COMMAND_ECHO "STDERR"
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ENCODING "UTF-8"
+        COMMAND_ERROR_IS_FATAL ANY
+    )
+    execute_process(
         COMMAND "${CONAN_COMMAND}"
                 install
                 "${PROJECT_SOURCE_DIR}/conanfile.py"
@@ -169,8 +190,28 @@ if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")
         COMMAND_ERROR_IS_FATAL ANY
     )
 endif()
+if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json")
+    message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json'")
+endif()
+if("${GLSLC_COMMAND}" STREQUAL "")
+    file(READ "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json" CONAN_INFO_SHADERC_JSON)
+    string(JSON CONAN_INFO_SHADERC_JSON_LEGTH LENGTH "${CONAN_INFO_SHADERC_JSON}")
+    if("${CONAN_INFO_SHADERC_JSON_LEGTH}" LESS_EQUAL "0")
+        message(FATAL_ERROR "Empty: '${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json'")
+    endif()
+    math(EXPR tmpMaxIndex "${CONAN_INFO_SHADERC_JSON_LEGTH} - 1")
+    foreach(i RANGE "0" "${tmpMaxIndex}")
+        string(JSON tmpJson GET "${CONAN_INFO_SHADERC_JSON}" "${i}")
+        string(JSON tmpJsonReference GET "${tmpJson}" "reference")
+        if("${tmpJsonReference}" STREQUAL "shaderc/2021.1")
+            string(JSON tmpJsonPackageFolder GET "${tmpJson}" "package_folder")
+            find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${tmpJsonPackageFolder}/bin" REQUIRED NO_DEFAULT_PATH)
+            break()
+        endif()
+    endforeach()
+endif()
 if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
-    message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-packages.cmake'!")
+    message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-packages.cmake'")
 endif()
 include("${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
 set(CMAKE_MODULE_PATH "${CONAN_INSTALL_PREFIX}")
@@ -211,10 +252,9 @@ foreach(
     elseif("vulkan-headers" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
         find_package("${cmakePackageName}Headers" "${cmakePackageVersion}" EXACT QUIET)
-    elseif("shaderc" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-        find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")
+    #[[elseif("vulkan-validationlayers" STREQUAL "${conanPackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)]]
     elseif("tinyobjloader" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)

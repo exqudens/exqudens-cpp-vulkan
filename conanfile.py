@@ -29,7 +29,7 @@ class ConanConfiguration(ConanFile):
     def requirements(self):
         try:
             if self.options.dependencies:
-                self.requires("vulkan-headers/1.3.250.0")
+                self.requires("vulkan-headers/1.3.239.0")
         except Exception as e:
             logging.error(e, exc_info=True)
             raise e
@@ -38,7 +38,6 @@ class ConanConfiguration(ConanFile):
         try:
             if self.options.dependencies:
                 #self.tool_requires("vulkan-validationlayers/1.3.239.0")
-                self.tool_requires("shaderc/2021.1")
                 self.tool_requires("glm/cci.20230113")
                 self.tool_requires("glfw/3.3.8")
                 self.tool_requires("tinyobjloader/1.0.6")
@@ -51,7 +50,6 @@ class ConanConfiguration(ConanFile):
     def configure(self):
         try:
             if self.options.dependencies:
-                self.options["shaderc"].shared = self.options.shared
                 self.options["glfw"].shared = self.options.shared
                 self.options["gtest"].shared = self.options.shared
                 self.options["lodepng"].shared = self.options.shared
