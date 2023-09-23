@@ -207,43 +207,49 @@ foreach(
     if("gtest" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+
     elseif("vulkan-headers" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
         find_package("${cmakePackageName}Headers" "${cmakePackageVersion}" EXACT QUIET)
+
     elseif("shaderc" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
         find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")
-    elseif("glslang" STREQUAL "${conanPackageName}")
+    #[[elseif("glslang" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-    elseif("spirv-tools" STREQUAL "${conanPackageName}")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)]]
+    #[[elseif("spirv-tools" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "SPIRV-Tools")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-    elseif("spirv-headers" STREQUAL "${conanPackageName}")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)]]
+    #[[elseif("spirv-headers" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" QUIET)
+        find_package("${cmakePackageName}" QUIET)]]
     #[[elseif("vulkan" STREQUAL "${conanPackageName}")
         file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
         find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")]]
+
     elseif("tinyobjloader" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+
     elseif("glm" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" QUIET)
+
     elseif("lodepng" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" QUIET)
+
     elseif("glfw" STREQUAL "${conanPackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET CONFIG)
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}3")
+        find_package("${cmakePackageName}3" "${cmakePackageVersion}" EXACT QUIET)
+
     else()
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET CONFIG)
+        message("Ignore conanPackageName: '${conanPackageName}'")
+
     endif()
 endforeach()
 set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
@@ -631,7 +637,7 @@ gtest_discover_tests("test-app"
 
 add_custom_target("cmake-test"
     COMMAND "${CMAKE_CTEST_COMMAND}" --preset "${PRESET_NAME}"
-            #"-R" "UiTests\.test1"
+            "-R" "UiTests\.test1"
     DEPENDS "test-app"
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     USES_TERMINAL

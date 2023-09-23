@@ -37,11 +37,11 @@ class ConanConfiguration(ConanFile):
     def build_requirements(self):
         try:
             if not self.options.dependencies:
-                self.requires("vulkan-headers/1.3.250.0")
-            if self.options.dependencies:
+                self.tool_requires("vulkan-headers/1.3.250.0")
+                #self.tool_requires("vulkan-validationlayers/1.3.239.0")
                 self.tool_requires("shaderc/2021.1")
                 self.tool_requires("glm/cci.20230113")
-                self.tool_requires("glfw/3.3.7")
+                self.tool_requires("glfw/3.3.8")
                 self.tool_requires("tinyobjloader/1.0.6")
                 self.tool_requires("gtest/1.14.0")
                 self.tool_requires("lodepng/cci.20200615")
