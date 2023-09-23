@@ -148,11 +148,13 @@ namespace exqudens::vulkan {
               );
               textureMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1;
 
-              Utility::setEnvironmentVariable("VK_LAYER_PATH", arguments.front());
-
               std::vector<const char*> enabledExtensionNames = glfwInstanceRequiredExtensions;
               enabledExtensionNames.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
               enabledExtensionNames.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
+              std::vector<const char*> enabledLayerNames;
+              //Utility::setEnvironmentVariable("VK_LAYER_PATH", arguments.front());
+              //enabledLayerNames.emplace_back("VK_LAYER_KHRONOS_validation");
 
               std::function<VkSurfaceKHR(VkInstance)> createSurfaceFunction;
               createSurfaceFunction = [&window](VkInstance instance) -> VkSurfaceKHR {
@@ -163,7 +165,7 @@ namespace exqudens::vulkan {
                 return vkSurface;
               };
 
-              root.init(enabledExtensionNames, createSurfaceFunction, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
+              root.init(enabledExtensionNames, enabledLayerNames, createSurfaceFunction, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
               std::cout << std::format("root.instance: '{}'", (bool) root.instance.value) << std::endl;
               std::cout << std::format("root.surface: '{}'", (bool) root.surface.value) << std::endl;

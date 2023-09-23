@@ -18,9 +18,10 @@ block()
 endblock()
 
 include("${CMAKE_CURRENT_BINARY_DIR}/../cmake/util.cmake")
+set(COMPILER "msvc-16-x64-x64" CACHE STRING "...")
 
 string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
-if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS)
+if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msvc-16-x64-x64")
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/msvc-16-x64-x64-toolchain.cmake")
         set_msvc_toolchain(TOOLCHAIN_CONTENT
             PROCESSOR "x86_64"
@@ -33,7 +34,7 @@ if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS)
         )
     endif()
     find_program(CONAN_COMMAND NAMES "conan.exe" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
-elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS)
+elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "gcc")
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake")
         find_file(COMPILER_PATH NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
         set_gnu_toolchain(TOOLCHAIN_CONTENT
@@ -140,8 +141,8 @@ set_conan_settings(CONAN_SETTINGS
     "compiler.version=${CONAN_COMPILER_VERSION}"
     "compiler.runtime=${CONAN_COMPILER_RUNTIME}"
     "build_type=${CMAKE_BUILD_TYPE}"
-    "vulkan:build_type=Release"
-    "vulkan:compiler.runtime=MD"
+    "shaderc:build_type=Release"
+    "shaderc:compiler.runtime=MD"
     "glfw:build_type=Release"
     "glfw:compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
 )
@@ -204,19 +205,35 @@ foreach(
     list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
 
     if("gtest" STREQUAL "${conanPackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET CONFIG)
-    elseif("vulkan" STREQUAL "${conanPackageName}")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+    elseif("vulkan-headers" STREQUAL "${conanPackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
+        find_package("${cmakePackageName}Headers" "${cmakePackageVersion}" EXACT QUIET)
+    elseif("shaderc" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
         find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")
+    elseif("glslang" STREQUAL "${conanPackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+    elseif("spirv-tools" STREQUAL "${conanPackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "SPIRV-Tools")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+    elseif("spirv-headers" STREQUAL "${conanPackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" QUIET)
+    #[[elseif("vulkan" STREQUAL "${conanPackageName}")
+        file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+        find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")]]
     elseif("tinyobjloader" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
     elseif("glm" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
+        find_package("${cmakePackageName}" QUIET)
     elseif("lodepng" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" QUIET)
@@ -231,7 +248,7 @@ foreach(
 endforeach()
 set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
 if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
-    foreach(package ${NOT_FOUND_PACKAGE_NAMES})
+    foreach(package IN LISTS NOT_FOUND_PACKAGE_NAMES)
         message(SEND_ERROR "${package}_FOUND: '${${package}_FOUND}' ${package}_NOT_FOUND_MESSAGE: '${${package}_NOT_FOUND_MESSAGE}'")
     endforeach()
     message(FATAL_ERROR "Some package not found!")
@@ -542,6 +559,7 @@ add_custom_command(
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag"
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert"
             "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag"
+    USES_TERMINAL
     VERBATIM
 )
 add_executable("test-app"
@@ -592,6 +610,7 @@ if("${BUILD_SHARED_LIBS}")
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+        USES_TERMINAL
         VERBATIM
     )
 else()
@@ -600,6 +619,7 @@ else()
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
         COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
         COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+        USES_TERMINAL
         VERBATIM
     )
 endif()
@@ -611,8 +631,10 @@ gtest_discover_tests("test-app"
 
 add_custom_target("cmake-test"
     COMMAND "${CMAKE_CTEST_COMMAND}" --preset "${PRESET_NAME}"
+            #"-R" "UiTests\.test1"
     DEPENDS "test-app"
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    USES_TERMINAL
     VERBATIM
 )
 
@@ -620,6 +642,7 @@ add_custom_target("cmake-install" ALL
     COMMAND "${CMAKE_COMMAND}" --install "${PROJECT_BINARY_DIR}" --prefix "${CMAKE_INSTALL_PREFIX}"
     DEPENDS ${TARGET_CMAKE_INSTALL_DEPENDS_ON}
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    USES_TERMINAL
     VERBATIM
 )
 
@@ -635,11 +658,12 @@ add_custom_target("conan-export"
             ${CONAN_OPTIONS}
     DEPENDS "cmake-install"
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    USES_TERMINAL
     VERBATIM
 )
 
 set_target_names(ALL_TARGETS "${CMAKE_CURRENT_SOURCE_DIR}")
 message("all-targets:")
-foreach(t ${ALL_TARGETS})
+foreach(t IN LISTS ALL_TARGETS)
     message("  ${t}")
 endforeach()

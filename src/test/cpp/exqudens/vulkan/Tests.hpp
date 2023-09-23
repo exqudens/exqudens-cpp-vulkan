@@ -322,13 +322,15 @@ namespace exqudens::vulkan {
       );
       textureMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1;
 
-      Utility::setEnvironmentVariable("VK_LAYER_PATH", TestUtils::getExecutableDir());
-
       std::vector<const char*> enabledExtensionNames;
       enabledExtensionNames.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       enabledExtensionNames.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
-      root.init(enabledExtensionNames, {}, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
+      std::vector<const char*> enabledLayerNames;
+      //Utility::setEnvironmentVariable("VK_LAYER_PATH", arguments.front());
+      //enabledLayerNames.emplace_back("VK_LAYER_KHRONOS_validation");
+
+      root.init(enabledExtensionNames, enabledLayerNames, {}, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
       std::cout << std::format("root.instance: '{}'", (bool) root.instance.value) << std::endl;
       std::cout << std::format("root.surface: '{}'", (bool) root.surface.value) << std::endl;

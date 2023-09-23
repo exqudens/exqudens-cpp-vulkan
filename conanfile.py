@@ -1,6 +1,5 @@
-from os import path
-from traceback import format_exc
-from logging import error
+import logging
+from pathlib import Path
 from conans import ConanFile, tools
 from conans.util.files import save
 
@@ -15,47 +14,50 @@ class ConanConfiguration(ConanFile):
 
     def set_name(self):
         try:
-            self.name = tools.load(path.join(path.dirname(path.abspath(__file__)), "name-version.txt")).split(':')[0].strip()
+            self.name = Path(__file__).parent.joinpath('name-version.txt').read_text().split(':')[0].strip()
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def set_version(self):
         try:
-            self.version = tools.load(path.join(path.dirname(path.abspath(__file__)), "name-version.txt")).split(':')[1].strip()
+            self.version = Path(__file__).parent.joinpath('name-version.txt').read_text().split(':')[1].strip()
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def requirements(self):
         try:
             if self.options.dependencies:
-                self.requires("vulkan/1.3.224.1")
+                self.requires("vulkan-headers/1.3.250.0")
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def build_requirements(self):
         try:
-            self.tool_requires("tinyobjloader/1.0.6")
-            self.tool_requires("glm/0.9.9.8")
-            self.tool_requires("gtest/1.11.0")
-            self.tool_requires("lodepng/cci.20200615")
-            self.tool_requires("glfw/3.3.7")
             if not self.options.dependencies:
-                self.tool_requires("vulkan/1.3.224.1")
+                self.requires("vulkan-headers/1.3.250.0")
+            if self.options.dependencies:
+                self.tool_requires("shaderc/2021.1")
+                self.tool_requires("glm/cci.20230113")
+                self.tool_requires("glfw/3.3.7")
+                self.tool_requires("tinyobjloader/1.0.6")
+                self.tool_requires("gtest/1.14.0")
+                self.tool_requires("lodepng/cci.20200615")
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def configure(self):
         try:
-            self.options["vulkan"].shared = True
-            self.options["glfw"].shared = self.options.shared
-            self.options["lodepng"].shared = self.options.shared
-            self.options["gtest"].shared = self.options.shared
+            if self.options.dependencies:
+                self.options["shaderc"].shared = self.options.shared
+                self.options["glfw"].shared = self.options.shared
+                self.options["gtest"].shared = self.options.shared
+                self.options["lodepng"].shared = self.options.shared
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def generate(self):
@@ -85,7 +87,7 @@ class ConanConfiguration(ConanFile):
 
             save(filename, content)
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def imports(self):
@@ -94,7 +96,7 @@ class ConanConfiguration(ConanFile):
             self.copy(pattern="*.dylib", dst="lib", src="lib")
             self.copy(pattern="*.json", dst="bin", src="bin")
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def package_info(self):
@@ -104,7 +106,7 @@ class ConanConfiguration(ConanFile):
             else:
                 self.cpp_info.libs = tools.collect_libs(self)
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
     def package_id(self):
@@ -112,7 +114,7 @@ class ConanConfiguration(ConanFile):
             if self.options.interface:
                 self.info.header_only()
         except Exception as e:
-            error(format_exc())
+            logging.error(e, exc_info=True)
             raise e
 
 

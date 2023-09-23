@@ -172,8 +172,8 @@
     },
 
     {
-      "name": "windows.ninja.msvc-16-x64-x64.interface",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "interface", "mtd" ],
+      "name": "windows.ninja.interface",
+      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt" ],
       "binaryDir": "${sourceDir}/build/0"
     },
 
@@ -226,8 +226,8 @@
       "jobs": 4
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.interface",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.interface",
+      "name": "windows.ninja.interface",
+      "configurePreset": "windows.ninja.interface",
       "inherits": [ "default" ]
     },
     {
@@ -281,17 +281,18 @@
       },
       "filter": {
         "exclude": {
-          "name": "(UiTests\\.test1)|(Tests\\.test1)"
+          "name": "(ExcludedTests\\..+)|(ExcludedTests\\.test1)"
         }
       },
       "execution": {
         "noTestsAction": "error",
-        "stopOnFailure": true
+        "stopOnFailure": true,
+        "timeout": 600
       }
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.interface",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.interface",
+      "name": "windows.ninja.interface",
+      "configurePreset": "windows.ninja.interface",
       "inherits": [ "default" ]
     },
     {
