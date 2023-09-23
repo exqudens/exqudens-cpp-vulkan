@@ -173,7 +173,7 @@
 
     {
       "name": "windows.ninja.interface",
-      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt" ],
+      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt", "nodeps" ],
       "binaryDir": "${sourceDir}/build/0"
     },
 

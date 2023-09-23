@@ -205,51 +205,30 @@ foreach(
     list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
 
     if("gtest" STREQUAL "${conanPackageName}")
+        #file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-
     elseif("vulkan-headers" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
         find_package("${cmakePackageName}Headers" "${cmakePackageVersion}" EXACT QUIET)
-
     elseif("shaderc" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
         find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")
-    #[[elseif("glslang" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)]]
-    #[[elseif("spirv-tools" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "SPIRV-Tools")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)]]
-    #[[elseif("spirv-headers" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" QUIET)]]
-    #[[elseif("vulkan" STREQUAL "${conanPackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-        find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin")]]
-
     elseif("tinyobjloader" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-
     elseif("glm" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" QUIET)
-
     elseif("lodepng" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" QUIET)
-
     elseif("glfw" STREQUAL "${conanPackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}3")
         find_package("${cmakePackageName}3" "${cmakePackageVersion}" EXACT QUIET)
-
     else()
         message("Ignore conanPackageName: '${conanPackageName}'")
-
     endif()
 endforeach()
 set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
