@@ -296,6 +296,19 @@ if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
     message(FATAL_ERROR "Some 'conan' package not found!")
 endif()
 
+unset(NOT_FOUND_PACKAGE_NAMES)
+if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+    list(APPEND NOT_FOUND_PACKAGE_NAMES "glfw3")
+    find_package("glfw3" QUIET)
+endif()
+set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
+if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
+    foreach(package IN LISTS NOT_FOUND_PACKAGE_NAMES)
+        message(SEND_ERROR "${package}_FOUND: '${${package}_FOUND}' ${package}_NOT_FOUND_MESSAGE: '${${package}_NOT_FOUND_MESSAGE}'")
+    endforeach()
+    message(FATAL_ERROR "Some 'system' package not found!")
+endif()
+
 set(FUNCTION_ATTRIBUTES_DEFINE_NAME "EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES")
 set(FUNCTION_ATTRIBUTES_DEFINE "#define ${FUNCTION_ATTRIBUTES_DEFINE_NAME}")
 if("${INTERFACE_ONLY}")
@@ -535,8 +548,6 @@ target_link_libraries("test-lib" PUBLIC
     "tinyobjloader::tinyobjloader"
 )
 set_target_properties("test-lib" PROPERTIES
-    CXX_STANDARD 23
-
     RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
@@ -625,8 +636,6 @@ target_link_libraries("test-app"
     "test-lib"
 )
 set_target_properties("test-app" PROPERTIES
-    CXX_STANDARD 23
-
     RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
