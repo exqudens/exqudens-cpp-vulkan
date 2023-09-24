@@ -51,6 +51,20 @@
         }
       }
     },
+    {
+      "name": "gcc",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": {
+          "type": "FILEPATH",
+          "value": "../cmake/gcc-toolchain.cmake"
+        },
+        "CONAN_COMPILER_LIBCXX": {
+          "type": "STRING",
+          "value": "libstdc++11"
+        }
+      }
+    },
 
     {
       "name": "interface",
@@ -217,6 +231,27 @@
       "name": "windows.ninja.msvc-16-x64-x64.release.shared.nodeps",
       "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "shared", "md", "nodeps" ],
       "binaryDir": "${sourceDir}/build/8"
+    },
+
+    {
+      "name": "linux.ninja.gcc.debug.static",
+      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "static", "deps" ],
+      "binaryDir": "${sourceDir}/build/9"
+    },
+    {
+      "name": "linux.ninja.gcc.debug.shared",
+      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "shared", "deps" ],
+      "binaryDir": "${sourceDir}/build/10"
+    },
+    {
+      "name": "linux.ninja.gcc.release.static",
+      "inherits": [ "default", "linux", "ninja", "gcc", "release", "static", "deps" ],
+      "binaryDir": "${sourceDir}/build/11"
+    },
+    {
+      "name": "linux.ninja.gcc.release.shared",
+      "inherits": [ "default", "linux", "ninja", "gcc", "release", "shared", "deps" ],
+      "binaryDir": "${sourceDir}/build/12"
     }
   ],
   "buildPresets": [
@@ -225,11 +260,13 @@
       "hidden": true,
       "jobs": 4
     },
+
     {
       "name": "windows.ninja.interface",
       "configurePreset": "windows.ninja.interface",
       "inherits": [ "default" ]
     },
+
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared",
@@ -250,6 +287,7 @@
       "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static",
       "inherits": [ "default" ]
     },
+
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
@@ -268,6 +306,27 @@
     {
       "name": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
+      "inherits": [ "default" ]
+    },
+
+    {
+      "name": "linux.ninja.gcc.debug.shared",
+      "configurePreset": "linux.ninja.gcc.debug.shared",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "linux.ninja.gcc.debug.static",
+      "configurePreset": "linux.ninja.gcc.debug.static",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "linux.ninja.gcc.release.shared",
+      "configurePreset": "linux.ninja.gcc.release.shared",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "linux.ninja.gcc.release.static",
+      "configurePreset": "linux.ninja.gcc.release.static",
       "inherits": [ "default" ]
     }
   ],
@@ -290,11 +349,13 @@
         "timeout": 600
       }
     },
+
     {
       "name": "windows.ninja.interface",
       "configurePreset": "windows.ninja.interface",
       "inherits": [ "default" ]
     },
+
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared",
@@ -315,6 +376,7 @@
       "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static",
       "inherits": [ "default" ]
     },
+
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
@@ -333,6 +395,27 @@
     {
       "name": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
+      "inherits": [ "default" ]
+    },
+
+    {
+      "name": "linux.ninja.gcc.debug.shared",
+      "configurePreset": "linux.ninja.gcc.debug.shared",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "linux.ninja.gcc.debug.static",
+      "configurePreset": "linux.ninja.gcc.debug.static",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "linux.ninja.gcc.release.shared",
+      "configurePreset": "linux.ninja.gcc.release.shared",
+      "inherits": [ "default" ]
+    },
+    {
+      "name": "linux.ninja.gcc.release.static",
+      "configurePreset": "linux.ninja.gcc.release.static",
       "inherits": [ "default" ]
     }
   ]

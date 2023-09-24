@@ -18,7 +18,7 @@ block()
 endblock()
 
 include("${CMAKE_CURRENT_BINARY_DIR}/../cmake/util.cmake")
-set(COMPILER "msvc-16-x64-x64" CACHE STRING "...")
+set(COMPILER "None" CACHE STRING "...")
 
 string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
 if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msvc-16-x64-x64")
@@ -74,7 +74,7 @@ set(CMAKE_SHARED_MODULE_PREFIX "")
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(CMAKE_IMPORT_LIBRARY_PREFIX "")
 set(CMAKE_STAGING_PREFIX "")
-set(CMAKE_FIND_LIBRARY_PREFIXES "")
+set(CMAKE_FIND_LIBRARY_PREFIXES "" "lib")
 set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)
 set(CMAKE_FIND_USE_CMAKE_SYSTEM_PATH FALSE)
 set(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH TRUE)
@@ -84,6 +84,7 @@ set(CMAKE_FIND_USE_PACKAGE_ROOT_PATH FALSE)
 set(CMAKE_FIND_USE_CMAKE_PATH TRUE)
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS FALSE)
+set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
 set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
 set(CMAKE_CXX_STANDARD 20)
@@ -102,14 +103,14 @@ if(MSVC)
 endif()
 string(JOIN " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
 
-if("" STREQUAL "${CMAKE_MSVC_RUNTIME_LIBRARY}")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")
-endif()
-
 if("${BUILD_SHARED_LIBS}")
-    set(CONAN_RELEASE_COMPILER_RUNTIME "MD")
+    if(NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
+        set(CONAN_RELEASE_COMPILER_RUNTIME "MD")
+    endif()
 else()
-    set(CONAN_RELEASE_COMPILER_RUNTIME "MT")
+    if(NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
+        set(CONAN_RELEASE_COMPILER_RUNTIME "MT")
+    endif()
     if("${MINGW}")
         set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ ${CMAKE_CXX_STANDARD_LIBRARIES}")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lwinpthread -Wl,--no-whole-archive")
@@ -125,24 +126,41 @@ if(${SKIP_CMAKE_TEST})
     set(TARGET_CMAKE_INSTALL_DEPENDS_ON "${PROJECT_NAME}")
 endif()
 
+set_conan_compiler_version(CONAN_SHADERC_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
+
 set_conan_architecture(CONAN_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 set_conan_compiler(CONAN_COMPILER "${CMAKE_CXX_COMPILER_ID}")
-set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}")
+set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
 set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
 
 set_python_boolean(CONAN_INTERFACE_ONLY "${INTERFACE_ONLY}")
 set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
 set_python_boolean(CONAN_WITH_DEPENDENCIES "${WITH_DEPENDENCIES}")
 
+if("${CONAN_COMPILER}" STREQUAL "gcc" AND "${CONAN_SHADERC_COMPILER_VERSION}" GREATER "10")
+    set(CONAN_SHADERC_COMPILER_VERSION "10")
+endif()
+
+set_conan_settings(CONAN_SHADERC_SETTINGS
+    "arch=${CONAN_ARCH}"
+    "os=${CMAKE_SYSTEM_NAME}"
+    "compiler=${CONAN_COMPILER}"
+    "compiler.version=${CONAN_SHADERC_COMPILER_VERSION}"
+    "compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
+    "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
+    "build_type=Release"
+)
+set_conan_options(CONAN_SHADERC_OPTIONS
+    "shared=True"
+)
 set_conan_settings(CONAN_SETTINGS
     "arch=${CONAN_ARCH}"
     "os=${CMAKE_SYSTEM_NAME}"
     "compiler=${CONAN_COMPILER}"
     "compiler.version=${CONAN_COMPILER_VERSION}"
     "compiler.runtime=${CONAN_COMPILER_RUNTIME}"
+    "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
     "build_type=${CMAKE_BUILD_TYPE}"
-    "shaderc:build_type=Release"
-    "shaderc:compiler.runtime=MD"
     "glfw:build_type=Release"
     "glfw:compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
 )
@@ -156,13 +174,7 @@ if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")
     message("CONAN_SETTINGS: '${CONAN_SETTINGS}'")
     message("CONAN_OPTIONS: '${CONAN_OPTIONS}'")
     execute_process(
-        COMMAND "${CONAN_COMMAND}" install "shaderc/2021.1@"
-                --settings arch=x86_64
-                --settings os=Windows
-                --settings "compiler=Visual Studio"
-                --settings compiler.version=16
-                --settings build_type=Release
-                --settings compiler.runtime=MD
+        COMMAND "${CONAN_COMMAND}" install "shaderc/2021.1@" ${CONAN_SHADERC_SETTINGS} ${CONAN_SHADERC_OPTIONS}
         COMMAND_ECHO "STDERR"
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ENCODING "UTF-8"
