@@ -84,8 +84,12 @@ set(CMAKE_FIND_USE_PACKAGE_ROOT_PATH FALSE)
 set(CMAKE_FIND_USE_CMAKE_PATH TRUE)
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG FALSE)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS FALSE)
+set(CMAKE_BUILD_RPATH "\$ORIGIN")
+set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
 set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
 set(CMAKE_CXX_STANDARD 20)
@@ -467,17 +471,9 @@ else()
     )
 endif()
 set_property(TARGET "${PROJECT_NAME}" PROPERTY "VERSION" "${PROJECT_VERSION}")
-set_property(TARGET "${PROJECT_NAME}" PROPERTY "SOVERSION" "${PROJECT_VERSION_MAJOR}")
-set_property(TARGET "${PROJECT_NAME}" PROPERTY "INTERFACE_${PROJECT_NAME}_MAJOR_VERSION" "${PROJECT_VERSION_MAJOR}")
+set_property(TARGET "${PROJECT_NAME}" PROPERTY "SOVERSION" "${PROJECT_VERSION}")
+set_property(TARGET "${PROJECT_NAME}" PROPERTY "INTERFACE_${PROJECT_NAME}_MAJOR_VERSION" "${PROJECT_VERSION}")
 set_property(TARGET "${PROJECT_NAME}" APPEND PROPERTY "COMPATIBLE_INTERFACE_STRING" "${PROJECT_NAME}_MAJOR_VERSION")
-install(
-    TARGETS "${PROJECT_NAME}"
-    EXPORT "${PROJECT_NAME}-targets"
-    INCLUDES DESTINATION "include"
-    RUNTIME DESTINATION "bin"
-    LIBRARY DESTINATION "lib"
-    ARCHIVE DESTINATION "lib"
-)
 install(
     EXPORT "${PROJECT_NAME}-targets"
     DESTINATION "cmake"
@@ -500,12 +496,31 @@ install(
           "${PROJECT_BINARY_DIR}/${PROJECT_NAME}-config-version.cmake"
     DESTINATION "cmake"
 )
+if("${INTERFACE_ONLY}")
+    install(
+        DIRECTORY "${PROJECT_BINARY_DIR}/generated/src/main/cpp/"
+        DESTINATION "include"
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+    )
+else()
+    install(
+        DIRECTORY "${PROJECT_BINARY_DIR}/generated/src/main/cpp/"
+                  "src/main/cpp/"
+        DESTINATION "include"
+        FILES_MATCHING
+        PATTERN "*.h"
+        PATTERN "*.hpp"
+    )
+endif()
 install(
-    DIRECTORY "src/main/cpp/"
-    DESTINATION "include"
-    FILES_MATCHING
-    PATTERN "*.h"
-    PATTERN "*.hpp"
+    TARGETS "${PROJECT_NAME}"
+    EXPORT "${PROJECT_NAME}-targets"
+    INCLUDES DESTINATION "include"
+    RUNTIME DESTINATION "bin"
+    LIBRARY DESTINATION "lib"
+    ARCHIVE DESTINATION "lib"
 )
 
 add_library("test-lib" STATIC
@@ -655,24 +670,47 @@ set_target_properties("test-app" PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
 )
 if("${BUILD_SHARED_LIBS}")
-    add_custom_command(TARGET "test-app"
-        POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-        USES_TERMINAL
-        VERBATIM
-    )
+    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+        add_custom_command(TARGET "test-app"
+            PRE_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            USES_TERMINAL
+            VERBATIM
+        )
+    else()
+        add_custom_command(TARGET "test-app"
+            PRE_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},LIBRARY_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            USES_TERMINAL
+            VERBATIM
+        )
+    endif()
 else()
-    add_custom_command(TARGET "test-app"
-        POST_BUILD
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-        COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-        USES_TERMINAL
-        VERBATIM
-    )
+    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+        add_custom_command(TARGET "test-app"
+            PRE_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            USES_TERMINAL
+            VERBATIM
+        )
+    else()
+        add_custom_command(TARGET "test-app"
+            PRE_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+            USES_TERMINAL
+            VERBATIM
+        )
+    endif()
 endif()
 
 gtest_discover_tests("test-app"

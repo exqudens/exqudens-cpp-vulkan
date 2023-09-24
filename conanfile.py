@@ -91,8 +91,10 @@ class ConanConfiguration(ConanFile):
     def imports(self):
         try:
             self.copy(pattern="*.dll", dst="bin", src="bin")
-            self.copy(pattern="*.dylib", dst="lib", src="lib")
             self.copy(pattern="*.json", dst="bin", src="bin")
+            self.copy(pattern="*.so", dst="lib", src="lib")
+            self.copy(pattern="*.so.*", dst="lib", src="lib")
+            self.copy(pattern="*.dylib", dst="lib", src="lib")
         except Exception as e:
             logging.error(e, exc_info=True)
             raise e
