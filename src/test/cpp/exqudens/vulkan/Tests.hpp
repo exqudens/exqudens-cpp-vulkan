@@ -327,8 +327,8 @@ namespace exqudens::vulkan {
       enabledExtensionNames.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
       std::vector<const char*> enabledLayerNames;
-      //Utility::setEnvironmentVariable("VK_LAYER_PATH", arguments.front());
-      //enabledLayerNames.emplace_back("VK_LAYER_KHRONOS_validation");
+      Utility::setEnvironmentVariable("VK_LAYER_PATH", TestUtils::getExecutableDir());
+      enabledLayerNames.emplace_back("VK_LAYER_KHRONOS_validation");
 
       root.init(enabledExtensionNames, enabledLayerNames, {}, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 

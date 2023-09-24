@@ -37,7 +37,7 @@ class ConanConfiguration(ConanFile):
     def build_requirements(self):
         try:
             if self.options.dependencies:
-                #self.tool_requires("vulkan-validationlayers/1.3.231.1")
+                self.tool_requires("vulkan-validationlayers/1.3.231.1")
                 self.tool_requires("glm/cci.20230113")
                 self.tool_requires("glfw/3.3.8")
                 self.tool_requires("tinyobjloader/1.0.6")
