@@ -8,8 +8,8 @@ required_conan_version = ">=1.43.0"
 
 class ConanConfiguration(ConanFile):
     settings = "arch", "os", "compiler", "build_type"
-    options = {"shared": [True, False], "interface": [True, False], "dependencies": [True, False]}
-    default_options = {"shared": True, "interface": False, "dependencies": True}
+    options = {"shared": [True, False], "interface": [True, False], "dependencies": [True, False], "test_dependencies": [True, False]}
+    default_options = {"shared": True, "interface": False, "dependencies": True, "test_dependencies": True}
     generators = "cmake_find_package"
 
     def set_name(self):
@@ -36,7 +36,7 @@ class ConanConfiguration(ConanFile):
 
     def build_requirements(self):
         try:
-            if self.options.dependencies:
+            if self.options.test_dependencies:
                 self.tool_requires("glm/cci.20230113")
                 self.tool_requires("tinyobjloader/1.0.6")
                 self.tool_requires("gtest/1.14.0")
@@ -50,7 +50,7 @@ class ConanConfiguration(ConanFile):
 
     def configure(self):
         try:
-            if self.options.dependencies:
+            if self.options.test_dependencies:
                 self.options["glfw"].shared = self.options.shared
                 self.options["gtest"].shared = self.options.shared
                 self.options["lodepng"].shared = self.options.shared

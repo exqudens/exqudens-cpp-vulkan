@@ -48,6 +48,8 @@ elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "gcc")
     find_program(CONAN_COMMAND NAMES "conan" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
 endif()
 
+message("CMAKE_TOOLCHAIN_FILE: '${CMAKE_TOOLCHAIN_FILE}'")
+
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/name-version.txt" INFO)
 string(REPLACE ":" ";" INFO_LIST "${INFO}")
 list(GET INFO_LIST 0 RAW_NAME)
@@ -125,192 +127,199 @@ endif()
 set(CMAKE_VERBOSE_MAKEFILE TRUE CACHE BOOL "" FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE CACHE BOOL "" FORCE)
 
-set(TARGET_CMAKE_INSTALL_DEPENDS_ON "cmake-test")
-option(SKIP_CMAKE_TEST "..." FALSE)
-if(${SKIP_CMAKE_TEST})
-    set(TARGET_CMAKE_INSTALL_DEPENDS_ON "${PROJECT_NAME}")
+set(TARGET_CMAKE_INSTALL_DEPENDS_ON "${PROJECT_NAME}")
+if("${TEST_DEPENDENCIES}")
+    set(TARGET_CMAKE_INSTALL_DEPENDS_ON "cmake-test")
 endif()
 
-set_conan_compiler_version(CONAN_SHADERC_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
+if("${DEPENDENCIES}")
+    set_conan_compiler_version(CONAN_SHADERC_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
 
-set_conan_architecture(CONAN_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
-set_conan_compiler(CONAN_COMPILER "${CMAKE_CXX_COMPILER_ID}")
-set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
-set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
+    set_conan_architecture(CONAN_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+    set_conan_compiler(CONAN_COMPILER "${CMAKE_CXX_COMPILER_ID}")
+    set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
+    set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
 
-set_python_boolean(CONAN_INTERFACE_ONLY "${INTERFACE_ONLY}")
-set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
-set_python_boolean(CONAN_WITH_DEPENDENCIES "${WITH_DEPENDENCIES}")
+    set_python_boolean(CONAN_INTERFACE_ONLY "${INTERFACE_ONLY}")
+    set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
+    set_python_boolean(CONAN_DEPENDENCIES "${DEPENDENCIES}")
+    set_python_boolean(CONAN_TEST_DEPENDENCIES "${TEST_DEPENDENCIES}")
 
-if("${CONAN_COMPILER}" STREQUAL "gcc" AND "${CONAN_SHADERC_COMPILER_VERSION}" GREATER "10")
-    set(CONAN_SHADERC_COMPILER_VERSION "10")
-endif()
+    set("CONAN_INSTALL_PREFIX" "${PROJECT_BINARY_DIR}/conan-install")
 
-set_conan_settings(CONAN_SHADERC_SETTINGS
-    "arch=${CONAN_ARCH}"
-    "os=${CMAKE_SYSTEM_NAME}"
-    "compiler=${CONAN_COMPILER}"
-    "compiler.version=${CONAN_SHADERC_COMPILER_VERSION}"
-    "compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
-    "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
-    "build_type=Release"
-)
-set_conan_options(CONAN_SHADERC_OPTIONS
-    "shared=True"
-)
-set_conan_settings(CONAN_SETTINGS
-    "arch=${CONAN_ARCH}"
-    "os=${CMAKE_SYSTEM_NAME}"
-    "compiler=${CONAN_COMPILER}"
-    "compiler.version=${CONAN_COMPILER_VERSION}"
-    "compiler.runtime=${CONAN_COMPILER_RUNTIME}"
-    "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
-    "build_type=${CMAKE_BUILD_TYPE}"
-    "glfw:build_type=Release"
-    "glfw:compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
-)
-set_conan_options(CONAN_OPTIONS
-    "interface=${CONAN_INTERFACE_ONLY}"
-    "shared=${CONAN_BUILD_SHARED_LIBS}"
-    "dependencies=${CONAN_WITH_DEPENDENCIES}"
-)
-set("CONAN_INSTALL_PREFIX" "${PROJECT_BINARY_DIR}/conan-install")
-if(NOT EXISTS "${CONAN_INSTALL_PREFIX}")
-    message("CONAN_SETTINGS: '${CONAN_SETTINGS}'")
-    message("CONAN_OPTIONS: '${CONAN_OPTIONS}'")
-    execute_process(
-        COMMAND "${CONAN_COMMAND}" install "shaderc/2021.1@" ${CONAN_SHADERC_SETTINGS} ${CONAN_SHADERC_OPTIONS}
-        COMMAND_ECHO "STDERR"
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ENCODING "UTF-8"
-        COMMAND_ERROR_IS_FATAL ANY
-    )
-    execute_process(
-        COMMAND "${CONAN_COMMAND}" info "shaderc/2021.1@" --paths
-                --json "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json"
-        COMMAND_ECHO "STDERR"
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ENCODING "UTF-8"
-        COMMAND_ERROR_IS_FATAL ANY
-    )
-    execute_process(
-        COMMAND "${CONAN_COMMAND}"
-                install
-                "${PROJECT_SOURCE_DIR}/conanfile.py"
-                --install-folder
-                "${CONAN_INSTALL_PREFIX}"
-                ${CONAN_SETTINGS}
-                ${CONAN_OPTIONS}
-        COMMAND_ECHO "STDERR"
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ENCODING "UTF-8"
-        COMMAND_ERROR_IS_FATAL ANY
-    )
-endif()
-if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json")
-    message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json'")
-endif()
-if("${GLSLC_COMMAND}" STREQUAL "")
-    file(READ "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json" CONAN_INFO_SHADERC_JSON)
-    string(JSON CONAN_INFO_SHADERC_JSON_LEGTH LENGTH "${CONAN_INFO_SHADERC_JSON}")
-    if("${CONAN_INFO_SHADERC_JSON_LEGTH}" LESS_EQUAL "0")
-        message(FATAL_ERROR "Empty: '${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json'")
-    endif()
-    math(EXPR tmpMaxIndex "${CONAN_INFO_SHADERC_JSON_LEGTH} - 1")
-    foreach(i RANGE "0" "${tmpMaxIndex}")
-        string(JSON tmpJson GET "${CONAN_INFO_SHADERC_JSON}" "${i}")
-        string(JSON tmpJsonReference GET "${tmpJson}" "reference")
-        if("${tmpJsonReference}" STREQUAL "shaderc/2021.1")
-            string(JSON tmpJsonPackageFolder GET "${tmpJson}" "package_folder")
-            find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${tmpJsonPackageFolder}/bin" REQUIRED NO_DEFAULT_PATH)
-            break()
+    if("${GLSLC}" STREQUAL "conan")
+        if("${CONAN_COMPILER}" STREQUAL "gcc" AND "${CONAN_SHADERC_COMPILER_VERSION}" GREATER "10")
+            set(CONAN_SHADERC_COMPILER_VERSION "10")
         endif()
+
+        set_conan_settings(CONAN_SHADERC_SETTINGS
+            "arch=${CONAN_ARCH}"
+            "os=${CMAKE_SYSTEM_NAME}"
+            "compiler=${CONAN_COMPILER}"
+            "compiler.version=${CONAN_SHADERC_COMPILER_VERSION}"
+            "compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
+            "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
+            "build_type=Release"
+        )
+        set_conan_options(CONAN_SHADERC_OPTIONS
+            "shared=True"
+        )
+
+        execute_process(
+            COMMAND "${CONAN_COMMAND}" install "shaderc/2021.1@" ${CONAN_SHADERC_SETTINGS} ${CONAN_SHADERC_OPTIONS}
+            COMMAND_ECHO "STDERR"
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ENCODING "UTF-8"
+            COMMAND_ERROR_IS_FATAL ANY
+        )
+        execute_process(
+            COMMAND "${CONAN_COMMAND}" info "shaderc/2021.1@" --paths
+            --json "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json"
+            COMMAND_ECHO "STDERR"
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ENCODING "UTF-8"
+            COMMAND_ERROR_IS_FATAL ANY
+        )
+        if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json")
+            message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json'")
+        endif()
+        if("${GLSLC_COMMAND}" STREQUAL "")
+            file(READ "${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json" CONAN_INFO_SHADERC_JSON)
+            string(JSON CONAN_INFO_SHADERC_JSON_LEGTH LENGTH "${CONAN_INFO_SHADERC_JSON}")
+            if("${CONAN_INFO_SHADERC_JSON_LEGTH}" LESS_EQUAL "0")
+                message(FATAL_ERROR "Empty: '${CONAN_INSTALL_PREFIX}/conan-info-shaderc.json'")
+            endif()
+            math(EXPR tmpMaxIndex "${CONAN_INFO_SHADERC_JSON_LEGTH} - 1")
+            foreach(i RANGE "0" "${tmpMaxIndex}")
+                string(JSON tmpJson GET "${CONAN_INFO_SHADERC_JSON}" "${i}")
+                string(JSON tmpJsonReference GET "${tmpJson}" "reference")
+                if("${tmpJsonReference}" STREQUAL "shaderc/2021.1")
+                    string(JSON tmpJsonPackageFolder GET "${tmpJson}" "package_folder")
+                    find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${tmpJsonPackageFolder}/bin" REQUIRED NO_DEFAULT_PATH)
+                    break()
+                endif()
+            endforeach()
+        endif()
+    endif()
+
+    set_conan_settings(CONAN_SETTINGS
+        "arch=${CONAN_ARCH}"
+        "os=${CMAKE_SYSTEM_NAME}"
+        "compiler=${CONAN_COMPILER}"
+        "compiler.version=${CONAN_COMPILER_VERSION}"
+        "compiler.runtime=${CONAN_COMPILER_RUNTIME}"
+        "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
+        "build_type=${CMAKE_BUILD_TYPE}"
+        "glfw:build_type=Release"
+        "glfw:compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
+    )
+    set_conan_options(CONAN_OPTIONS
+        "interface=${CONAN_INTERFACE_ONLY}"
+        "shared=${CONAN_BUILD_SHARED_LIBS}"
+        "dependencies=${CONAN_DEPENDENCIES}"
+        "test_dependencies=${CONAN_TEST_DEPENDENCIES}"
+    )
+    if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
+        message("CONAN_SETTINGS: '${CONAN_SETTINGS}'")
+        message("CONAN_OPTIONS: '${CONAN_OPTIONS}'")
+        execute_process(
+            COMMAND "${CONAN_COMMAND}"
+                    install
+                    "${PROJECT_SOURCE_DIR}/conanfile.py"
+                    --install-folder
+                    "${CONAN_INSTALL_PREFIX}"
+                    ${CONAN_SETTINGS}
+                    ${CONAN_OPTIONS}
+            COMMAND_ECHO "STDERR"
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ENCODING "UTF-8"
+            COMMAND_ERROR_IS_FATAL ANY
+        )
+    endif()
+    if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
+        message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-packages.cmake'")
+    endif()
+    include("${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
+    set(CMAKE_MODULE_PATH "${CONAN_INSTALL_PREFIX}")
+    foreach(
+        conanPackageName
+        cmakePackageName
+        cmakePackageVersion
+        cmakePackagePath
+        IN ZIP_LISTS
+        "${PROJECT_NAME}_CONAN_PACKAGE_NAMES"
+        "${PROJECT_NAME}_CMAKE_PACKAGE_NAMES"
+        "${PROJECT_NAME}_CMAKE_PACKAGE_VERSIONS"
+        "${PROJECT_NAME}_CMAKE_PACKAGE_PATHS"
+    )
+        if(
+            "" STREQUAL "${conanPackageName}"
+            OR "" STREQUAL "${cmakePackageName}"
+            OR "" STREQUAL "${cmakePackageVersion}"
+            OR "" STREQUAL "${cmakePackagePath}"
+        )
+            string(JOIN " " errorMessage
+                "Empty value 'conanPackageName': '${conanPackageName}'"
+                "or 'cmakePackageName': '${cmakePackageName}'"
+                "or 'cmakePackageVersion': '${cmakePackageVersion}'"
+                "or 'cmakePackagePath': '${cmakePackagePath}'!"
+            )
+            message(FATAL_ERROR "${errorMessage}")
+        elseif(NOT IS_DIRECTORY "${cmakePackagePath}")
+            message(FATAL_ERROR "Not is directory 'cmakePackagePath': '${cmakePackagePath}'!")
+        endif()
+
+        set("${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION" "${cmakePackageVersion}")
+
+        list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
     endforeach()
 endif()
-if(NOT EXISTS "${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
-    message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_PREFIX}/conan-packages.cmake'")
-endif()
-include("${CONAN_INSTALL_PREFIX}/conan-packages.cmake")
-set(CMAKE_MODULE_PATH "${CONAN_INSTALL_PREFIX}")
-foreach(
-    conanPackageName
-    cmakePackageName
-    cmakePackageVersion
-    cmakePackagePath
-    IN ZIP_LISTS
-    "${PROJECT_NAME}_CONAN_PACKAGE_NAMES"
-    "${PROJECT_NAME}_CMAKE_PACKAGE_NAMES"
-    "${PROJECT_NAME}_CMAKE_PACKAGE_VERSIONS"
-    "${PROJECT_NAME}_CMAKE_PACKAGE_PATHS"
-)
-    if(
-        "" STREQUAL "${conanPackageName}"
-        OR "" STREQUAL "${cmakePackageName}"
-        OR "" STREQUAL "${cmakePackageVersion}"
-        OR "" STREQUAL "${cmakePackagePath}"
-    )
-        string(JOIN " " errorMessage
-            "Empty value 'conanPackageName': '${conanPackageName}'"
-            "or 'cmakePackageName': '${cmakePackageName}'"
-            "or 'cmakePackageVersion': '${cmakePackageVersion}'"
-            "or 'cmakePackagePath': '${cmakePackagePath}'!"
-        )
-        message(FATAL_ERROR "${errorMessage}")
-    elseif(NOT IS_DIRECTORY "${cmakePackagePath}")
-        message(FATAL_ERROR "Not is directory 'cmakePackagePath': '${cmakePackagePath}'!")
-    endif()
 
-    list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
-
-    if("gtest" STREQUAL "${conanPackageName}")
-        #file(REMOVE "${CONAN_INSTALL_PREFIX}/Find${cmakePackageName}.cmake")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-    elseif("vulkan-headers" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
-        find_package("${cmakePackageName}Headers" "${cmakePackageVersion}" EXACT QUIET)
-    #[[elseif("vulkan-validationlayers" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}Headers")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)]]
-    elseif("tinyobjloader" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${cmakePackageVersion}" EXACT QUIET)
-    elseif("glm" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" QUIET)
-    elseif("lodepng" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" QUIET)
-    elseif("glfw" STREQUAL "${conanPackageName}")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}3")
-        find_package("${cmakePackageName}3" "${cmakePackageVersion}" EXACT QUIET)
+if("${GLSLC}" STREQUAL "system")
+    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+        find_program(GLSLC_COMMAND NAMES "glslc.exe" PATHS ENV GLSLC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
     else()
-        message("Ignore conanPackageName: '${conanPackageName}'")
+        find_program(GLSLC_COMMAND NAMES "glslc" PATHS ENV GLSLC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+    endif()
+endif()
+set("${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
+    "VulkanHeaders"
+    "GTest"
+    "glfw3"
+    "glm"
+    "tinyobjloader"
+    "lodepng"
+)
+unset(NOT_FOUND_PACKAGE_NAMES)
+foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
+    if("VulkanHeaders" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}" EXACT QUIET)
+    elseif("GTest" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
+    elseif("glfw3" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" QUIET)
+    elseif("glm" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" QUIET)
+    elseif("tinyobjloader" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
+    elseif("lodepng" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" QUIET)
+    else()
+        message("Ignore cmakePackageName: '${cmakePackageName}'")
     endif()
 endforeach()
-if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-    list(APPEND NOT_FOUND_PACKAGE_NAMES "glfw3")
-    find_package("glfw3" QUIET)
-endif()
 set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
 if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
     foreach(package IN LISTS NOT_FOUND_PACKAGE_NAMES)
         message(SEND_ERROR "${package}_FOUND: '${${package}_FOUND}' ${package}_NOT_FOUND_MESSAGE: '${${package}_NOT_FOUND_MESSAGE}'")
     endforeach()
-    message(FATAL_ERROR "Some 'conan' package not found!")
-endif()
-
-unset(NOT_FOUND_PACKAGE_NAMES)
-if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-    list(APPEND NOT_FOUND_PACKAGE_NAMES "glfw3")
-    find_package("glfw3" QUIET)
-endif()
-set_not_found_package_names(NOT_FOUND_PACKAGE_NAMES ${NOT_FOUND_PACKAGE_NAMES})
-if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
-    foreach(package IN LISTS NOT_FOUND_PACKAGE_NAMES)
-        message(SEND_ERROR "${package}_FOUND: '${${package}_FOUND}' ${package}_NOT_FOUND_MESSAGE: '${${package}_NOT_FOUND_MESSAGE}'")
-    endforeach()
-    message(FATAL_ERROR "Some 'system' package not found!")
+    message(FATAL_ERROR "Some package not found!")
 endif()
 
 set(FUNCTION_ATTRIBUTES_DEFINE_NAME "EXQUDENS_VULKAN_FUNCTION_ATTRIBUTES")
@@ -523,209 +532,211 @@ install(
     ARCHIVE DESTINATION "lib"
 )
 
-add_library("test-lib" STATIC
-    "src/test/cpp/TestApplication.hpp"
-    "src/test/cpp/TestApplication.cpp"
-    "src/test/cpp/TestConfiguration.hpp"
-    "src/test/cpp/TestConfiguration.cpp"
-    "src/test/cpp/TestMacros.hpp"
-    "src/test/cpp/TestUtils.hpp"
-    "src/test/cpp/TestUtils.cpp"
-    "src/test/cpp/exqudens/vulkan/Vertex.hpp"
-    "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
-    "src/test/cpp/exqudens/vulkan/Context.hpp"
-    "src/test/cpp/exqudens/vulkan/Context.cpp"
-    "src/test/cpp/exqudens/vulkan/DataContext.hpp"
-    "src/test/cpp/exqudens/vulkan/DataContext.cpp"
-    "src/test/cpp/exqudens/vulkan/CameraContext.hpp"
-    "src/test/cpp/exqudens/vulkan/CameraContext.cpp"
-    "src/test/cpp/exqudens/vulkan/LightContext.hpp"
-    "src/test/cpp/exqudens/vulkan/LightContext.cpp"
-    "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
-    "src/test/cpp/exqudens/vulkan/Tests.hpp"
-    "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
-    "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
-    "src/test/cpp/exqudens/vulkan/UiTests.hpp"
-)
-target_include_directories("test-lib" PUBLIC
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"
-    "$<INSTALL_INTERFACE:include>"
-)
-target_link_libraries("test-lib" PUBLIC
-    "${PROJECT_NAME}"
-    "GTest::gmock"
-    "GTest::gtest"
-    "GTest::gmock_main"
-    "GTest::gtest_main"
-    "glm::glm"
-    "lodepng::lodepng"
-    "glfw"
-    "tinyobjloader::tinyobjloader"
-)
-set_target_properties("test-lib" PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/bin"
+if("${TEST_DEPENDENCIES}")
+    add_library("test-lib" STATIC
+        "src/test/cpp/TestApplication.hpp"
+        "src/test/cpp/TestApplication.cpp"
+        "src/test/cpp/TestConfiguration.hpp"
+        "src/test/cpp/TestConfiguration.cpp"
+        "src/test/cpp/TestMacros.hpp"
+        "src/test/cpp/TestUtils.hpp"
+        "src/test/cpp/TestUtils.cpp"
+        "src/test/cpp/exqudens/vulkan/Vertex.hpp"
+        "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
+        "src/test/cpp/exqudens/vulkan/Context.hpp"
+        "src/test/cpp/exqudens/vulkan/Context.cpp"
+        "src/test/cpp/exqudens/vulkan/DataContext.hpp"
+        "src/test/cpp/exqudens/vulkan/DataContext.cpp"
+        "src/test/cpp/exqudens/vulkan/CameraContext.hpp"
+        "src/test/cpp/exqudens/vulkan/CameraContext.cpp"
+        "src/test/cpp/exqudens/vulkan/LightContext.hpp"
+        "src/test/cpp/exqudens/vulkan/LightContext.cpp"
+        "src/test/cpp/exqudens/vulkan/OtherTests.hpp"
+        "src/test/cpp/exqudens/vulkan/Tests.hpp"
+        "src/test/cpp/exqudens/vulkan/TestUtilsTests.hpp"
+        "src/test/cpp/exqudens/vulkan/TinyObjLoaderTests.hpp"
+        "src/test/cpp/exqudens/vulkan/UiTests.hpp"
+    )
+    target_include_directories("test-lib" PUBLIC
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"
+        "$<INSTALL_INTERFACE:include>"
+    )
+    target_link_libraries("test-lib" PUBLIC
+        "${PROJECT_NAME}"
+        "GTest::gmock"
+        "GTest::gtest"
+        "GTest::gmock_main"
+        "GTest::gtest_main"
+        "glm::glm"
+        "lodepng::lodepng"
+        "glfw"
+        "tinyobjloader::tinyobjloader"
+    )
+    set_target_properties("test-lib" PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/bin"
 
-    ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
 
-    LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
-)
+        LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
+    )
 
-add_custom_command(
-    OUTPUT "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.frag.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.frag.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
-           "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
-    COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-rf" "${PROJECT_BINARY_DIR}/test/bin/resources/shader"
-    COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/bin/resources/shader"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.frag.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.frag.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
-    COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
-    DEPENDS "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.frag"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.frag"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.frag"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert"
-            "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag"
-    USES_TERMINAL
-    VERBATIM
-)
-add_executable("test-app"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.frag.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.frag.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
-    "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
-    "src/test/cpp/main.cpp"
-)
-target_link_libraries("test-app"
-    "test-lib"
-)
-set_target_properties("test-app" PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/bin"
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/bin"
+    add_custom_command(
+        OUTPUT "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.frag.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.frag.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
+               "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
+        COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-rf" "${PROJECT_BINARY_DIR}/test/bin/resources/shader"
+        COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/bin/resources/shader"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.frag.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.frag.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
+        COMMAND "${GLSLC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag" -o "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
+        DEPENDS "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-1.frag"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-2.frag"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-3.frag"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-4.frag"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shadow-shader-5.frag"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-5.frag"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/shader/shader-10.frag"
+        USES_TERMINAL
+        VERBATIM
+    )
+    add_executable("test-app"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-1.frag.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-2.frag.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-3.frag.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-4.frag.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shadow-shader-5.frag.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-5.frag.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.vert.spv"
+        "${PROJECT_BINARY_DIR}/test/bin/resources/shader/shader-10.frag.spv"
+        "src/test/cpp/main.cpp"
+    )
+    target_link_libraries("test-app"
+        "test-lib"
+    )
+    set_target_properties("test-app" PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/bin"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/bin"
 
-    ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
-    ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
+        ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
 
-    LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
-    LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
-)
-if("${BUILD_SHARED_LIBS}")
-    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-        add_custom_command(TARGET "test-app"
-            PRE_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            USES_TERMINAL
-            VERBATIM
-        )
+        LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/test/lib"
+        LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
+    )
+    if("${BUILD_SHARED_LIBS}")
+        if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+            add_custom_command(TARGET "test-app"
+                PRE_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                USES_TERMINAL
+                VERBATIM
+            )
+        else()
+            add_custom_command(TARGET "test-app"
+                PRE_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},LIBRARY_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                USES_TERMINAL
+                VERBATIM
+            )
+        endif()
     else()
-        add_custom_command(TARGET "test-app"
-            PRE_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},LIBRARY_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            USES_TERMINAL
-            VERBATIM
-        )
+        if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+            add_custom_command(TARGET "test-app"
+                PRE_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                USES_TERMINAL
+                VERBATIM
+            )
+        else()
+            add_custom_command(TARGET "test-app"
+                PRE_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
+                USES_TERMINAL
+                VERBATIM
+            )
+        endif()
     endif()
-else()
-    if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-        add_custom_command(TARGET "test-app"
-            PRE_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            USES_TERMINAL
-            VERBATIM
-        )
-    else()
-        add_custom_command(TARGET "test-app"
-            PRE_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-            COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
-            USES_TERMINAL
-            VERBATIM
-        )
-    endif()
+
+    gtest_discover_tests("test-app"
+        WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/test/bin"
+        PROPERTIES ENVIRONMENT "PARENT_PATH=;PATH="
+    )
+
+    add_custom_target("cmake-test"
+        COMMAND "${CMAKE_CTEST_COMMAND}" --preset "${PRESET_NAME}"
+                "-R" "UiTests\.test1"
+        DEPENDS "test-app"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        USES_TERMINAL
+        VERBATIM
+    )
 endif()
-
-gtest_discover_tests("test-app"
-    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/test/bin"
-    PROPERTIES ENVIRONMENT "PARENT_PATH=;PATH="
-)
-
-add_custom_target("cmake-test"
-    COMMAND "${CMAKE_CTEST_COMMAND}" --preset "${PRESET_NAME}"
-            "-R" "UiTests\.test1"
-    DEPENDS "test-app"
-    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-    USES_TERMINAL
-    VERBATIM
-)
 
 add_custom_target("cmake-install" ALL
     COMMAND "${CMAKE_COMMAND}" --install "${PROJECT_BINARY_DIR}" --prefix "${CMAKE_INSTALL_PREFIX}"
