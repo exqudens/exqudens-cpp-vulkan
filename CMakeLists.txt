@@ -269,7 +269,9 @@ if("${DEPENDENCIES}")
             message(FATAL_ERROR "Not is directory 'cmakePackagePath': '${cmakePackagePath}'!")
         endif()
 
-        set("${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION" "${cmakePackageVersion}")
+        if("${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" STREQUAL "")
+            set("${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION" "${cmakePackageVersion}")
+        endif()
 
         list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
     endforeach()
@@ -282,19 +284,38 @@ if("${GLSLC}" STREQUAL "system")
         find_program(GLSLC_COMMAND NAMES "glslc" PATHS ENV GLSLC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
     endif()
 endif()
-set("${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
-    "VulkanHeaders"
-    "GTest"
-    "glfw3"
-    "glm"
-    "tinyobjloader"
-    "lodepng"
-)
+if("${${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES}" STREQUAL "")
+    set("${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
+        "VulkanHeaders"
+    )
+    if("${TEST_DEPENDENCIES}")
+        list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
+            "GTest"
+            "glfw3"
+            "glm"
+            "tinyobjloader"
+            "lodepng"
+        )
+    endif()
+endif()
+message("${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES:")
+foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
+    message("  ${cmakePackageName}")
+endforeach()
 unset(NOT_FOUND_PACKAGE_NAMES)
 foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
     if("VulkanHeaders" STREQUAL "${cmakePackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}" EXACT QUIET)
+        if(
+            "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" STREQUAL ""
+            AND
+            NOT "${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}" STREQUAL ""
+        )
+            set("${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION" "${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}")
+        endif()
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
+    elseif("Vulkan" STREQUAL "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
     elseif("GTest" STREQUAL "${cmakePackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
