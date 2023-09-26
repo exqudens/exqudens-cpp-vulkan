@@ -51,6 +51,20 @@
         }
       }
     },
+    {
+      "name": "gcc",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": {
+          "type": "FILEPATH",
+          "value": "../cmake/gcc-toolchain.cmake"
+        },
+        "CONAN_COMPILER_LIBCXX": {
+          "type": "STRING",
+          "value": "libstdc++11"
+        }
+      }
+    },
 
     {
       "name": "interface",
@@ -59,14 +73,6 @@
         "INTERFACE_ONLY": {
           "type": "BOOL",
           "value": true
-        },
-        "BUILD_SHARED_LIBS": {
-          "type": "BOOL",
-          "value": false
-        },
-        "WITH_DEPENDENCIES": {
-          "type": "BOOL",
-          "value": false
         }
       }
     },
@@ -151,71 +157,111 @@
       }
     },
     {
-      "name": "deps",
+      "name": "conan-deps",
       "hidden": true,
       "cacheVariables": {
-        "WITH_DEPENDENCIES": {
+        "DEPENDENCIES": {
           "type": "BOOL",
           "value": true
         }
       }
     },
     {
-      "name": "nodeps",
+      "name": "no-conan-deps",
       "hidden": true,
       "cacheVariables": {
-        "WITH_DEPENDENCIES": {
+        "DEPENDENCIES": {
           "type": "BOOL",
           "value": false
         }
       }
     },
+    {
+      "name": "test-deps",
+      "hidden": true,
+      "cacheVariables": {
+        "TEST_DEPENDENCIES": {
+          "type": "BOOL",
+          "value": true
+        }
+      }
+    },
+    {
+      "name": "no-test-deps",
+      "hidden": true,
+      "cacheVariables": {
+        "TEST_DEPENDENCIES": {
+          "type": "BOOL",
+          "value": false
+        }
+      }
+    },
+    {
+      "name": "glslc-system",
+      "hidden": true,
+      "cacheVariables": {
+        "GLSLC": {
+          "type": "STRING",
+          "value": "system"
+        }
+      }
+    },
+    {
+      "name": "glslc-conan",
+      "hidden": true,
+      "cacheVariables": {
+        "GLSLC": {
+          "type": "STRING",
+          "value": "conan"
+        }
+      }
+    },
 
     {
-      "name": "windows.ninja.msvc-16-x64-x64.interface",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "interface", "mtd" ],
+      "name": "windows.ninja.interface",
+      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt", "glslc-system", "no-conan-deps", "no-test-deps" ],
       "binaryDir": "${sourceDir}/build/0"
     },
 
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.static",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "static", "mtd", "deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "static", "mtd", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/1"
     },
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "shared", "mdd", "deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "shared", "mdd", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/2"
     },
     {
       "name": "windows.ninja.msvc-16-x64-x64.release.static",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "static", "mt", "deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "static", "mt", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/3"
     },
     {
       "name": "windows.ninja.msvc-16-x64-x64.release.shared",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "shared", "md", "deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "shared", "md", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/4"
     },
 
     {
-      "name": "windows.ninja.msvc-16-x64-x64.debug.static.nodeps",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "static", "mtd", "nodeps" ],
+      "name": "linux.ninja.gcc.debug.static",
+      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "static", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/5"
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "shared", "mdd", "nodeps" ],
+      "name": "linux.ninja.gcc.debug.shared",
+      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "shared", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/6"
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "static", "mt", "nodeps" ],
+      "name": "linux.ninja.gcc.release.static",
+      "inherits": [ "default", "linux", "ninja", "gcc", "release", "static", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/7"
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.release.shared.nodeps",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "shared", "md", "nodeps" ],
+      "name": "linux.ninja.gcc.release.shared",
+      "inherits": [ "default", "linux", "ninja", "gcc", "release", "shared", "glslc-conan", "conan-deps", "test-deps" ],
       "binaryDir": "${sourceDir}/build/8"
     }
   ],
@@ -225,11 +271,13 @@
       "hidden": true,
       "jobs": 4
     },
+
     {
-      "name": "windows.ninja.msvc-16-x64-x64.interface",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.interface",
+      "name": "windows.ninja.interface",
+      "configurePreset": "windows.ninja.interface",
       "inherits": [ "default" ]
     },
+
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared",
@@ -250,24 +298,25 @@
       "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static",
       "inherits": [ "default" ]
     },
+
     {
-      "name": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
+      "name": "linux.ninja.gcc.debug.shared",
+      "configurePreset": "linux.ninja.gcc.debug.shared",
       "inherits": [ "default" ]
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.debug.static.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.static.nodeps",
+      "name": "linux.ninja.gcc.debug.static",
+      "configurePreset": "linux.ninja.gcc.debug.static",
       "inherits": [ "default" ]
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.release.shared.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.release.shared.nodeps",
+      "name": "linux.ninja.gcc.release.shared",
+      "configurePreset": "linux.ninja.gcc.release.shared",
       "inherits": [ "default" ]
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
+      "name": "linux.ninja.gcc.release.static",
+      "configurePreset": "linux.ninja.gcc.release.static",
       "inherits": [ "default" ]
     }
   ],
@@ -281,19 +330,22 @@
       },
       "filter": {
         "exclude": {
-          "name": "(UiTests\\.test1)|(Tests\\.test1)"
+          "name": "(ExcludedTests\\..+)|(ExcludedTests\\.test1)"
         }
       },
       "execution": {
         "noTestsAction": "error",
-        "stopOnFailure": true
+        "stopOnFailure": true,
+        "timeout": 600
       }
     },
+
     {
-      "name": "windows.ninja.msvc-16-x64-x64.interface",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.interface",
+      "name": "windows.ninja.interface",
+      "configurePreset": "windows.ninja.interface",
       "inherits": [ "default" ]
     },
+
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared",
       "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared",
@@ -314,24 +366,25 @@
       "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static",
       "inherits": [ "default" ]
     },
+
     {
-      "name": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.shared.nodeps",
+      "name": "linux.ninja.gcc.debug.shared",
+      "configurePreset": "linux.ninja.gcc.debug.shared",
       "inherits": [ "default" ]
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.debug.static.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.debug.static.nodeps",
+      "name": "linux.ninja.gcc.debug.static",
+      "configurePreset": "linux.ninja.gcc.debug.static",
       "inherits": [ "default" ]
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.release.shared.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.release.shared.nodeps",
+      "name": "linux.ninja.gcc.release.shared",
+      "configurePreset": "linux.ninja.gcc.release.shared",
       "inherits": [ "default" ]
     },
     {
-      "name": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
-      "configurePreset": "windows.ninja.msvc-16-x64-x64.release.static.nodeps",
+      "name": "linux.ninja.gcc.release.static",
+      "configurePreset": "linux.ninja.gcc.release.static",
       "inherits": [ "default" ]
     }
   ]

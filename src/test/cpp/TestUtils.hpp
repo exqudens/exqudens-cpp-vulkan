@@ -5,6 +5,7 @@
 #include <optional>
 #include <vector>
 #include <map>
+#include <chrono>
 #include <functional>
 
 #include <tiny_obj_loader.h>

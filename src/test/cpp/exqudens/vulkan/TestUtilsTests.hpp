@@ -59,8 +59,8 @@ namespace exqudens::vulkan {
       TestUtils::hashCombine(expected1, a);
       TestUtils::hashCombine(actual1, x);
 
-      std::cout << std::format("expected1: '{}'", expected1) << std::endl;
-      std::cout << std::format("  actual1: '{}'", actual1) << std::endl;
+      std::cout << "expected1: '{}'" << expected1 << "'" << std::endl;
+      std::cout << "  actual1: '{}'" << actual1 << "'" << std::endl;
 
       ASSERT_EQ(expected1, actual1);
 
@@ -70,8 +70,8 @@ namespace exqudens::vulkan {
       TestUtils::hashCombine(expected2, a, b);
       TestUtils::hashCombine(actual2, x, y);
 
-      std::cout << std::format("expected2: '{}'", expected2) << std::endl;
-      std::cout << std::format("  actual2: '{}'", actual2) << std::endl;
+      std::cout << "expected2: '{}'" << expected2 << "'" << std::endl;
+      std::cout << "  actual2: '{}'" << actual2 << "'" << std::endl;
 
       ASSERT_EQ(expected2, actual2);
 
@@ -81,8 +81,8 @@ namespace exqudens::vulkan {
       TestUtils::hashCombine(expected3, a, b, c);
       TestUtils::hashCombine(actual3, x, y, z);
 
-      std::cout << std::format("expected3: '{}'", expected3) << std::endl;
-      std::cout << std::format("  actual3: '{}'", actual3) << std::endl;
+      std::cout << "expected3: '{}'" << expected3 << "'" << std::endl;
+      std::cout << "  actual3: '{}'" << actual3 << "'" << std::endl;
 
       ASSERT_EQ(expected3, actual3);
 
@@ -123,8 +123,8 @@ namespace exqudens::vulkan {
           "TestUtilsTests.test2.info2",
           "writePng(const std::vector<std::vector<std::vector<unsigned char>>>& image, const std::string& path)"
       );
-      std::cout << std::format("executableFile: '{}'", TestConfiguration::getExecutableFile()) << std::endl;
-      std::cout << std::format("executableDir: '{}'", TestConfiguration::getExecutableDir()) << std::endl;
+      std::cout << "executableFile: '{}'" << TestConfiguration::getExecutableFile() << "'" << std::endl;
+      std::cout << "executableDir: '{}'" << TestConfiguration::getExecutableDir() << "'" << std::endl;
       std::vector<std::vector<std::vector<unsigned char>>> image1 = TestUtils::readPng(
           std::filesystem::path(TestConfiguration::getExecutableDir())
               .append("resources")

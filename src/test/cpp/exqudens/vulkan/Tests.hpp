@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <chrono>
 #include <functional>
-#include <format>
 #include <iostream>
 
 #include <gtest/gtest.h>
@@ -44,7 +43,7 @@ namespace exqudens::vulkan {
 
       void reCreateSwapchain(uint32_t width, uint32_t height) {
         try {
-          std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
+          std::cout << CALL_INFO() << " ... call" << std::endl;
 
           root.initSwapchain(width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
@@ -52,13 +51,13 @@ namespace exqudens::vulkan {
 
           camera.initSwapchain(root, {"resources/shader/shader-2.vert.spv", "resources/shader/shader-2.frag.spv"});
 
-          std::cout << std::format("camera.colorImage: '{}'", (bool) camera.colorImage.value) << std::endl;
-          std::cout << std::format("camera.colorImageView: '{}'", (bool) camera.colorImageView.value) << std::endl;
-          std::cout << std::format("camera.depthImage: '{}'", (bool) camera.depthImage.value) << std::endl;
-          std::cout << std::format("camera.depthImageView: '{}'", (bool) camera.depthImageView.value) << std::endl;
-          std::cout << std::format("camera.renderPass: '{}'", (bool) camera.renderPass.value) << std::endl;
-          std::cout << std::format("camera.pipeline: '{}'", (bool) camera.pipeline.value) << std::endl;
-          std::ranges::for_each(camera.framebuffers, [](const auto& o1) {std::cout << std::format("camera.swapchainFramebuffer: '{}'", (bool) o1.value) << std::endl;});
+          std::cout << "camera.colorImage: '" << (bool) camera.colorImage.value << "'" << std::endl;
+          std::cout << "camera.colorImageView: '" << (bool) camera.colorImageView.value << "'" << std::endl;
+          std::cout << "camera.depthImage: '" << (bool) camera.depthImage.value << "'" << std::endl;
+          std::cout << "camera.depthImageView: '" << (bool) camera.depthImageView.value << "'" << std::endl;
+          std::cout << "camera.renderPass: '" << (bool) camera.renderPass.value << "'" << std::endl;
+          std::cout << "camera.pipeline: '" << (bool) camera.pipeline.value << "'" << std::endl;
+          std::ranges::for_each(camera.framebuffers, [](const auto& o1) {std::cout << "camera.swapchainFramebuffer: '" << (bool) o1.value << "'" << std::endl;});
 
           root.transferCommandBuffer.reference().begin({});
           TestUtils::insertDepthImagePipelineBarrier(root.transferCommandBuffer, camera.depthImage);
@@ -72,7 +71,7 @@ namespace exqudens::vulkan {
           );
           root.transferQueue.reference().waitIdle();
 
-          std::cout << std::format("{} ... done", CALL_INFO()) << std::endl;
+          std::cout << CALL_INFO() << " ... done" << std::endl;
         } catch (...) {
           std::throw_with_nested(std::runtime_error(CALL_INFO()));
         }
@@ -266,7 +265,7 @@ namespace exqudens::vulkan {
               if (vk::Result::eSuccess == queryResults.first && queryResults.second.size() > 1) {
                 if (timeDiffCounter == 9) {
                   float timeDiff = root.physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second.at(1) - queryResults.second.at(0));
-                  //std::cout << std::format("timeDiff: {}", timeDiff) << std::endl;
+                  //std::cout << "timeDiff: '" << timeDiff << "'" << std::endl;
                   timeDiffCounter = 0;
                 } else {
                   timeDiffCounter++;
@@ -301,7 +300,7 @@ namespace exqudens::vulkan {
 
   TEST_F(Tests, test1) {
     try {
-      std::cout << std::format("{} ... call", CALL_INFO()) << std::endl;
+      std::cout << CALL_INFO() << " ... call" << std::endl;
 
       std::vector<Vertex> vertexVector = {};
       std::vector<uint16_t> indexVector = {};
@@ -322,75 +321,77 @@ namespace exqudens::vulkan {
       );
       textureMipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(textureWidth, textureHeight)))) + 1;
 
-      Utility::setEnvironmentVariable("VK_LAYER_PATH", TestUtils::getExecutableDir());
-
       std::vector<const char*> enabledExtensionNames;
       enabledExtensionNames.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
       enabledExtensionNames.emplace_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
-      root.init(enabledExtensionNames, {}, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
+      std::vector<const char*> enabledLayerNames;
+      //Utility::setEnvironmentVariable("VK_LAYER_PATH", TestUtils::getExecutableDir());
+      //enabledLayerNames.emplace_back("VK_LAYER_KHRONOS_validation");
 
-      std::cout << std::format("root.instance: '{}'", (bool) root.instance.value) << std::endl;
-      std::cout << std::format("root.surface: '{}'", (bool) root.surface.value) << std::endl;
-      std::cout << std::format("root.physicalDevice: '{}'", (bool) root.physicalDevice.value) << std::endl;
-      std::cout << std::format("root.physicalDeviceTimestampPeriod: '{}'", root.physicalDeviceTimestampPeriod) << std::endl;
-      std::cout << std::format("root.physicalDeviceMsaaSamples: '{}'", vk::to_string(root.physicalDeviceMsaaSamples)) << std::endl;
-      std::cout << std::format("root.device: '{}'", (bool) root.device.value) << std::endl;
-      std::cout << std::format("root.transferQueue: '{}'", (bool) root.transferQueue.value) << std::endl;
-      std::cout << std::format("root.graphicsQueue: '{}'", (bool) root.graphicsQueue.value) << std::endl;
-      std::cout << std::format("root.presentQueue: '{}'", (bool) root.presentQueue.value) << std::endl;
-      std::cout << std::format("root.transferCommandPool: '{}'", (bool) root.transferCommandPool.value) << std::endl;
-      std::cout << std::format("root.graphicsCommandPool: '{}'", (bool) root.graphicsCommandPool.value) << std::endl;
-      std::cout << std::format("root.transferCommandBuffer: '{}'", (bool) root.transferCommandBuffer.value) << std::endl;
-      std::cout << std::format("root.descriptorSetLayout: '{}'", (bool) root.descriptorSetLayout.value) << std::endl;
-      std::cout << std::format("root.queryPool: '{}'", (bool) root.queryPool.value) << std::endl;
-      std::cout << std::format("root.swapchain: '{}'", (bool) root.swapchain.value) << std::endl;
-      std::cout << std::format("root.swapchain.images.size: '{}'", root.swapchain.value ? root.swapchain.reference().getImages().size() : 0) << std::endl;
-      std::ranges::for_each(root.swapchainImages, [](const auto& o1) {std::cout << std::format("root.swapchainImage: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.swapchainImageViews, [](const auto& o1) {std::cout << std::format("root.swapchainImageView: '{}'", (bool) o1.value) << std::endl;});
-      std::cout << std::format("root.renderPass: '{}'", (bool) root.renderPass.value) << std::endl;
-      std::cout << std::format("root.pipeline: '{}'", (bool) root.pipeline.value) << std::endl;
-      std::ranges::for_each(root.swapchainFramebuffers, [](const auto& o1) {std::cout << std::format("root.swapchainFramebuffer: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.samplerImages, [](auto& o1) {std::cout << std::format("root.samplerImage: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.samplerImageViews, [](auto& o1) {std::cout << std::format("root.samplerImageView: '{}'", (bool) o1.value) << std::endl;});
-      std::cout << std::format("root.descriptorPool: '{}'", (bool) root.descriptorPool.value) << std::endl;
-      std::cout << std::format("root.sampler: '{}'", (bool) root.sampler.value) << std::endl;
-      std::ranges::for_each(root.descriptorSets, [](auto& o1) {std::cout << std::format("root.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.graphicsCommandBuffers, [](const auto& o1) {std::cout << std::format("root.graphicsCommandBuffer: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.imageAvailableSemaphores, [](auto& o1) {std::cout << std::format("root.imageAvailableSemaphore: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.renderFinishedSemaphores, [](auto& o1) {std::cout << std::format("root.renderFinishedSemaphore: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(root.inFlightFences, [](auto& o1) {std::cout << std::format("root.inFlightFence: '{}'", (bool) o1.value) << std::endl;});
+      root.init(enabledExtensionNames, enabledLayerNames, {}, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
+
+      std::cout << "root.instance: '" << (bool) root.instance.value << "'" << std::endl;
+      std::cout << "root.surface: '" << (bool) root.surface.value << "'" << std::endl;
+      std::cout << "root.physicalDevice: '" << (bool) root.physicalDevice.value << "'" << std::endl;
+      std::cout << "root.physicalDeviceTimestampPeriod: '" << root.physicalDeviceTimestampPeriod << "'" << std::endl;
+      std::cout << "root.physicalDeviceMsaaSamples: '" << vk::to_string(root.physicalDeviceMsaaSamples) << "'" << std::endl;
+      std::cout << "root.device: '" << (bool) root.device.value << "'" << std::endl;
+      std::cout << "root.transferQueue: '" << (bool) root.transferQueue.value << "'" << std::endl;
+      std::cout << "root.graphicsQueue: '" << (bool) root.graphicsQueue.value << "'" << std::endl;
+      std::cout << "root.presentQueue: '" << (bool) root.presentQueue.value << "'" << std::endl;
+      std::cout << "root.transferCommandPool: '" << (bool) root.transferCommandPool.value << "'" << std::endl;
+      std::cout << "root.graphicsCommandPool: '" << (bool) root.graphicsCommandPool.value << "'" << std::endl;
+      std::cout << "root.transferCommandBuffer: '" << (bool) root.transferCommandBuffer.value << "'" << std::endl;
+      std::cout << "root.descriptorSetLayout: '" << (bool) root.descriptorSetLayout.value << "'" << std::endl;
+      std::cout << "root.queryPool: '" << (bool) root.queryPool.value << "'" << std::endl;
+      std::cout << "root.swapchain: '" << (bool) root.swapchain.value << "'" << std::endl;
+      std::cout << "root.swapchain.images.size: '" << (root.swapchain.value ? root.swapchain.reference().getImages().size() : 0) << "'" << std::endl;
+      std::ranges::for_each(root.swapchainImages, [](const auto& o1) {std::cout << "root.swapchainImage: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.swapchainImageViews, [](const auto& o1) {std::cout << "root.swapchainImageView: '" << (bool) o1.value << "'" << std::endl;});
+      std::cout << "root.renderPass: '" << (bool) root.renderPass.value << "'" << std::endl;
+      std::cout << "root.pipeline: '" << (bool) root.pipeline.value << "'" << std::endl;
+      std::ranges::for_each(root.swapchainFramebuffers, [](const auto& o1) {std::cout << "root.swapchainFramebuffer: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.samplerImages, [](auto& o1) {std::cout << "root.samplerImage: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.samplerImageViews, [](auto& o1) {std::cout << "root.samplerImageView: '" << (bool) o1.value << "'" << std::endl;});
+      std::cout << "root.descriptorPool: '" << (bool) root.descriptorPool.value << "'" << std::endl;
+      std::cout << "root.sampler: '" << (bool) root.sampler.value << "'" << std::endl;
+      std::ranges::for_each(root.descriptorSets, [](auto& o1) {std::cout << "root.descriptorSet: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.graphicsCommandBuffers, [](const auto& o1) {std::cout << "root.graphicsCommandBuffer: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.imageAvailableSemaphores, [](auto& o1) {std::cout << "root.imageAvailableSemaphore: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.renderFinishedSemaphores, [](auto& o1) {std::cout << "root.renderFinishedSemaphore: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(root.inFlightFences, [](auto& o1) {std::cout << "root.inFlightFence: '" << (bool) o1.value << "'" << std::endl;});
 
       data.init(root, vertexVector, indexVector, textureWidth, textureHeight, textureDepth, textureMipLevels);
 
-      std::cout << std::format("data.vertexStagingBuffer: '{}'", (bool) data.vertexStagingBuffer.value) << std::endl;
-      std::cout << std::format("data.vertexBuffer: '{}'", (bool) data.vertexBuffer.value) << std::endl;
-      std::cout << std::format("data.indexStagingBuffer: '{}'", (bool) data.indexStagingBuffer.value) << std::endl;
-      std::cout << std::format("data.indexBuffer: '{}'", (bool) data.indexBuffer.value) << std::endl;
-      std::cout << std::format("data.textureBuffer: '{}'", (bool) data.textureBuffer.value) << std::endl;
-      std::cout << std::format("data.textureImage: '{}'", (bool) data.textureImage.value) << std::endl;
-      std::cout << std::format("data.textureImageView: '{}'", (bool) data.textureImageView.value) << std::endl;
-      std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << std::format("data.uniformBuffer: '{}'", (bool) o1.value) << std::endl;});
+      std::cout << "data.vertexStagingBuffer: '" << (bool) data.vertexStagingBuffer.value << "'" << std::endl;
+      std::cout << "data.vertexBuffer: '" << (bool) data.vertexBuffer.value << "'" << std::endl;
+      std::cout << "data.indexStagingBuffer: '" << (bool) data.indexStagingBuffer.value << "'" << std::endl;
+      std::cout << "data.indexBuffer: '" << (bool) data.indexBuffer.value << "'" << std::endl;
+      std::cout << "data.textureBuffer: '" << (bool) data.textureBuffer.value << "'" << std::endl;
+      std::cout << "data.textureImage: '" << (bool) data.textureImage.value << "'" << std::endl;
+      std::cout << "data.textureImageView: '" << (bool) data.textureImageView.value << "'" << std::endl;
+      std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << "data.uniformBuffer: '" << (bool) o1.value << "'" << std::endl;});
 
       light.init(root, data.shadowUniformBuffers, {"resources/shader/shader-3.vert.spv", "resources/shader/shader-3.frag.spv"});
 
-      std::ranges::for_each(light.shadowImages, [](auto& o1) {std::cout << std::format("light.shadowImage: '{}'", (bool) o1.value) << std::endl;});
-      std::ranges::for_each(light.shadowImageViews, [](auto& o1) {std::cout << std::format("light.shadowImageView: '{}'", (bool) o1.value) << std::endl;});
-      std::cout << std::format("light.sampler: '{}'", (bool) light.sampler.value) << std::endl;
-      std::cout << std::format("light.descriptorSetLayout: '{}'", (bool) light.descriptorSetLayout.value) << std::endl;
-      std::cout << std::format("light.descriptorPool: '{}'", (bool) light.descriptorPool.value) << std::endl;
-      std::cout << std::format("light.descriptorPool: '{}'", (bool) light.descriptorPool.value) << std::endl;
-      std::ranges::for_each(light.descriptorSets, [](auto& o1) {std::cout << std::format("light.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
-      std::cout << std::format("light.renderPass: '{}'", (bool) light.renderPass.value) << std::endl;
-      std::cout << std::format("light.pipeline: '{}'", (bool) light.pipeline.value) << std::endl;
-      std::ranges::for_each(light.framebuffers, [](auto& o1) {std::cout << std::format("light.framebuffer: '{}'", (bool) o1.value) << std::endl;});
+      std::ranges::for_each(light.shadowImages, [](auto& o1) {std::cout << "light.shadowImage: '" << (bool) o1.value << "'" << std::endl;});
+      std::ranges::for_each(light.shadowImageViews, [](auto& o1) {std::cout << "light.shadowImageView: '" << (bool) o1.value << "'" << std::endl;});
+      std::cout << "light.sampler: '" << (bool) light.sampler.value << "'" << std::endl;
+      std::cout << "light.descriptorSetLayout: '" << (bool) light.descriptorSetLayout.value << "'" << std::endl;
+      std::cout << "light.descriptorPool: '" << (bool) light.descriptorPool.value << "'" << std::endl;
+      std::cout << "light.descriptorPool: '" << (bool) light.descriptorPool.value << "'" << std::endl;
+      std::ranges::for_each(light.descriptorSets, [](auto& o1) {std::cout << "light.descriptorSet: '" << (bool) o1.value << "'" << std::endl;});
+      std::cout << "light.renderPass: '" << (bool) light.renderPass.value << "'" << std::endl;
+      std::cout << "light.pipeline: '" << (bool) light.pipeline.value << "'" << std::endl;
+      std::ranges::for_each(light.framebuffers, [](auto& o1) {std::cout << "light.framebuffer: '" << (bool) o1.value << "'" << std::endl;});
 
       camera.init(root, light, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
 
-      std::cout << std::format("camera.descriptorSetLayout: '{}'", (bool) camera.descriptorSetLayout.value) << std::endl;
-      std::cout << std::format("camera.sampler: '{}'", (bool) camera.sampler.value) << std::endl;
-      std::cout << std::format("camera.descriptorPool: '{}'", (bool) camera.descriptorPool.value) << std::endl;
-      std::ranges::for_each(camera.descriptorSets, [](auto& o1) {std::cout << std::format("camera.descriptorSet: '{}'", (bool) o1.value) << std::endl;});
+      std::cout << "camera.descriptorSetLayout: '" << (bool) camera.descriptorSetLayout.value << "'" << std::endl;
+      std::cout << "camera.sampler: '" << (bool) camera.sampler.value << "'" << std::endl;
+      std::cout << "camera.descriptorPool: '" << (bool) camera.descriptorPool.value << "'" << std::endl;
+      std::ranges::for_each(camera.descriptorSets, [](auto& o1) {std::cout << "camera.descriptorSet: '" << (bool) o1.value << "'" << std::endl;});
 
       data.vertexStagingBuffer.fill(vertexVector.data());
       data.indexStagingBuffer.fill(indexVector.data());
@@ -438,7 +439,7 @@ namespace exqudens::vulkan {
           )
           .setMemoryCreateInfo(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
           .build();
-      std::cout << std::format("outputImage: '{}'", (bool) outputImage.value) << std::endl;
+      std::cout << "outputImage: '" << (bool) outputImage.value << "'" << std::endl;
 
       float angleLeft = 0.0f;
       float angleUp = 0.0f;
@@ -544,7 +545,7 @@ namespace exqudens::vulkan {
       ASSERT_EQ(expected[0][0].size(), actual[0][0].size());
       ASSERT_EQ(expected, actual);
 
-      std::cout << std::format("{} ... done", CALL_INFO()) << std::endl;
+      std::cout << CALL_INFO() + " ... done" << std::endl;
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }

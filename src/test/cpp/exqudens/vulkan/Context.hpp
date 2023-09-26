@@ -42,6 +42,7 @@ namespace exqudens::vulkan {
 
     void init(
         const std::vector<const char*>& enabledExtensionNames,
+        const std::vector<const char*>& enabledLayerNames,
         const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
         const uint32_t& queryPoolSize,
         const uint32_t& width,

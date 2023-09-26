@@ -8,6 +8,7 @@ namespace exqudens::vulkan {
 
   void Context::init(
       const std::vector<const char*>& enabledExtensionNames,
+      const std::vector<const char*>& enabledLayerNames,
       const std::function<VkSurfaceKHR(VkInstance)>& createSurfaceFunction,
       const uint32_t& queryPoolSize,
       const uint32_t& width,
@@ -16,8 +17,8 @@ namespace exqudens::vulkan {
   ) {
     try {
       instance = Instance::builder()
-          .addEnabledLayerName("VK_LAYER_KHRONOS_validation")
           .setEnabledExtensionNames(enabledExtensionNames)
+          .setEnabledLayerNames(enabledLayerNames)
           .setApplicationInfo(
               vk::ApplicationInfo()
                   .setPApplicationName("Exqudens Application")
