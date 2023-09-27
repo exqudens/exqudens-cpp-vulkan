@@ -186,10 +186,20 @@
         }
       }
     },
+    {
+      "name": "vvl-no-conan",
+      "hidden": true,
+      "cacheVariables": {
+        "VVL_CONAN": {
+          "type": "BOOL",
+          "value": false
+        }
+      }
+    },
 
     {
       "name": "windows.ninja.interface",
-      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt", "glslc-no-conan", "no-conan", "skip-test" ],
+      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt", "vvl-no-conan", "glslc-no-conan", "no-conan", "skip-test" ],
       "binaryDir": "${sourceDir}/build/0"
     },
 

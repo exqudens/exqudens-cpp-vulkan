@@ -7,27 +7,14 @@ required_conan_version = ">=1.43.0"
 
 class ConanConfiguration(ConanFile):
     settings = "arch", "os", "compiler", "build_type"
-    options = {"shared": [True, False], "interface": [True, False], "gtest_reference": ["ANY"]}
-    default_options = {"shared": True, "interface": False, "gtest_reference": "gtest/1.11.0"}
+    options = {"shared": [True, False], "interface": [True, False]}
+    default_options = {"shared": True, "interface": False}
     generators = "cmake_find_package"
 
     def requirements(self):
         try:
-            self.requires(str(self.options.gtest_reference))
-            self.requires("glm/cci.20230113")
-            self.requires("tinyobjloader/1.0.6")
-            self.requires("lodepng/cci.20200615")
             if self.settings.os == "Windows":
-                self.requires("glfw/3.3.8")
-        except Exception as e:
-            logging.error(e, exc_info=True)
-            raise e
-
-    def configure(self):
-        try:
-            self.options["gtest"].shared = self.options.shared
-            self.options["glfw"].shared = self.options.shared
-            self.options["lodepng"].shared = self.options.shared
+                self.requires("vulkan-validationlayers/1.3.231.1")
         except Exception as e:
             logging.error(e, exc_info=True)
             raise e
@@ -66,9 +53,6 @@ class ConanConfiguration(ConanFile):
         try:
             self.copy(pattern="*.dll", dst="bin", src="bin")
             self.copy(pattern="*.json", dst="bin", src="bin")
-            self.copy(pattern="*.so", dst="lib", src="lib")
-            self.copy(pattern="*.so.*", dst="lib", src="lib")
-            self.copy(pattern="*.dylib", dst="lib", src="lib")
         except Exception as e:
             logging.error(e, exc_info=True)
             raise e

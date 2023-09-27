@@ -24,6 +24,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS "TRUE" CACHE BOOL "..." FORCE)
 set(COMPILER "None" CACHE STRING "...")
 set(USE_CONAN "TRUE" CACHE BOOL "...")
 set(GLSLC_CONAN "TRUE" CACHE BOOL "...")
+set(VVL_CONAN "TRUE" CACHE BOOL "...")
 set(SKIP_TEST "FALSE" CACHE BOOL "...")
 
 string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
@@ -44,6 +45,16 @@ if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msv
     endif()
     if(NOT "${GLSLC_CONAN}")
         find_program(GLSLC_COMMAND NAMES "glslc.exe" PATHS ENV GLSLC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+    endif()
+    if(NOT "${VVL_CONAN}")
+        if("${VK_LAYER_PATH}" STREQUAL "")
+            set(VK_LAYER_PATH "$ENV{VK_LAYER_PATH}")
+        elseif()
+            set(ENV{VK_LAYER_PATH} "${VK_LAYER_PATH}")
+        endif()
+        if("${VK_LAYER_PATH}" STREQUAL "")
+            message(FATAL_ERROR "'VK_LAYER_PATH' is empty!")
+        endif()
     endif()
 elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "gcc")
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake")
@@ -148,6 +159,7 @@ endif()
 set(CONAN_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/conan-install")
 set(CONAN_INSTALL_TEST_PREFIX "${PROJECT_BINARY_DIR}/conan-install-test")
 set(CONAN_INSTALL_GLSLC_PREFIX "${PROJECT_BINARY_DIR}/conan-install-glslc")
+set(CONAN_INSTALL_VVL_PREFIX "${PROJECT_BINARY_DIR}/conan-install-vvl")
 
 file(MAKE_DIRECTORY "${CONAN_INSTALL_PREFIX}/bin")
 file(MAKE_DIRECTORY "${CONAN_INSTALL_PREFIX}/lib")
@@ -155,8 +167,6 @@ file(MAKE_DIRECTORY "${CONAN_INSTALL_TEST_PREFIX}/bin")
 file(MAKE_DIRECTORY "${CONAN_INSTALL_TEST_PREFIX}/lib")
 
 if("${USE_CONAN}")
-    set_conan_compiler_version(CONAN_GLSLC_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
-
     set_conan_architecture(CONAN_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
     set_conan_compiler(CONAN_COMPILER "${CMAKE_CXX_COMPILER_ID}")
     set_conan_compiler_version(CONAN_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
@@ -166,6 +176,8 @@ if("${USE_CONAN}")
     set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
 
     if("${GLSLC_CONAN}")
+        set_conan_compiler_version(CONAN_GLSLC_COMPILER_VERSION "${CMAKE_CXX_COMPILER_ID}" "${CMAKE_CXX_COMPILER_VERSION}" MAX_ELEMENTS "1")
+
         if("${CONAN_COMPILER}" STREQUAL "gcc" AND "${CONAN_GLSLC_COMPILER_VERSION}" GREATER "10")
             set(CONAN_GLSLC_COMPILER_VERSION "10")
         endif()
@@ -200,6 +212,41 @@ if("${USE_CONAN}")
         include("${CONAN_INSTALL_GLSLC_PREFIX}/conan-packages.cmake")
         list(GET "${PROJECT_NAME}_CMAKE_PACKAGE_PATHS" "0" cmakePackagePath)
         find_program(GLSLC_COMMAND NAMES "glslc.exe" "glslc" PATHS "${cmakePackagePath}/bin" REQUIRED NO_DEFAULT_PATH)
+    endif()
+
+    if("${VVL_CONAN}")
+        if(NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
+            set(CONAN_COMPILER_RUNTIME_MD "MD")
+        endif()
+
+        set_conan_settings(CONAN_VVL_SETTINGS
+            "arch=${CONAN_ARCH}"
+            "os=${CMAKE_SYSTEM_NAME}"
+            "compiler=${CONAN_COMPILER}"
+            "compiler.version=${CONAN_COMPILER_VERSION}"
+            "compiler.runtime=${CONAN_COMPILER_RUNTIME_MD}"
+            "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
+            "build_type=Release"
+        )
+
+        if(NOT EXISTS "${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake")
+            execute_process(
+                COMMAND "${CONAN_COMMAND}" install
+                        --install-folder "${CONAN_INSTALL_VVL_PREFIX}"
+                        ${CONAN_VVL_SETTINGS}
+                        "${PROJECT_SOURCE_DIR}/vvl-conanfile.py"
+                COMMAND_ECHO "STDERR"
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ENCODING "UTF-8"
+                COMMAND_ERROR_IS_FATAL ANY
+            )
+        endif()
+
+        if(NOT EXISTS "${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake")
+            message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake'")
+        endif()
+
+        file(COPY "${CONAN_INSTALL_VVL_PREFIX}/bin/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/bin")
     endif()
 
     set_conan_settings(CONAN_SETTINGS
@@ -283,6 +330,7 @@ if("${USE_CONAN}")
                         --install-folder "${CONAN_INSTALL_TEST_PREFIX}"
                         ${CONAN_SETTINGS}
                         ${CONAN_OPTIONS}
+                        #--options "gtest_reference=gtest/1.14.0"
                         "${PROJECT_SOURCE_DIR}/test-conanfile.py"
                 COMMAND_ECHO "STDERR"
                 OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -369,8 +417,9 @@ foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
     elseif("Vulkan" STREQUAL "${cmakePackageName}")
         find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
     elseif("GTest" STREQUAL "${cmakePackageName}")
+        file(REMOVE "${CONAN_INSTALL_TEST_PREFIX}/Find${cmakePackageName}.cmake")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET CONFIG)
     elseif("glfw3" STREQUAL "${cmakePackageName}")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" QUIET)
@@ -780,8 +829,8 @@ if(NOT "${SKIP_TEST}")
         if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
             add_custom_command(TARGET "test-app"
                 PRE_BUILD
-                #COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-                #COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_TEST_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_TEST_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
                 COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
                 USES_TERMINAL
@@ -790,8 +839,8 @@ if(NOT "${SKIP_TEST}")
         else()
             add_custom_command(TARGET "test-app"
                 PRE_BUILD
-                #COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
-                #COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_TEST_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_TEST_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 COMMAND "${CMAKE_COMMAND}" -E make_directory "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
                 COMMAND "${CMAKE_COMMAND}" -E copy_directory "${PROJECT_SOURCE_DIR}/src/test/resources" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>/resources"
                 USES_TERMINAL
