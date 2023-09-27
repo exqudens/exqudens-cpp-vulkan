@@ -157,111 +157,81 @@
       }
     },
     {
-      "name": "conan-deps",
+      "name": "no-conan",
       "hidden": true,
       "cacheVariables": {
-        "DEPENDENCIES": {
-          "type": "BOOL",
-          "value": true
-        }
-      }
-    },
-    {
-      "name": "no-conan-deps",
-      "hidden": true,
-      "cacheVariables": {
-        "DEPENDENCIES": {
+        "USE_CONAN": {
           "type": "BOOL",
           "value": false
         }
       }
     },
     {
-      "name": "test-deps",
+      "name": "skip-test",
       "hidden": true,
       "cacheVariables": {
-        "TEST_DEPENDENCIES": {
+        "SKIP_TEST": {
           "type": "BOOL",
           "value": true
         }
       }
     },
     {
-      "name": "no-test-deps",
+      "name": "glslc-no-conan",
       "hidden": true,
       "cacheVariables": {
-        "TEST_DEPENDENCIES": {
+        "GLSLC_CONAN": {
           "type": "BOOL",
           "value": false
-        }
-      }
-    },
-    {
-      "name": "glslc-system",
-      "hidden": true,
-      "cacheVariables": {
-        "GLSLC": {
-          "type": "STRING",
-          "value": "system"
-        }
-      }
-    },
-    {
-      "name": "glslc-conan",
-      "hidden": true,
-      "cacheVariables": {
-        "GLSLC": {
-          "type": "STRING",
-          "value": "conan"
         }
       }
     },
 
     {
       "name": "windows.ninja.interface",
-      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt", "glslc-system", "no-conan-deps", "no-test-deps" ],
+      "inherits": [ "default", "windows", "ninja", "release", "interface", "mt", "glslc-no-conan", "no-conan", "skip-test" ],
       "binaryDir": "${sourceDir}/build/0"
     },
 
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.static",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "static", "mtd", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "static", "mtd" ],
       "binaryDir": "${sourceDir}/build/1"
     },
     {
       "name": "windows.ninja.msvc-16-x64-x64.debug.shared",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "shared", "mdd", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "debug", "shared", "mdd" ],
       "binaryDir": "${sourceDir}/build/2"
     },
     {
       "name": "windows.ninja.msvc-16-x64-x64.release.static",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "static", "mt", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "static", "mt" ],
       "binaryDir": "${sourceDir}/build/3"
     },
     {
       "name": "windows.ninja.msvc-16-x64-x64.release.shared",
-      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "shared", "md", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "windows", "ninja", "msvc-16-x64-x64", "release", "shared", "md" ],
       "binaryDir": "${sourceDir}/build/4"
     },
 
     {
       "name": "linux.ninja.gcc.debug.static",
-      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "static", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "static" ],
       "binaryDir": "${sourceDir}/build/5"
     },
     {
       "name": "linux.ninja.gcc.debug.shared",
-      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "shared", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "linux", "ninja", "gcc", "debug", "shared" ],
       "binaryDir": "${sourceDir}/build/6"
     },
     {
       "name": "linux.ninja.gcc.release.static",
-      "inherits": [ "default", "linux", "ninja", "gcc", "release", "static", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "linux", "ninja", "gcc", "release", "static" ],
       "binaryDir": "${sourceDir}/build/7"
     },
     {
       "name": "linux.ninja.gcc.release.shared",
-      "inherits": [ "default", "linux", "ninja", "gcc", "release", "shared", "glslc-conan", "conan-deps", "test-deps" ],
+      "inherits": [ "default", "linux", "ninja", "gcc", "release", "shared" ],
       "binaryDir": "${sourceDir}/build/8"
     }
   ],
