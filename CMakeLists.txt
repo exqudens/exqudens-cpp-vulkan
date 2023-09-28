@@ -1,5 +1,17 @@
 cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
+set(CMAKE_VERBOSE_MAKEFILE "TRUE" CACHE BOOL "..." FORCE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS "TRUE" CACHE BOOL "..." FORCE)
+set(COMPILER "None" CACHE STRING "...")
+set(VULKAN_PACKAGE_NAME "VulkanHeaders" CACHE STRING "...")
+set(VULKAN_PACKAGE_VERSION "1.3.231.1" CACHE STRING "...")
+set(USE_CONAN "TRUE" CACHE BOOL "...")
+set(CONAN_VULKAN_REFERENCE "vulkan-headers/${VULKAN_PACKAGE_VERSION}" CACHE STRING "...")
+set(CONAN_GTEST_REFERENCE "gtest/1.11.0" CACHE STRING "...")
+set(GLSLC_CONAN "TRUE" CACHE BOOL "...")
+set(VVL_CONAN "TRUE" CACHE BOOL "...")
+set(SKIP_TEST "FALSE" CACHE BOOL "...")
+
 block()
     set(fileName "util.cmake")
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/${fileName}")
@@ -18,15 +30,6 @@ block()
 endblock()
 
 include("${CMAKE_CURRENT_BINARY_DIR}/../cmake/util.cmake")
-
-set(CMAKE_VERBOSE_MAKEFILE "TRUE" CACHE BOOL "..." FORCE)
-set(CMAKE_EXPORT_COMPILE_COMMANDS "TRUE" CACHE BOOL "..." FORCE)
-set(COMPILER "None" CACHE STRING "...")
-set(USE_CONAN "TRUE" CACHE BOOL "...")
-set(CONAN_GTEST_REFERENCE "gtest/1.11.0" CACHE STRING "...")
-set(GLSLC_CONAN "TRUE" CACHE BOOL "...")
-set(VVL_CONAN "TRUE" CACHE BOOL "...")
-set(SKIP_TEST "FALSE" CACHE BOOL "...")
 
 string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
 if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msvc-16-x64-x64")
@@ -47,7 +50,7 @@ if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msv
     if(NOT "${GLSLC_CONAN}")
         find_program(GLSLC_COMMAND NAMES "glslc.exe" PATHS ENV GLSLC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
     endif()
-    if(NOT "${VVL_CONAN}")
+    #[[if(NOT "${VVL_CONAN}")
         if("${VK_LAYER_PATH}" STREQUAL "")
             set(VK_LAYER_PATH "$ENV{VK_LAYER_PATH}")
         elseif()
@@ -56,7 +59,7 @@ if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msv
         if("${VK_LAYER_PATH}" STREQUAL "")
             message(FATAL_ERROR "'VK_LAYER_PATH' is empty!")
         endif()
-    endif()
+    endif()]]
 elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "gcc")
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake")
         find_file(COMPILER_PATH NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
@@ -220,39 +223,42 @@ if("${USE_CONAN}")
     endif()
 
     if("${VVL_CONAN}")
-        if(NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
-            set(CONAN_COMPILER_RUNTIME_MD "MD")
-        endif()
+        if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+            if(NOT "${CMAKE_MSVC_RUNTIME_LIBRARY}" STREQUAL "")
+                set(CONAN_COMPILER_RUNTIME_MD "MD")
+            endif()
 
-        set_conan_settings(CONAN_VVL_SETTINGS
-            "arch=${CONAN_ARCH}"
-            "os=${CMAKE_SYSTEM_NAME}"
-            "compiler=${CONAN_COMPILER}"
-            "compiler.version=${CONAN_COMPILER_VERSION}"
-            "compiler.runtime=${CONAN_COMPILER_RUNTIME_MD}"
-            "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
-            "build_type=Release"
-        )
-
-        if(NOT EXISTS "${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake")
-            execute_process(
-                COMMAND "${CONAN_COMMAND}" install
-                        --install-folder "${CONAN_INSTALL_VVL_PREFIX}"
-                        ${CONAN_VVL_SETTINGS}
-                        "${PROJECT_SOURCE_DIR}/vvl-conanfile.py"
-                COMMAND_ECHO "STDERR"
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                ENCODING "UTF-8"
-                COMMAND_ERROR_IS_FATAL ANY
+            set_conan_settings(CONAN_VVL_SETTINGS
+                "arch=${CONAN_ARCH}"
+                "os=${CMAKE_SYSTEM_NAME}"
+                "compiler=${CONAN_COMPILER}"
+                "compiler.version=${CONAN_COMPILER_VERSION}"
+                "compiler.runtime=${CONAN_COMPILER_RUNTIME_MD}"
+                "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
+                "build_type=Release"
             )
-        endif()
 
-        if(NOT EXISTS "${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake")
-            message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake'")
-        endif()
+            if(NOT EXISTS "${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake")
+                execute_process(
+                    COMMAND "${CONAN_COMMAND}" install
+                            --install-folder "${CONAN_INSTALL_VVL_PREFIX}"
+                            ${CONAN_VVL_SETTINGS}
+                            --options "vulkan_reference=vulkan-validationlayers/${VULKAN_PACKAGE_VERSION}"
+                            "${PROJECT_SOURCE_DIR}/vvl-conanfile.py"
+                    COMMAND_ECHO "STDERR"
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                    ENCODING "UTF-8"
+                    COMMAND_ERROR_IS_FATAL ANY
+                )
+            endif()
 
-        file(COPY "${CONAN_INSTALL_VVL_PREFIX}/bin/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/bin")
-        file(COPY "${CONAN_INSTALL_VVL_PREFIX}/lib/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/lib")
+            if(NOT EXISTS "${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake")
+                message(FATAL_ERROR "Not exists: '${CONAN_INSTALL_VVL_PREFIX}/conan-packages.cmake'")
+            endif()
+
+            file(COPY "${CONAN_INSTALL_VVL_PREFIX}/bin/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/bin")
+            file(COPY "${CONAN_INSTALL_VVL_PREFIX}/lib/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/lib")
+        endif()
     endif()
 
     set_conan_settings(CONAN_SETTINGS
@@ -269,6 +275,7 @@ if("${USE_CONAN}")
     set_conan_options(CONAN_OPTIONS
         "interface=${CONAN_INTERFACE_ONLY}"
         "shared=${CONAN_BUILD_SHARED_LIBS}"
+        "vulkan_reference=${CONAN_VULKAN_REFERENCE}"
     )
     message("CONAN_SETTINGS: '${CONAN_SETTINGS}'")
     message("CONAN_OPTIONS: '${CONAN_OPTIONS}'")
@@ -392,7 +399,7 @@ endif()
 
 if("${${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES}" STREQUAL "")
     set("${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
-        "VulkanHeaders"
+        "${VULKAN_PACKAGE_NAME}"
     )
     if(NOT "${SKIP_TEST}")
         list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
@@ -421,6 +428,7 @@ foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
         endif()
         find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
     elseif("Vulkan" STREQUAL "${cmakePackageName}")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
     elseif("GTest" STREQUAL "${cmakePackageName}")
         file(REMOVE "${CONAN_INSTALL_TEST_PREFIX}/Find${cmakePackageName}.cmake")
