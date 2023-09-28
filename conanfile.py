@@ -8,7 +8,7 @@ required_conan_version = ">=1.43.0"
 
 class ConanConfiguration(ConanFile):
     settings = "arch", "os", "compiler", "build_type"
-    options = {"shared": [True, False], "interface": [True, False], "vulkan_reference":["ANY"]}
+    options = {"shared": [True, False], "interface": [True, False], "vulkan_reference":[None, "ANY"]}
     default_options = {"shared": True, "interface": False, "vulkan_reference": "vulkan-headers/1.3.231.1"}
     generators = "cmake_find_package"
 
@@ -28,7 +28,8 @@ class ConanConfiguration(ConanFile):
 
     def requirements(self):
         try:
-            self.requires(str(self.options.vulkan_reference))
+            if self.options.vulkan_reference is not None and str(self.options.vulkan_reference) != "None":
+                self.requires(str(self.options.vulkan_reference))
         except Exception as e:
             logging.error(e, exc_info=True)
             raise e
