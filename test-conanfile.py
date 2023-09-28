@@ -8,7 +8,7 @@ required_conan_version = ">=1.43.0"
 class ConanConfiguration(ConanFile):
     settings = "arch", "os", "compiler", "build_type"
     options = {"shared": [True, False], "interface": [True, False], "gtest_reference": ["ANY"]}
-    default_options = {"shared": True, "interface": False, "gtest_reference": "gtest/1.11.0"}
+    default_options = {"shared": True, "interface": False, "gtest_reference": "gtest/1.14.0"}
     generators = "cmake_find_package"
 
     def requirements(self):

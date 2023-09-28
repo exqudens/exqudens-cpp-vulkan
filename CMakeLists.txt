@@ -7,7 +7,7 @@ block()
         file(DOWNLOAD
             "https://raw.githubusercontent.com/exqudens/exqudens-cmake/master/src/main/cmake/${fileName}"
             "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}"
-            EXPECTED_MD5 "45e1ffe4458069384764afcfd1e8a2c0"
+            EXPECTED_MD5 "37869f187abc25d25a2551f7e1911393"
             STATUS downloadStatus
         )
         if(NOT "${downloadStatus}" STREQUAL "0;\"No error\"")
@@ -23,6 +23,7 @@ set(CMAKE_VERBOSE_MAKEFILE "TRUE" CACHE BOOL "..." FORCE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS "TRUE" CACHE BOOL "..." FORCE)
 set(COMPILER "None" CACHE STRING "...")
 set(USE_CONAN "TRUE" CACHE BOOL "...")
+set(CONAN_GTEST_REFERENCE "gtest/1.11.0" CACHE STRING "...")
 set(GLSLC_CONAN "TRUE" CACHE BOOL "...")
 set(VVL_CONAN "TRUE" CACHE BOOL "...")
 set(SKIP_TEST "FALSE" CACHE BOOL "...")
@@ -165,6 +166,10 @@ file(MAKE_DIRECTORY "${CONAN_INSTALL_PREFIX}/bin")
 file(MAKE_DIRECTORY "${CONAN_INSTALL_PREFIX}/lib")
 file(MAKE_DIRECTORY "${CONAN_INSTALL_TEST_PREFIX}/bin")
 file(MAKE_DIRECTORY "${CONAN_INSTALL_TEST_PREFIX}/lib")
+file(MAKE_DIRECTORY "${CONAN_INSTALL_GLSLC_PREFIX}/bin")
+file(MAKE_DIRECTORY "${CONAN_INSTALL_GLSLC_PREFIX}/lib")
+file(MAKE_DIRECTORY "${CONAN_INSTALL_VVL_PREFIX}/bin")
+file(MAKE_DIRECTORY "${CONAN_INSTALL_VVL_PREFIX}/lib")
 
 if("${USE_CONAN}")
     set_conan_architecture(CONAN_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
@@ -247,6 +252,7 @@ if("${USE_CONAN}")
         endif()
 
         file(COPY "${CONAN_INSTALL_VVL_PREFIX}/bin/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/bin")
+        file(COPY "${CONAN_INSTALL_VVL_PREFIX}/lib/" DESTINATION "${CONAN_INSTALL_TEST_PREFIX}/lib")
     endif()
 
     set_conan_settings(CONAN_SETTINGS
@@ -330,7 +336,7 @@ if("${USE_CONAN}")
                         --install-folder "${CONAN_INSTALL_TEST_PREFIX}"
                         ${CONAN_SETTINGS}
                         ${CONAN_OPTIONS}
-                        #--options "gtest_reference=gtest/1.14.0"
+                        --options "gtest_reference=${CONAN_GTEST_REFERENCE}"
                         "${PROJECT_SOURCE_DIR}/test-conanfile.py"
                 COMMAND_ECHO "STDERR"
                 OUTPUT_STRIP_TRAILING_WHITESPACE
