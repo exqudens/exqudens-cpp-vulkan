@@ -269,6 +269,8 @@ if("${USE_CONAN}")
         "compiler.runtime=${CONAN_COMPILER_RUNTIME}"
         "compiler.libcxx=${CONAN_COMPILER_LIBCXX}"
         "build_type=${CMAKE_BUILD_TYPE}"
+        "vulkan:build_type=${CONAN_VULKAN_BUILD_TYPE}"
+        "vulkan:compiler.runtime=${CONAN_VULKAN_COMPILER_RUNTIME}"
         "glfw:build_type=Release"
         "glfw:compiler.runtime=${CONAN_RELEASE_COMPILER_RUNTIME}"
     )
@@ -431,7 +433,7 @@ foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         if("${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" STREQUAL "")
             find_package("${cmakePackageName}" QUIET)
-        elseif()
+        else()
             find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
         endif()
     elseif("GTest" STREQUAL "${cmakePackageName}")
