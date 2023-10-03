@@ -19,7 +19,7 @@ block()
         file(DOWNLOAD
             "https://raw.githubusercontent.com/exqudens/exqudens-cmake/master/src/main/cmake/${fileName}"
             "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}"
-            EXPECTED_MD5 "1e49518ef1adafe7fa6abce82e732f8e"
+            EXPECTED_MD5 "e673727e2ba6edf44b6f4be012a54188"
             STATUS downloadStatus
         )
         if(NOT "${downloadStatus}" STREQUAL "0;\"No error\"")
