@@ -11,6 +11,8 @@ set(CONAN_GTEST_REFERENCE "gtest/1.11.0" CACHE STRING "...")
 set(GLSLC_CONAN "TRUE" CACHE BOOL "...")
 set(VVL_CONAN "TRUE" CACHE BOOL "...")
 set(SKIP_TEST "FALSE" CACHE BOOL "...")
+set(TEST_GROUP "all" CACHE STRING "...")
+set(TEST_CASE "all" CACHE STRING "...")
 
 block()
     set(fileName "util.cmake")
@@ -19,7 +21,7 @@ block()
         file(DOWNLOAD
             "https://raw.githubusercontent.com/exqudens/exqudens-cmake/master/src/main/cmake/${fileName}"
             "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}"
-            EXPECTED_MD5 "e673727e2ba6edf44b6f4be012a54188"
+            EXPECTED_MD5 "28a83be2536fcac622b7cccb48e02229"
             STATUS downloadStatus
         )
         if(NOT "${downloadStatus}" STREQUAL "0;\"No error\"")
@@ -158,6 +160,15 @@ endif()
 set(TARGET_CMAKE_INSTALL_DEPENDS_ON "${PROJECT_NAME}")
 if(NOT "${SKIP_TEST}")
     set(TARGET_CMAKE_INSTALL_DEPENDS_ON "cmake-test")
+    if("${TEST_GROUP}" STREQUAL "all" AND "${TEST_CASE}" STREQUAL "all")
+        set(TEST_REGEXP "^.+\\..+$")
+    elseif(NOT "${TEST_GROUP}" STREQUAL "all" AND "${TEST_CASE}" STREQUAL "all")
+        set(TEST_REGEXP "^${TEST_GROUP}\\..+$")
+    elseif("${TEST_GROUP}" STREQUAL "all" AND NOT "${TEST_CASE}" STREQUAL "all")
+        set(TEST_REGEXP "^.+\\.${TEST_CASE}$")
+    elseif(NOT "${TEST_GROUP}" STREQUAL "all" AND NOT "${TEST_CASE}" STREQUAL "all")
+        set(TEST_REGEXP "^${TEST_GROUP}\\.${TEST_CASE}$")
+    endif()
 endif()
 
 set(CONAN_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/conan-install")
@@ -871,12 +882,11 @@ if(NOT "${SKIP_TEST}")
 
     gtest_discover_tests("test-app"
         WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/test/bin"
-        PROPERTIES ENVIRONMENT "PARENT_PATH=;PATH="
+        #PROPERTIES ENVIRONMENT "PARENT_PATH=;PATH="
     )
 
     add_custom_target("cmake-test"
-        COMMAND "${CMAKE_CTEST_COMMAND}" --preset "${PRESET_NAME}"
-                "-R" "UiTests\.test1"
+        COMMAND "${CMAKE_CTEST_COMMAND}" --preset "${PRESET_NAME}" "-R" "${TEST_REGEXP}"
         DEPENDS "test-app"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
         USES_TERMINAL
