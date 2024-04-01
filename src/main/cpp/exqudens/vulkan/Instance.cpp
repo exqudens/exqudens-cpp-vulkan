@@ -1,52 +1,54 @@
+#include <filesystem>
+#include <stdexcept>
+
 #include "exqudens/vulkan/Instance.hpp"
 #include "exqudens/vulkan/Utility.hpp"
-#include "exqudens/vulkan/macros.hpp"
 
-#include <stdexcept>
+#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
   vk::raii::Context& Instance::contextReference() {
     try {
       if (!context) {
-        throw std::runtime_error(CALL_INFO() + ": context is not initialized!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": context is not initialized!");
       }
       return *context;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
   vk::raii::Instance& Instance::reference() {
     try {
       if (!value) {
-        throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": value is not initialized!");
       }
       return *value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
   Messenger& Instance::messengerReference() {
     try {
       if (!messenger) {
-        throw std::runtime_error(CALL_INFO() + ": messenger is not initialized!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": messenger is not initialized!");
       }
       return *messenger;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
   vk::raii::DebugUtilsMessengerEXT& Instance::debugUtilsMessengerReference() {
     try {
       if (!debugUtilsMessenger) {
-        throw std::runtime_error(CALL_INFO() + ": debugUtilsMessenger is not initialized!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": debugUtilsMessenger is not initialized!");
       }
       return *debugUtilsMessenger;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
@@ -151,7 +153,7 @@ namespace exqudens::vulkan {
       );
       return target;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
@@ -160,3 +162,5 @@ namespace exqudens::vulkan {
   }
 
 }
+
+#undef EXQUDENS_VULKAN_CALL_INFO

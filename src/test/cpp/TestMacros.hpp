@@ -2,14 +2,13 @@
 
 #include <string>
 #include <filesystem>
-#include <iostream>
 
 #ifndef FUNCTION_INFO
 #define FUNCTION_INFO() std::string(__FUNCTION__)
 #endif
 
 #ifndef FILE_INFO
-#define FILE_INFO() std::filesystem::path(__FILE__).make_preferred().string()
+#define FILE_INFO() std::filesystem::relative(std::filesystem::path(__FILE__), std::filesystem::path(__BASE_FILE__)).make_preferred().string()
 #endif
 
 #ifndef LINE_INFO

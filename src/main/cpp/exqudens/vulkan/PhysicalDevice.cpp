@@ -1,19 +1,21 @@
-#include "exqudens/vulkan/PhysicalDevice.hpp"
-#include "exqudens/vulkan/macros.hpp"
-
-#include <stdexcept>
 #include <map>
+#include <filesystem>
+#include <stdexcept>
+
+#include "exqudens/vulkan/PhysicalDevice.hpp"
+
+#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
   vk::raii::PhysicalDevice& PhysicalDevice::reference() {
     try {
       if (!value) {
-        throw std::runtime_error(CALL_INFO() + ": value is not initialized!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": value is not initialized!");
       }
       return *value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
@@ -65,7 +67,7 @@ namespace exqudens::vulkan {
   PhysicalDevice PhysicalDevice::Builder::build() {
     try {
       if (!isSuitableFunction) {
-        throw std::runtime_error(CALL_INFO() + ": 'isSuitableFunction' is not defined!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": 'isSuitableFunction' is not defined!");
       }
 
       PhysicalDevice target = {};
@@ -160,11 +162,11 @@ namespace exqudens::vulkan {
 
       }
       if (!target.value) {
-        throw std::runtime_error(CALL_INFO() + ": failed to create physical device!");
+        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": failed to create physical device!");
       }
       return target;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
@@ -173,3 +175,5 @@ namespace exqudens::vulkan {
   }
 
 }
+
+#undef EXQUDENS_VULKAN_CALL_INFO

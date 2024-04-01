@@ -1,7 +1,10 @@
-#include "exqudens/vulkan/Messenger.hpp"
-#include "exqudens/vulkan/macros.hpp"
-
 #include <iostream>
+#include <filesystem>
+#include <stdexcept>
+
+#include "exqudens/vulkan/Messenger.hpp"
+
+#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
@@ -56,14 +59,14 @@ namespace exqudens::vulkan {
       } else {
         std::cout << formatted << std::endl;
       }
-      std::throw_with_nested(std::runtime_error(CALL_INFO() + ": " + e.what()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": " + e.what()));
     } catch (...) {
       if (messenger != nullptr && messenger->value != nullptr) {
         *messenger->value << formatted << std::endl;
       } else {
         std::cout << formatted << std::endl;
       }
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
     }
   }
 
@@ -79,3 +82,5 @@ namespace exqudens::vulkan {
   }
 
 }
+
+#undef EXQUDENS_VULKAN_CALL_INFO

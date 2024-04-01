@@ -19,9 +19,9 @@ block()
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/${fileName}")
         file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}")
         file(DOWNLOAD
-            "https://raw.githubusercontent.com/exqudens/exqudens-cmake/master/src/main/cmake/${fileName}"
+            "https://raw.githubusercontent.com/exqudens/exqudens-cmake/1.0.1/src/main/cmake/${fileName}"
             "${CMAKE_CURRENT_BINARY_DIR}/tmp/${fileName}"
-            EXPECTED_MD5 "28a83be2536fcac622b7cccb48e02229"
+            EXPECTED_MD5 "d7dd546adf3830d9eb6cca7b0dda7d4e"
             STATUS downloadStatus
         )
         if(NOT "${downloadStatus}" STREQUAL "0;\"No error\"")
@@ -42,7 +42,7 @@ if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msv
             VERSION "16"
             HOST "x64"
             TARGET "x64"
-            NO_CACHE "FALSE"
+            #NO_CACHE "FALSE"
             OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/../cmake/msvc-16-x64-x64-toolchain.cmake"
         )
     endif()
@@ -64,11 +64,11 @@ if("msvc-16-x64-x64" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "msv
     endif()]]
 elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS OR "${COMPILER}" STREQUAL "gcc")
     if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake")
-        find_file(COMPILER_PATH NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+        find_file(COMPILER_FILE NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
         set_gnu_toolchain(TOOLCHAIN_CONTENT
             PROCESSOR "x86_64"
             OS "${CMAKE_HOST_SYSTEM_NAME}"
-            PATH "${COMPILER_PATH}"
+            PATH "${COMPILER_FILE}"
             NO_CACHE "FALSE"
             OUTPUT_FILE "${CMAKE_CURRENT_BINARY_DIR}/../cmake/gcc-toolchain.cmake"
         )
@@ -525,7 +525,6 @@ if("${INTERFACE_ONLY}")
 else()
     add_library("${PROJECT_NAME}"
         "src/main/cpp/exqudens/vulkan/all.hpp"
-        "src/main/cpp/exqudens/vulkan/macros.hpp"
 
         "src/main/cpp/exqudens/vulkan/Utility.hpp"
         "src/main/cpp/exqudens/vulkan/Utility.cpp"
@@ -597,7 +596,10 @@ else()
         CUSTOM_CONTENT_FROM_VARIABLE "FUNCTION_ATTRIBUTES_DEFINE_CONTENT"
     )
     if(NOT "${BUILD_SHARED_LIBS}")
-        set_target_properties("${PROJECT_NAME}" PROPERTIES COMPILE_FLAGS -DEXQUDENS_VULKAN_STATIC_DEFINE)
+        target_compile_definitions("${PROJECT_NAME}" PUBLIC
+            #"__BASE_FILE__=\"${PROJECT_SOURCE_DIR}\""
+            "EXQUDENS_VULKAN_STATIC_DEFINE"
+        )
     endif()
     target_include_directories("${PROJECT_NAME}" PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
@@ -726,6 +728,8 @@ if(NOT "${SKIP_TEST}")
         "tinyobjloader::tinyobjloader"
     )
     set_target_properties("test-lib" PROPERTIES
+        COMPILE_DEFINITIONS "__BASE_FILE__=\"${PROJECT_SOURCE_DIR}\""
+
         RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/test/bin"
         RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/test/bin"
         RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/test/bin"
@@ -917,7 +921,7 @@ add_custom_target("conan-export"
 )
 
 set_target_names(ALL_TARGETS "${CMAKE_CURRENT_SOURCE_DIR}")
-message("all-targets:")
+message("ALL_TARGETS:")
 foreach(t IN LISTS ALL_TARGETS)
     message("  ${t}")
 endforeach()

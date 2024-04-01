@@ -2,9 +2,11 @@
 
 #include <cstddef>
 #include <cstring>
+#include <memory>
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <memory>
 #include <limits>
 #include <chrono>
 #include <algorithm>
@@ -543,12 +545,12 @@ namespace exqudens::vulkan {
         public:
 
           std::vector<std::string> arguments = {};
-          TestRenderer* renderer = nullptr;
+          std::shared_ptr<TestRenderer> renderer = nullptr;
 
           TestUiApplication(const int& argc, char** argv) {
             try {
               for (std::size_t i = 0; i < argc; i++) {
-                arguments.emplace_back(std::string(argv[i]));
+                arguments.emplace_back(argv[i]);
               }
             } catch (...) {
               std::throw_with_nested(std::runtime_error(CALL_INFO()));
@@ -577,7 +579,7 @@ namespace exqudens::vulkan {
               glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
               std::vector<const char*> glfwInstanceRequiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-              renderer = new TestRenderer();
+              renderer = std::make_shared<TestRenderer>();
               renderer->create(
                   arguments,
                   glfwInstanceRequiredExtensions,
@@ -597,7 +599,7 @@ namespace exqudens::vulkan {
               }
               renderer->waitIdle();
 
-              delete renderer;
+              renderer.reset();
               glfwDestroyWindow(window);
               glfwTerminate();
 
