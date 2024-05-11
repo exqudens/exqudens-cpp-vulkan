@@ -5,16 +5,28 @@
 #include <unordered_map>
 
 #include <gtest/gtest.h>
+#include <tiny_obj_loader.h>
 
 #include "TestUtils.hpp"
+#include "TestLogging.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
 
 namespace exqudens::vulkan {
 
-  class TinyObjLoaderTests : public testing::Test {};
+  class TinyObjLoaderTests : public testing::Test {
+
+    protected:
+
+      inline static const char* LOGGER_ID = "exqudens.vulkan.TinyObjLoaderTests";
+
+  };
 
   TEST_F(TinyObjLoaderTests, test1) {
     try {
+      std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+      std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' start";
+
       std::string executableDir = TestUtils::getExecutableDir();
 
       tinyobj::attrib_t attrib;
@@ -60,6 +72,8 @@ namespace exqudens::vulkan {
       }
 
       SUCCEED();
+
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' end";
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }

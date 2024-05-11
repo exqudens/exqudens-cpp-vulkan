@@ -2,11 +2,10 @@
 
 #include <string>
 #include <optional>
-#include <utility>
 
 class TestConfiguration {
 
-    friend class TestApplication;
+  friend class TestApplication;
 
   private:
 
@@ -21,6 +20,6 @@ class TestConfiguration {
 
   private:
 
-    static std::pair<int, std::string> setExecutableFile(const char* value);
+    static void setExecutableFile(const std::string& value);
 
 };

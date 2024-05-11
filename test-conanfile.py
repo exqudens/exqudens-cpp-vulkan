@@ -14,6 +14,7 @@ class ConanConfiguration(ConanFile):
     def requirements(self):
         try:
             self.requires(str(self.options.gtest_reference))
+            self.requires("easyloggingpp/9.89")
             self.requires("glm/cci.20230113")
             self.requires("tinyobjloader/1.0.6")
             self.requires("lodepng/cci.20200615")
@@ -26,6 +27,7 @@ class ConanConfiguration(ConanFile):
     def configure(self):
         try:
             self.options["gtest"].shared = self.options.shared
+            self.options["easyloggingpp"].interface = True
             self.options["glfw"].shared = self.options.shared
             self.options["lodepng"].shared = self.options.shared
         except Exception as e:

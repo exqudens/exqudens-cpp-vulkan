@@ -8,8 +8,6 @@
 #include <chrono>
 #include <functional>
 
-#include <tiny_obj_loader.h>
-
 #include "exqudens/vulkan/all.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
 

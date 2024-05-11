@@ -346,6 +346,11 @@ if("${USE_CONAN}")
             set("${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH" "${cmakePackagePath}")
         endif()
 
+        if("Vulkan" STREQUAL "${cmakePackageName}")
+            list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES" "${VULKAN_PACKAGE_NAME}")
+        else()
+            list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES" "${cmakePackageName}")
+        endif()
         list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
     endforeach()
 
@@ -405,6 +410,11 @@ if("${USE_CONAN}")
                 set("${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH" "${cmakePackagePath}")
             endif()
 
+            if("glfw" STREQUAL "${cmakePackageName}")
+                list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES" "glfw3")
+            else()
+                list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES" "${cmakePackageName}")
+            endif()
             list(APPEND CMAKE_PREFIX_PATH "${cmakePackagePath}")
         endforeach()
     endif()
@@ -417,6 +427,7 @@ if("${${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES}" STREQUAL "")
     if(NOT "${SKIP_TEST}")
         list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
             "GTest"
+            "Easyloggingpp"
             "glfw3"
             "glm"
             "tinyobjloader"
@@ -448,6 +459,10 @@ foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
             find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
         endif()
     elseif("GTest" STREQUAL "${cmakePackageName}")
+        file(REMOVE "${CONAN_INSTALL_TEST_PREFIX}/Find${cmakePackageName}.cmake")
+        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
+        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET CONFIG)
+    elseif("Easyloggingpp" STREQUAL "${cmakePackageName}")
         file(REMOVE "${CONAN_INSTALL_TEST_PREFIX}/Find${cmakePackageName}.cmake")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET CONFIG)
@@ -693,9 +708,11 @@ if(NOT "${SKIP_TEST}")
         "src/test/cpp/TestApplication.cpp"
         "src/test/cpp/TestConfiguration.hpp"
         "src/test/cpp/TestConfiguration.cpp"
-        "src/test/cpp/TestMacros.hpp"
         "src/test/cpp/TestUtils.hpp"
         "src/test/cpp/TestUtils.cpp"
+        "src/test/cpp/TestLogging.hpp"
+        "src/test/cpp/TestLogging.cpp"
+        "src/test/cpp/exqudens/vulkan/DrawingTriangleSystemTests.hpp"
         "src/test/cpp/exqudens/vulkan/Vertex.hpp"
         "src/test/cpp/exqudens/vulkan/UniformBufferObject.hpp"
         "src/test/cpp/exqudens/vulkan/Context.hpp"
@@ -722,6 +739,7 @@ if(NOT "${SKIP_TEST}")
         "GTest::gtest"
         "GTest::gmock_main"
         "GTest::gtest_main"
+        "Easyloggingpp::Easyloggingpp"
         "glm::glm"
         "lodepng::lodepng"
         "glfw"

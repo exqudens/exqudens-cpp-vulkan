@@ -1,8 +1,10 @@
-#include "exqudens/vulkan/Context.hpp"
-#include "TestMacros.hpp"
-
 #include <functional>
+#include <filesystem>
 #include <stdexcept>
+
+#include "exqudens/vulkan/Context.hpp"
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
@@ -208,7 +210,7 @@ namespace exqudens::vulkan {
 
       initSwapchain(width, height, paths);
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -636,8 +638,10 @@ namespace exqudens::vulkan {
       graphicsQueue.reference().submit(submits);
       graphicsQueue.reference().waitIdle();
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
 }
+
+#undef CALL_INFO

@@ -1,10 +1,12 @@
+#include <functional>
+#include <filesystem>
+#include <stdexcept>
+
 #include "exqudens/vulkan/CameraContext.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
 #include "exqudens/vulkan/UniformBufferObject.hpp"
-#include "TestMacros.hpp"
 
-#include <functional>
-#include <stdexcept>
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
@@ -140,7 +142,7 @@ namespace exqudens::vulkan {
             .build();
       }
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -448,8 +450,10 @@ namespace exqudens::vulkan {
             .build();
       }
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
 }
+
+#undef CALL_INFO

@@ -1,8 +1,10 @@
-#include "exqudens/vulkan/DataContext.hpp"
-#include "TestMacros.hpp"
-
 #include <functional>
+#include <filesystem>
 #include <stdexcept>
+
+#include "exqudens/vulkan/DataContext.hpp"
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
@@ -160,8 +162,10 @@ namespace exqudens::vulkan {
             .build();
       }
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(CALL_INFO()));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
 }
+
+#undef CALL_INFO

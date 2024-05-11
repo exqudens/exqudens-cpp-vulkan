@@ -7,9 +7,11 @@
 
 #include <gtest/gtest.h>
 
-#include "TestMacros.hpp"
-#include "TestConfiguration.hpp"
 #include "TestUtils.hpp"
+#include "TestLogging.hpp"
+#include "TestConfiguration.hpp"
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
@@ -17,11 +19,13 @@ namespace exqudens::vulkan {
 
     protected:
 
+      inline static const char* LOGGER_ID = "exqudens.vulkan.TestUtilsTests";
+
       void func3() {
         try {
-          throw std::invalid_argument(CALL_INFO() + ": Test error message!");
+          throw std::invalid_argument(CALL_INFO + ": Test error message!");
         } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
+          std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
       }
 
@@ -29,7 +33,7 @@ namespace exqudens::vulkan {
         try {
           func3();
         } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
+          std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
       }
 
@@ -37,7 +41,7 @@ namespace exqudens::vulkan {
         try {
           func2();
         } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
+          std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
       }
 
@@ -45,6 +49,10 @@ namespace exqudens::vulkan {
 
   TEST_F(TestUtilsTests, test1) {
     try {
+      std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+      std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' start";
+
       uint64_t a = 123;
       int64_t b = -123;
       float_t c = 123.123f;
@@ -89,6 +97,8 @@ namespace exqudens::vulkan {
       ASSERT_NE(actual1, actual2);
       ASSERT_NE(actual1, actual3);
       ASSERT_NE(actual2, actual3);
+
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' end";
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }
@@ -96,6 +106,10 @@ namespace exqudens::vulkan {
 
   TEST_F(TestUtilsTests, test2) {
     try {
+      std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+      std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' start";
+
       RecordProperty("TestUtilsTests.test1.info1", "toString(const std::exception& e)");
       std::string thisFilePath = std::filesystem::path(__FILE__).make_preferred().string();
       std::ostringstream out;
@@ -111,6 +125,8 @@ namespace exqudens::vulkan {
         std::string result = TestUtils::toString(e);
         ASSERT_EQ(expected, result);
       }
+
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' end";
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }
@@ -118,6 +134,10 @@ namespace exqudens::vulkan {
 
   TEST_F(TestUtilsTests, test3) {
     try {
+      std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+      std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' start";
+
       RecordProperty("TestUtilsTests.test2.info1", "readPng(const std::string& path)");
       RecordProperty(
           "TestUtilsTests.test2.info2",
@@ -159,9 +179,13 @@ namespace exqudens::vulkan {
       ASSERT_EQ(4, image2[0][0].size());
       std::cout << "image2.size OK!" << std::endl;
       ASSERT_EQ(image1, image2);
+
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' end";
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }
   }
 
 }
+
+#undef CALL_INFO

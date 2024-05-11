@@ -11,7 +11,7 @@
 #include <chrono>
 #include <algorithm>
 #include <filesystem>
-#include <iostream>
+#include <stdexcept>
 
 #include <gtest/gtest.h>
 #include <vulkan/vulkan_raii.hpp>
@@ -24,6 +24,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "TestUtils.hpp"
+#include "TestLogging.hpp"
 #include "exqudens/vulkan/all.hpp"
 #include "exqudens/vulkan/Vertex.hpp"
 #include "exqudens/vulkan/UniformBufferObject.hpp"
@@ -32,11 +33,15 @@
 #include "exqudens/vulkan/LightContext.hpp"
 #include "exqudens/vulkan/CameraContext.hpp"
 
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
 namespace exqudens::vulkan {
 
   class UiTests : public testing::Test {
 
     protected:
+
+      inline static const char* LOGGER_ID = "exqudens.vulkan.UiTests";
 
       class TestRenderer {
 
@@ -83,7 +88,7 @@ namespace exqudens::vulkan {
               uint32_t height
           ) {
             try {
-              std::cout << CALL_INFO() << " ... call" << std::endl;
+              TEST_LOG_I(LOGGER_ID) << CALL_INFO << " ... call";
 
               /*vertexVector = {
                   {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
@@ -161,75 +166,75 @@ namespace exqudens::vulkan {
               createSurfaceFunction = [&window](VkInstance instance) -> VkSurfaceKHR {
                 VkSurfaceKHR vkSurface = nullptr;
                 if (glfwCreateWindowSurface(instance, window, nullptr, &vkSurface) != VK_SUCCESS || vkSurface == nullptr) {
-                  throw std::runtime_error(CALL_INFO() + ": failed to create surface!");
+                  throw std::runtime_error(CALL_INFO + ": failed to create surface!");
                 }
                 return vkSurface;
               };
 
               root.init(enabledExtensionNames, enabledLayerNames, createSurfaceFunction, 2, width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
-              std::cout << "root.instance: '" << (bool) root.instance.value << "'" << std::endl;
-              std::cout << "root.surface: '" << (bool) root.surface.value << "'" << std::endl;
-              std::cout << "root.physicalDevice: '" << (bool) root.physicalDevice.value << "'" << std::endl;
-              std::cout << "root.physicalDeviceTimestampPeriod: '" << root.physicalDeviceTimestampPeriod << "'" << std::endl;
-              std::cout << "root.physicalDeviceMsaaSamples: '" << vk::to_string(root.physicalDeviceMsaaSamples) << "'" << std::endl;
-              std::cout << "root.device: '" << (bool) root.device.value << "'" << std::endl;
-              std::cout << "root.transferQueue: '" << (bool) root.transferQueue.value << "'" << std::endl;
-              std::cout << "root.graphicsQueue: '" << (bool) root.graphicsQueue.value << "'" << std::endl;
-              std::cout << "root.presentQueue: '" << (bool) root.presentQueue.value << "'" << std::endl;
-              std::cout << "root.transferCommandPool: '" << (bool) root.transferCommandPool.value << "'" << std::endl;
-              std::cout << "root.graphicsCommandPool: '" << (bool) root.graphicsCommandPool.value << "'" << std::endl;
-              std::cout << "root.transferCommandBuffer: '" << (bool) root.transferCommandBuffer.value << "'" << std::endl;
-              std::cout << "root.descriptorSetLayout: '" << (bool) root.descriptorSetLayout.value << "'" << std::endl;
-              std::cout << "root.queryPool: '" << (bool) root.queryPool.value << "'" << std::endl;
-              std::cout << "root.swapchain: '" << (bool) root.swapchain.value << "'" << std::endl;
-              std::cout << "root.swapchain.images.size: '" << root.swapchain.reference().getImages().size() << "'" << std::endl;
-              std::ranges::for_each(root.swapchainImages, [](const auto& o1) {std::cout << "root.swapchainImage: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.swapchainImageViews, [](const auto& o1) {std::cout << "root.swapchainImageView: '" << (bool) o1.value << "'" << std::endl;});
-              std::cout << "root.renderPass: '" << (bool) root.renderPass.value << "'" << std::endl;
-              std::cout << "root.pipeline: '" << (bool) root.pipeline.value << "'" << std::endl;
-              std::ranges::for_each(root.swapchainFramebuffers, [](const auto& o1) {std::cout << "root.swapchainFramebuffer: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.samplerImages, [](auto& o1) {std::cout << "root.samplerImage: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.samplerImageViews, [](auto& o1) {std::cout << "root.samplerImageView: '" << (bool) o1.value << "'" << std::endl;});
-              std::cout << "root.descriptorPool: '" << (bool) root.descriptorPool.value << "'" << std::endl;
-              std::cout << "root.sampler: '" << (bool) root.sampler.value << "'" << std::endl;
-              std::ranges::for_each(root.descriptorSets, [](auto& o1) {std::cout << "root.descriptorSet: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.graphicsCommandBuffers, [](const auto& o1) {std::cout << "root.graphicsCommandBuffer: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.imageAvailableSemaphores, [](auto& o1) {std::cout << "root.imageAvailableSemaphore: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.renderFinishedSemaphores, [](auto& o1) {std::cout << "root.renderFinishedSemaphore: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(root.inFlightFences, [](auto& o1) {std::cout << "root.inFlightFence: '" << (bool) o1.value << "'" << std::endl;});
+              TEST_LOG_I(LOGGER_ID) << "root.instance: '" << (bool) root.instance.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.surface: '" << (bool) root.surface.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.physicalDevice: '" << (bool) root.physicalDevice.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.physicalDeviceTimestampPeriod: '" << root.physicalDeviceTimestampPeriod << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.physicalDeviceMsaaSamples: '" << vk::to_string(root.physicalDeviceMsaaSamples) << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.device: '" << (bool) root.device.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.transferQueue: '" << (bool) root.transferQueue.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.graphicsQueue: '" << (bool) root.graphicsQueue.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.presentQueue: '" << (bool) root.presentQueue.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.transferCommandPool: '" << (bool) root.transferCommandPool.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.graphicsCommandPool: '" << (bool) root.graphicsCommandPool.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.transferCommandBuffer: '" << (bool) root.transferCommandBuffer.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.descriptorSetLayout: '" << (bool) root.descriptorSetLayout.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.queryPool: '" << (bool) root.queryPool.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.swapchain: '" << (bool) root.swapchain.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.swapchain.images.size: '" << root.swapchain.reference().getImages().size() << "'";
+              std::ranges::for_each(root.swapchainImages, [](const auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.swapchainImage: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.swapchainImageViews, [](const auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.swapchainImageView: '" << (bool) o1.value << "'";});
+              TEST_LOG_I(LOGGER_ID) << "root.renderPass: '" << (bool) root.renderPass.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.pipeline: '" << (bool) root.pipeline.value << "'";
+              std::ranges::for_each(root.swapchainFramebuffers, [](const auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.swapchainFramebuffer: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.samplerImages, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.samplerImage: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.samplerImageViews, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.samplerImageView: '" << (bool) o1.value << "'";});
+              TEST_LOG_I(LOGGER_ID) << "root.descriptorPool: '" << (bool) root.descriptorPool.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "root.sampler: '" << (bool) root.sampler.value << "'";
+              std::ranges::for_each(root.descriptorSets, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.descriptorSet: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.graphicsCommandBuffers, [](const auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.graphicsCommandBuffer: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.imageAvailableSemaphores, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.imageAvailableSemaphore: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.renderFinishedSemaphores, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.renderFinishedSemaphore: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(root.inFlightFences, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "root.inFlightFence: '" << (bool) o1.value << "'";});
 
               data.init(root, vertexVector, indexVector, textureWidth, textureHeight, textureDepth, textureMipLevels);
 
-              std::cout << "data.vertexStagingBuffer: '" << (bool) data.vertexStagingBuffer.value << "'" << std::endl;
-              std::cout << "data.vertexBuffer: '" << (bool) data.vertexBuffer.value << "'" << std::endl;
-              std::cout << "data.indexStagingBuffer: '" << (bool) data.indexStagingBuffer.value << "'" << std::endl;
-              std::cout << "data.indexBuffer: '" << (bool) data.indexBuffer.value << "'" << std::endl;
-              std::cout << "data.textureBuffer: '" << (bool) data.textureBuffer.value << "'" << std::endl;
-              std::cout << "data.textureImage: '" << (bool) data.textureImage.value << "'" << std::endl;
-              std::cout << "data.textureImageView: '" << (bool) data.textureImageView.value << "'" << std::endl;
-              std::ranges::for_each(data.shadowUniformBuffers, [](auto& o1) {std::cout << "data.shadowUniformBuffer: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(data.uniformBuffers, [](auto& o1) {std::cout << "data.uniformBuffer: '" << (bool) o1.value << "'" << std::endl;});
+              TEST_LOG_I(LOGGER_ID) << "data.vertexStagingBuffer: '" << (bool) data.vertexStagingBuffer.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "data.vertexBuffer: '" << (bool) data.vertexBuffer.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "data.indexStagingBuffer: '" << (bool) data.indexStagingBuffer.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "data.indexBuffer: '" << (bool) data.indexBuffer.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "data.textureBuffer: '" << (bool) data.textureBuffer.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "data.textureImage: '" << (bool) data.textureImage.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "data.textureImageView: '" << (bool) data.textureImageView.value << "'";
+              std::ranges::for_each(data.shadowUniformBuffers, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "data.shadowUniformBuffer: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(data.uniformBuffers, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "data.uniformBuffer: '" << (bool) o1.value << "'";});
 
               light.init(root, data.shadowUniformBuffers, {"resources/shader/shader-3.vert.spv", "resources/shader/shader-3.frag.spv"});
 
-              std::ranges::for_each(light.shadowImages, [](auto& o1) {std::cout << "light.shadowImage: '" << (bool) o1.value << "'" << std::endl;});
-              std::ranges::for_each(light.shadowImageViews, [](auto& o1) {std::cout << "light.shadowImageView: '" << (bool) o1.value << "'" << std::endl;});
-              std::cout << "light.sampler: '" << (bool) light.sampler.value << "'" << std::endl;
-              std::cout << "light.descriptorSetLayout: '" << (bool) light.descriptorSetLayout.value << "'" << std::endl;
-              std::cout << "light.descriptorPool: '" << (bool) light.descriptorPool.value << "'" << std::endl;
-              std::cout << "light.descriptorPool: '" << (bool) light.descriptorPool.value << "'" << std::endl;
-              std::ranges::for_each(light.descriptorSets, [](auto& o1) {std::cout << "light.descriptorSet: '" << (bool) o1.value << "'" << std::endl;});
-              std::cout << "light.renderPass: '" << (bool) light.renderPass.value << "'" << std::endl;
-              std::cout << "light.pipeline: '" << (bool) light.pipeline.value << "'" << std::endl;
-              std::ranges::for_each(light.framebuffers, [](auto& o1) {std::cout << "light.framebuffer: '" << (bool) o1.value << "'" << std::endl;});
+              std::ranges::for_each(light.shadowImages, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "light.shadowImage: '" << (bool) o1.value << "'";});
+              std::ranges::for_each(light.shadowImageViews, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "light.shadowImageView: '" << (bool) o1.value << "'";});
+              TEST_LOG_I(LOGGER_ID) << "light.sampler: '" << (bool) light.sampler.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "light.descriptorSetLayout: '" << (bool) light.descriptorSetLayout.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "light.descriptorPool: '" << (bool) light.descriptorPool.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "light.descriptorPool: '" << (bool) light.descriptorPool.value << "'";
+              std::ranges::for_each(light.descriptorSets, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "light.descriptorSet: '" << (bool) o1.value << "'";});
+              TEST_LOG_I(LOGGER_ID) << "light.renderPass: '" << (bool) light.renderPass.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "light.pipeline: '" << (bool) light.pipeline.value << "'";
+              std::ranges::for_each(light.framebuffers, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "light.framebuffer: '" << (bool) o1.value << "'";});
 
               camera.init(root, light, data.textureImage.createInfo.mipLevels, data.uniformBuffers, data.textureImageView);
 
-              std::cout << "camera.descriptorSetLayout: '" << (bool) camera.descriptorSetLayout.value << "'" << std::endl;
-              std::cout << "camera.sampler: '" << (bool) camera.sampler.value << "'" << std::endl;
-              std::cout << "camera.descriptorPool: '" << (bool) camera.descriptorPool.value << "'" << std::endl;
-              std::ranges::for_each(camera.descriptorSets, [](auto& o1) {std::cout << "camera.descriptorSet: '" << (bool) o1.value << "'" << std::endl;});
+              TEST_LOG_I(LOGGER_ID) << "camera.descriptorSetLayout: '" << (bool) camera.descriptorSetLayout.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.sampler: '" << (bool) camera.sampler.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.descriptorPool: '" << (bool) camera.descriptorPool.value << "'";
+              std::ranges::for_each(camera.descriptorSets, [](auto& o1) {TEST_LOG_I(LOGGER_ID) << "camera.descriptorSet: '" << (bool) o1.value << "'";});
 
               data.vertexStagingBuffer.fill(vertexVector.data());
               data.indexStagingBuffer.fill(indexVector.data());
@@ -259,15 +264,15 @@ namespace exqudens::vulkan {
 
               reCreateSwapchain(width, height);
 
-              std::cout << CALL_INFO() << " ... done" << std::endl;
+              TEST_LOG_I(LOGGER_ID) << CALL_INFO << " ... done";
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
           void reCreateSwapchain(uint32_t width, uint32_t height) {
             try {
-              std::cout << CALL_INFO() << " ... call" << std::endl;
+              TEST_LOG_I(LOGGER_ID) << CALL_INFO << " ... call";
 
               root.initSwapchain(width, height, {"resources/shader/shader-1.vert.spv", "resources/shader/shader-1.frag.spv"});
 
@@ -275,13 +280,13 @@ namespace exqudens::vulkan {
 
               camera.initSwapchain(root, {"resources/shader/shader-2.vert.spv", "resources/shader/shader-2.frag.spv"});
 
-              std::cout << "camera.colorImage: '" << (bool) camera.colorImage.value << "'" << std::endl;
-              std::cout << "camera.colorImageView: '" << (bool) camera.colorImageView.value << "'" << std::endl;
-              std::cout << "camera.depthImage: '" << (bool) camera.depthImage.value << "'" << std::endl;
-              std::cout << "camera.depthImageView: '" << (bool) camera.depthImageView.value << "'" << std::endl;
-              std::cout << "camera.renderPass: '" << (bool) camera.renderPass.value << "'" << std::endl;
-              std::cout << "camera.pipeline: '" << (bool) camera.pipeline.value << "'" << std::endl;
-              std::ranges::for_each(camera.framebuffers, [](const auto& o1) {std::cout << "camera.swapchainFramebuffer: '" << (bool) o1.value << "'" << std::endl;});
+              TEST_LOG_I(LOGGER_ID) << "camera.colorImage: '" << (bool) camera.colorImage.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.colorImageView: '" << (bool) camera.colorImageView.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.depthImage: '" << (bool) camera.depthImage.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.depthImageView: '" << (bool) camera.depthImageView.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.renderPass: '" << (bool) camera.renderPass.value << "'";
+              TEST_LOG_I(LOGGER_ID) << "camera.pipeline: '" << (bool) camera.pipeline.value << "'";
+              std::ranges::for_each(camera.framebuffers, [](const auto& o1) {TEST_LOG_I(LOGGER_ID) << "camera.swapchainFramebuffer: '" << (bool) o1.value << "'";});
 
               root.transferCommandBuffer.reference().begin({});
               TestUtils::insertDepthImagePipelineBarrier(root.transferCommandBuffer, camera.depthImage);
@@ -295,9 +300,9 @@ namespace exqudens::vulkan {
               );
               root.transferQueue.reference().waitIdle();
 
-              std::cout << CALL_INFO() << " ... done" << std::endl;
+              TEST_LOG_I(LOGGER_ID) << CALL_INFO << " ... done";
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -312,7 +317,7 @@ namespace exqudens::vulkan {
                   || root.imageAvailableSemaphores.size() < root.swapchainImageViews.size()
                   || root.renderFinishedSemaphores.size() < root.swapchainImageViews.size()
               ) {
-                std::throw_with_nested(std::runtime_error(CALL_INFO() + ": vector.size() < root.swapchainImageViews.size() !!!"));
+                std::throw_with_nested(std::runtime_error(CALL_INFO + ": vector.size() < root.swapchainImageViews.size() !!!"));
               }
 
               vk::Result result = root.device.reference().waitForFences(
@@ -321,7 +326,7 @@ namespace exqudens::vulkan {
                   UINT64_MAX
               );
               if (vk::Result::eSuccess != result) {
-                throw std::runtime_error(CALL_INFO() + ": failed to 'device.waitForFences(...)'!");
+                throw std::runtime_error(CALL_INFO + ": failed to 'device.waitForFences(...)'!");
               }
 
               std::pair<vk::Result, uint32_t> swapchainNextImage = root.swapchain
@@ -476,7 +481,7 @@ namespace exqudens::vulkan {
                   if (vk::Result::eSuccess == queryResults.first && queryResults.second.size() > 1) {
                     if (timeDiffCounter == 9) {
                       float timeDiff = root.physicalDevice.reference().getProperties().limits.timestampPeriod * ((float) queryResults.second.at(1) - queryResults.second.at(0));
-                      //std::cout << "timeDiff: {}" << timeDiff << "'" << std::endl;
+                      //TEST_LOG_I(LOGGER_ID) << "timeDiff: {}" << timeDiff << "'";
                       timeDiffCounter = 0;
                     } else {
                       timeDiffCounter++;
@@ -486,7 +491,7 @@ namespace exqudens::vulkan {
                   throw std::runtime_error("failed to 'queryPool.getResults(...)'!");
                 }
               } catch (...) {
-                std::throw_with_nested(std::runtime_error(CALL_INFO() + ": exception in 'queryPool.getResults(...)'!"));
+                std::throw_with_nested(std::runtime_error(CALL_INFO + ": exception in 'queryPool.getResults(...)'!"));
               }
 
               root.queryPool.reference().reset(0, 2);
@@ -526,7 +531,7 @@ namespace exqudens::vulkan {
 
               currentFrame = (currentFrame + 1) % root.swapchainImageViews.size();
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -534,7 +539,7 @@ namespace exqudens::vulkan {
             try {
               root.device.reference().waitIdle();
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -553,7 +558,7 @@ namespace exqudens::vulkan {
                 arguments.emplace_back(argv[i]);
               }
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -605,7 +610,7 @@ namespace exqudens::vulkan {
 
               return EXIT_SUCCESS;
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -614,7 +619,7 @@ namespace exqudens::vulkan {
               auto* app = reinterpret_cast<TestUiApplication*>(glfwGetWindowUserPointer(window));
               app->renderer->resized = true;
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -656,7 +661,7 @@ namespace exqudens::vulkan {
                 app->renderer->down = false;
               }
             } catch (...) {
-              std::throw_with_nested(std::runtime_error(CALL_INFO()));
+              std::throw_with_nested(std::runtime_error(CALL_INFO));
             }
           }
 
@@ -664,17 +669,17 @@ namespace exqudens::vulkan {
 
       void SetUp() override {
         try {
-          std::cout << CALL_INFO() << std::endl;
+          TEST_LOG_I(LOGGER_ID) << CALL_INFO;
         } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
+          std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
       }
 
       void TearDown() override {
         try {
-          std::cout << CALL_INFO() << std::endl;
+          TEST_LOG_I(LOGGER_ID) << CALL_INFO;
         } catch (...) {
-          std::throw_with_nested(std::runtime_error(CALL_INFO()));
+          std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
       }
 
@@ -682,6 +687,10 @@ namespace exqudens::vulkan {
 
   TEST_F(UiTests, test1) {
     try {
+      std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+      std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' start";
+
       std::string executableDir = TestUtils::getExecutableDir();
       std::filesystem::path srcResourcesDir = std::filesystem::path(executableDir)
           .append("..")
@@ -703,9 +712,13 @@ namespace exqudens::vulkan {
       char** argv = &arguments[0];
       int result = TestUiApplication(argc, argv).run();
       ASSERT_EQ(EXIT_SUCCESS, result);
+
+      TEST_LOG_I(LOGGER_ID) << "'" << testGroup << "." << testCase << "' end";
     } catch (const std::exception& e) {
       FAIL() << TestUtils::toString(e);
     }
   }
 
 }
+
+#undef CALL_INFO

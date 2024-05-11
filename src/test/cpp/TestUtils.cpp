@@ -1,13 +1,3 @@
-#include "TestUtils.hpp"
-#include "TestMacros.hpp"
-#include "TestConfiguration.hpp"
-#include "exqudens/vulkan/UniformBufferObject.hpp"
-
-#include <lodepng.h>
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-#include <vulkan/vulkan_raii.hpp>
-
 #include <cstdlib>
 #include <string>
 #include <sstream>
@@ -16,11 +6,22 @@
 #include <functional>
 #include <stdexcept>
 
+#include <lodepng.h>
+#include <vulkan/vulkan_raii.hpp>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+#include "TestUtils.hpp"
+#include "TestConfiguration.hpp"
+#include "exqudens/vulkan/UniformBufferObject.hpp"
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
 std::string TestUtils::getExecutableFile() {
   try {
     return TestConfiguration::getExecutableFile();
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -28,7 +29,7 @@ std::string TestUtils::getExecutableDir() {
   try {
     return TestConfiguration::getExecutableDir();
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -58,7 +59,7 @@ std::optional<std::string> TestUtils::getEnvironmentVariable(const std::string& 
 #endif
     return value;
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -70,7 +71,7 @@ void TestUtils::setEnvironmentVariable(const std::string& name, const std::strin
     _putenv_s(name.c_str(), value.c_str());
 #endif
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -86,7 +87,7 @@ std::vector<std::string> TestUtils::toStringVector(
     return toStringVector(e, previous);
   } catch (...) {
     if (previous.empty()) {
-      previous.emplace_back(CALL_INFO() + ": Empty stack!");
+      previous.emplace_back(CALL_INFO + ": Empty stack!");
     }
     return previous;
   }
@@ -100,7 +101,7 @@ std::vector<std::string> TestUtils::toStackTrace(const std::exception& exception
     }
     return elements;
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -116,7 +117,7 @@ std::string TestUtils::toString(const std::exception& e) {
     }
     return out.str();
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -135,7 +136,7 @@ void TestUtils::readPng(
     unsigned int error = lodepng::decode(dataIn, widthIn, heightIn, path);
     if (error) {
       throw std::runtime_error(
-          CALL_INFO() + ": failed to read image '" + std::to_string(error) + "': " + lodepng_error_text(error) + ": '" + path + "'"
+          CALL_INFO + ": failed to read image '" + std::to_string(error) + "': " + lodepng_error_text(error) + ": '" + path + "'"
       );
     }
     width = widthIn;
@@ -143,7 +144,7 @@ void TestUtils::readPng(
     depth = depthIn;
     data = dataIn;
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -171,7 +172,7 @@ std::vector<std::vector<std::vector<unsigned char>>> TestUtils::readPng(const st
     }
     return image;
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -189,11 +190,11 @@ void TestUtils::writePng(
     unsigned int error = lodepng::encode(path, data, widthIn, heightIn);
     if (error) {
       throw std::runtime_error(
-          CALL_INFO() + ": failed to write image '" + std::to_string(error) + "': " + lodepng_error_text(error) + ": '" + path + "'"
+          CALL_INFO + ": failed to write image '" + std::to_string(error) + "': " + lodepng_error_text(error) + ": '" + path + "'"
       );
     }
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -201,7 +202,7 @@ void TestUtils::writePng(const std::vector<std::vector<std::vector<unsigned char
   try {
     if (image.empty() || image[0].empty() || image[0][0].empty()) {
       throw std::runtime_error(
-          CALL_INFO() + ": image.empty() || image[0].empty() || image[0][0].empty()"
+          CALL_INFO + ": image.empty() || image[0].empty() || image[0][0].empty()"
       );
     }
     unsigned int height = image.size();
@@ -220,7 +221,7 @@ void TestUtils::writePng(const std::vector<std::vector<std::vector<unsigned char
     }
     writePng(path, width, height, depth, pixels);
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -279,7 +280,7 @@ void TestUtils::readObj(
       }
     }
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -291,7 +292,7 @@ vk::PipelineShaderStageCreateInfo TestUtils::createStage(
   try {
     std::vector<char> bytes = exqudens::vulkan::Utility::readFileBytes(path);
     if (bytes.empty()) {
-      throw std::runtime_error(CALL_INFO() + ": '" + path + "' failed to create shader module bytes is empty!");
+      throw std::runtime_error(CALL_INFO + ": '" + path + "' failed to create shader module bytes is empty!");
     }
     vk::ShaderModuleCreateInfo shaderCreateInfo = vk::ShaderModuleCreateInfo()
         .setCodeSize(bytes.size())
@@ -305,7 +306,7 @@ vk::PipelineShaderStageCreateInfo TestUtils::createStage(
         .setModule(*(*shaders[path].second))
         .setStage(path.ends_with(".vert.spv") ? vk::ShaderStageFlagBits::eVertex : vk::ShaderStageFlagBits::eFragment);
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -345,7 +346,7 @@ void TestUtils::insertDepthImagePipelineBarrier(
         }
     );
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -412,7 +413,7 @@ void TestUtils::copyBufferToImageAndGenerateMipmaps(
       vk::FormatProperties formatProperties = physicalDevice.reference().getFormatProperties(textureImage.createInfo.format);
 
       if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
-        throw std::runtime_error(CALL_INFO() + "texture image format does not support linear blitting!");
+        throw std::runtime_error(CALL_INFO + "texture image format does not support linear blitting!");
       }
 
       auto mipWidth = (int32_t) textureImage.createInfo.extent.width;
@@ -550,7 +551,7 @@ void TestUtils::copyBufferToImageAndGenerateMipmaps(
         }
     );
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -660,7 +661,7 @@ void TestUtils::updateUniformBuffer(
     shadowUniformBuffer.fill(&shadowUbo);
     uniformBuffer.fill(&ubo);
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
 
@@ -756,6 +757,8 @@ void TestUtils::copySwapchainImageToOutputImage(
     );
     transferQueue.reference().waitIdle();
   } catch (...) {
-    std::throw_with_nested(std::runtime_error(CALL_INFO()));
+    std::throw_with_nested(std::runtime_error(CALL_INFO));
   }
 }
+
+#undef CALL_INFO
