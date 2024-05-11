@@ -3,18 +3,18 @@
 
 #include "exqudens/vulkan/DescriptorSet.hpp"
 
-#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
   vk::raii::DescriptorSet& DescriptorSet::reference() {
     try {
       if (!value) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": value is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": value is not initialized!");
       }
       return *value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -68,7 +68,7 @@ namespace exqudens::vulkan {
       device.lock()->updateDescriptorSets(tmpWrites, {});
       return target;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -78,4 +78,4 @@ namespace exqudens::vulkan {
 
 }
 
-#undef EXQUDENS_VULKAN_CALL_INFO
+#undef CALL_INFO

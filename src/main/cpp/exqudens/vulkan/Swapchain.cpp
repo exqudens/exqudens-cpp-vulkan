@@ -3,18 +3,18 @@
 
 #include "exqudens/vulkan/Swapchain.hpp"
 
-#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
   vk::raii::SwapchainKHR& Swapchain::reference() {
     try {
       if (!value) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": value is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": value is not initialized!");
       }
       return *value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -35,7 +35,7 @@ namespace exqudens::vulkan {
 
   Swapchain::Builder& Swapchain::Builder::addQueueFamilyIndex(const uint32_t& val) {
     if (queueFamilyIndices.size() == 2) {
-      throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": queue family indices size equals 2!");
+      throw std::runtime_error(CALL_INFO + ": queue family indices size equals 2!");
     }
     queueFamilyIndices.insert(val);
     return *this;
@@ -43,7 +43,7 @@ namespace exqudens::vulkan {
 
   Swapchain::Builder& Swapchain::Builder::setQueueFamilyIndices(const std::vector<uint32_t>& val) {
     if (val.size() <= 2) {
-      throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": val size greater than 2!");
+      throw std::runtime_error(CALL_INFO + ": val size greater than 2!");
     }
     queueFamilyIndices = std::set<uint32_t>(val.begin(), val.end());
     return *this;
@@ -73,7 +73,7 @@ namespace exqudens::vulkan {
       );
       return target;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -83,4 +83,4 @@ namespace exqudens::vulkan {
 
 }
 
-#undef EXQUDENS_VULKAN_CALL_INFO
+#undef CALL_INFO

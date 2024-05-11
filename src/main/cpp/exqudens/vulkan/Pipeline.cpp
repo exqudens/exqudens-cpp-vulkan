@@ -5,40 +5,40 @@
 #include "exqudens/vulkan/Pipeline.hpp"
 #include "exqudens/vulkan/Utility.hpp"
 
-#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
   vk::raii::PipelineLayout& Pipeline::layoutReference() {
     try {
       if (!layout) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": layout is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": layout is not initialized!");
       }
       return *layout;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
   vk::raii::PipelineCache& Pipeline::cacheReference() {
     try {
       if (!cache) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": cache is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": cache is not initialized!");
       }
       return *cache;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
   vk::raii::Pipeline& Pipeline::reference() {
     try {
       if (!value) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": value is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": value is not initialized!");
       }
       return *value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -147,7 +147,7 @@ namespace exqudens::vulkan {
           if (!shaders.contains(path)) {
             std::vector<char> bytes = readFileBytesFunction(path);
             if (bytes.empty()) {
-              throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": '" + path + "' failed to create shader module bytes is empty!");
+              throw std::runtime_error(CALL_INFO + ": '" + path + "' failed to create shader module bytes is empty!");
             }
             vk::ShaderModuleCreateInfo shaderCreateInfo = vk::ShaderModuleCreateInfo()
                 .setCodeSize(bytes.size())
@@ -164,7 +164,7 @@ namespace exqudens::vulkan {
             } else if (path.ends_with(".frag.spv")) {
               stage.setStage(vk::ShaderStageFlagBits::eFragment);
             } else {
-              throw std::invalid_argument(EXQUDENS_VULKAN_CALL_INFO + ": '" + path + "' failed to create shader!");
+              throw std::invalid_argument(CALL_INFO + ": '" + path + "' failed to create shader!");
             }
             stages.emplace_back(stage);
           }
@@ -180,7 +180,7 @@ namespace exqudens::vulkan {
       }
       return target;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -190,4 +190,4 @@ namespace exqudens::vulkan {
 
 }
 
-#undef EXQUDENS_VULKAN_CALL_INFO
+#undef CALL_INFO

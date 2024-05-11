@@ -4,29 +4,29 @@
 #include "exqudens/vulkan/Buffer.hpp"
 #include "exqudens/vulkan/Utility.hpp"
 
-#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
   vk::raii::Buffer& Buffer::reference() {
     try {
       if (!value) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": value is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": value is not initialized!");
       }
       return *value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
   vk::raii::DeviceMemory& Buffer::memoryReference() {
     try {
       if (!memory) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": memory is not initialized!");
+        throw std::runtime_error(CALL_INFO + ": memory is not initialized!");
       }
       return *memory;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -36,7 +36,7 @@ namespace exqudens::vulkan {
       std::memcpy(tmpData, data, size);
       memoryReference().unmapMemory();
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -46,7 +46,7 @@ namespace exqudens::vulkan {
       std::memcpy(tmpData, data, static_cast<size_t>(createInfo.size));
       memoryReference().unmapMemory();
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -109,7 +109,7 @@ namespace exqudens::vulkan {
       target.reference().bindMemory(*target.memoryReference(), 0);
       return target;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -119,4 +119,4 @@ namespace exqudens::vulkan {
 
 }
 
-#undef EXQUDENS_VULKAN_CALL_INFO
+#undef CALL_INFO

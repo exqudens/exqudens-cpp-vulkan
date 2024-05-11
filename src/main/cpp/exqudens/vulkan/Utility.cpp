@@ -7,7 +7,7 @@
 
 #include "exqudens/vulkan/Utility.hpp"
 
-#define EXQUDENS_VULKAN_CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
 namespace exqudens::vulkan {
 
@@ -17,7 +17,7 @@ namespace exqudens::vulkan {
       _putenv_s(name.c_str(), value.c_str());
 #endif
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -37,7 +37,7 @@ namespace exqudens::vulkan {
 #endif
       return value;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -49,7 +49,7 @@ namespace exqudens::vulkan {
     try {
       return vk::to_string(severity) + " " + vk::to_string(type) + ": " + message;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -59,7 +59,7 @@ namespace exqudens::vulkan {
       std::size_t fileSizeRaw = std::filesystem::file_size(filePath);
 
       if (fileSizeRaw > LLONG_MAX) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": file size is larger than read max size: '" + std::to_string(fileSizeRaw) + " > " + std::to_string(LLONG_MAX) + "'!");
+        throw std::runtime_error(CALL_INFO + ": file size is larger than read max size: '" + std::to_string(fileSizeRaw) + " > " + std::to_string(LLONG_MAX) + "'!");
       }
 
       auto fileSize = (std::streamsize) fileSizeRaw;
@@ -67,14 +67,14 @@ namespace exqudens::vulkan {
       std::ifstream file(filePath.string(), std::ios::binary);
 
       if (!file.is_open()) {
-        throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": failed to open file: '" + path + "'!");
+        throw std::runtime_error(CALL_INFO + ": failed to open file: '" + path + "'!");
       }
 
       file.read(buffer.data(), fileSize);
       file.close();
       return buffer;
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -154,7 +154,7 @@ namespace exqudens::vulkan {
           .setClipped(true)
           .setOldSwapchain({});
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -172,9 +172,9 @@ namespace exqudens::vulkan {
           return format;
         }
       }
-      throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": failed to find image depth format!");
+      throw std::runtime_error(CALL_INFO + ": failed to find image depth format!");
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -187,7 +187,7 @@ namespace exqudens::vulkan {
           vk::FormatFeatureFlagBits::eDepthStencilAttachment
       );
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -206,9 +206,9 @@ namespace exqudens::vulkan {
           return i;
         }
       }
-      throw std::runtime_error(EXQUDENS_VULKAN_CALL_INFO + ": failed to find memory type index!");
+      throw std::runtime_error(CALL_INFO + ": failed to find memory type index!");
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
@@ -237,10 +237,10 @@ namespace exqudens::vulkan {
         return vk::SampleCountFlagBits::e1;
       }
     } catch (...) {
-      std::throw_with_nested(std::runtime_error(EXQUDENS_VULKAN_CALL_INFO));
+      std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
   }
 
 }
 
-#undef EXQUDENS_VULKAN_CALL_INFO
+#undef CALL_INFO
