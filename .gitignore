@@ -1,0 +1,15 @@
+# Directories
+.idea/
+.clion/
+.vs/
+.vscode/
+build/
+tmp/
+
+# Files
+*.iml
+*.iws
+*.ipr
+*.ids
+CMakeUserPresets.json
+nohup.out

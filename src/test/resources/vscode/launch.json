@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "test-app",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "console": "internalConsole",
+            "cwd": "${workspaceRoot}",
+            "program": "@_BINARY_DIR@/test/bin/test-app.exe",
+            "args": [
+                "--project-binary-dir=@_BINARY_DIR@",
+                "--gtest_filter=${input:test-app-selector}"
+            ],
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "@_BINARY_DIR@/test/bin"
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "test-app-selector",
+            "type": "pickString",
+            "description": "Select Test Entry",
+            "default": "@_LAUNCH_DEFAULT_TEST@",
+            "options": [
+                "@_LAUNCH_TESTS@"
+            ]
+        }
+    ]
+}
