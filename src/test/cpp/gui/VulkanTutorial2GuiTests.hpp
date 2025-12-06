@@ -5,11 +5,13 @@
 #include <vector>
 #include <memory>
 #include <exception>
+#include <functional>
 #include <iostream>
 
 #include <gtest/gtest.h>
 #include <exqudens/Log.hpp>
 #include <exqudens/log/api/Logging.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
@@ -24,19 +26,17 @@ class VulkanTutorial2GuiTests: public testing::Test {
 
     protected:
 
-        struct Data {
-            exqudens::vulkan::Context context = {};
-            exqudens::vulkan::Instance instance = {};
-        };
-
         class Application {
 
             private:
 
                 uint32_t width = 0;
                 uint32_t height = 0;
+
                 GLFWwindow* window = nullptr;
-                Data data = {};
+
+                exqudens::vulkan::Context context = {};
+                exqudens::vulkan::Instance instance = {};
 
             public:
 
@@ -56,7 +56,7 @@ class VulkanTutorial2GuiTests: public testing::Test {
 
                     width = 800;
                     height = 600;
-                    window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+                    window = glfwCreateWindow(width, height, LOGGER_ID, nullptr, nullptr);
 
                     initVulkan();
                 }
@@ -73,12 +73,20 @@ class VulkanTutorial2GuiTests: public testing::Test {
                 }
 
                 void initVulkan() {
-                    data.context = exqudens::vulkan::Context::builder()
-                        .build();
-                    data.instance = exqudens::vulkan::Instance::builder()
-                        .addEnabledExtensionNames(TestGlfwUtils::getRequiredInstanceExtensions())
-                        .setContext(data.context.getPtr())
-                        .build();
+                    std::vector<const char*> requiredExtensions = TestGlfwUtils::getRequiredInstanceExtensions();
+
+                    context = {};
+
+                    instance = exqudens::vulkan::Instance::builder()
+                    .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
+                    .setApplicationName(LOGGER_ID)
+                    .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
+                    .setEngineName("No Engine")
+                    .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    .setEnabledExtensionNames(requiredExtensions)
+                    .build(std::ref(context.get()));
+
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "instance.applicationInfo.pApplicationName: '" << instance.applicationInfo.pApplicationName << "'";
                 }
 
         };

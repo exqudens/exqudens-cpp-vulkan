@@ -5,11 +5,13 @@
 #include <vector>
 #include <memory>
 #include <exception>
+#include <functional>
 #include <iostream>
 
 #include <gtest/gtest.h>
 #include <exqudens/Log.hpp>
 #include <exqudens/log/api/Logging.hpp>
+#include <vulkan/vulkan_raii.hpp>
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
@@ -44,24 +46,22 @@ class VulkanTutorial3GuiTests: public testing::Test {
 
     protected:
 
-        struct Data {
-            exqudens::vulkan::Context context = {};
-            exqudens::vulkan::Instance instance = {};
-        };
-
         class Application {
 
             private:
 
                 uint32_t width = 0;
                 uint32_t height = 0;
+                const char* title = nullptr;
 #ifdef NDEBUG
                 bool enableValidationLayers = false;
 #else
                 bool enableValidationLayers = true;
 #endif
                 GLFWwindow* window = nullptr;
-                Data data = {};
+
+                exqudens::vulkan::Context context = {};
+                exqudens::vulkan::Instance instance = {};
 
             public:
 
@@ -81,7 +81,8 @@ class VulkanTutorial3GuiTests: public testing::Test {
 
                     width = 800;
                     height = 600;
-                    window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+                    title = "Vulkan";
+                    window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 
                     initVulkan();
                 }
@@ -98,24 +99,40 @@ class VulkanTutorial3GuiTests: public testing::Test {
                 }
 
                 void initVulkan() {
-                    std::vector<const char*> requiredInstanceExtensions = TestGlfwUtils::getRequiredInstanceExtensions();
+                    std::vector<const char*> requiredExtensions = TestGlfwUtils::getRequiredInstanceExtensions();
                     std::vector<const char*> requiredLayers = {};
 
                     if (enableValidationLayers) {
-                        requiredInstanceExtensions.emplace_back(VULKAN_HPP_NAMESPACE::EXTDebugUtilsExtensionName);
+                        requiredExtensions.emplace_back(VULKAN_HPP_NAMESPACE::EXTDebugUtilsExtensionName);
                         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
                     }
 
-                    data.context = exqudens::vulkan::Context::builder()
-                        .build();
-                    data.instance = exqudens::vulkan::Instance::builder()
-                        .addEnabledExtensionNames(requiredInstanceExtensions)
-                        .addEnabledLayerNames(requiredLayers)
-                        .setDebugCallback(&VulkanTutorial3GuiTests::debugCallback)
-                        .setContext(data.context.getPtr())
-                        .build();
+                    context = {};
 
-                    data.instance.getRaii().submitDebugUtilsMessageEXT(
+                    instance = exqudens::vulkan::Instance::builder()
+                    .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
+                    .setApplicationName(LOGGER_ID)
+                    .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
+                    .setEngineName("No Engine")
+                    .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    .setEnabledExtensionNames(requiredExtensions)
+                    .setEnabledLayerNames(requiredLayers)
+                    .setMessageSeverity(
+                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
+                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
+                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eError
+                    )
+                    .setMessageType(
+                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+                        //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
+                    )
+                    .setDebugCallback(&VulkanTutorial3GuiTests::debugCallback)
+                    .build(std::ref(context.get()));
+
+                    instance.get().submitDebugUtilsMessageEXT(
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral,
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCallbackDataEXT().setPMessage("instance build done")

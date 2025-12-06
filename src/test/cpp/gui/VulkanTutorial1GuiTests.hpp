@@ -44,7 +44,7 @@ class VulkanTutorial1GuiTests: public testing::Test {
 
                     width = 800;
                     height = 600;
-                    window = glfwCreateWindow(width, height, "Vulkan", nullptr, nullptr);
+                    window = glfwCreateWindow(width, height, LOGGER_ID, nullptr, nullptr);
                 }
 
                 void loop() {
