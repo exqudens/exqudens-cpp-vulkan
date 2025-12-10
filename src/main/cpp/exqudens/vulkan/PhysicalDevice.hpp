@@ -1,9 +1,7 @@
 #pragma once
 
-//#include <cstdint>
 #include <cstddef>
 #include <string>
-//#include <optional>
 #include <vector>
 #include <filesystem>
 #include <functional>
@@ -21,7 +19,7 @@ namespace exqudens::vulkan {
         std::vector<const char*> requiredExtensions = {};
         std::function<bool(
             size_t index,
-            VULKAN_HPP_NAMESPACE::raii::PhysicalDevice device,
+            const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& device,
             std::vector<const char*> requiredExtensions
         )> filterFunction = {};
         VULKAN_HPP_NAMESPACE::raii::PhysicalDevice targetObject = nullptr;
@@ -42,7 +40,7 @@ namespace exqudens::vulkan {
 
             Builder& setRequiredExtensions(const std::vector<const char*>& value);
 
-            Builder& setFilterFunction(const std::function<bool(size_t, VULKAN_HPP_NAMESPACE::raii::PhysicalDevice, std::vector<const char*>)>& value);
+            Builder& setFilterFunction(const std::function<bool(size_t, const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice&, std::vector<const char*>)>& value);
 
             PhysicalDevice build(VULKAN_HPP_NAMESPACE::raii::Instance& instance);
 
@@ -64,7 +62,7 @@ namespace exqudens::vulkan {
     }
 
     inline PhysicalDevice::Builder& PhysicalDevice::Builder::setFilterFunction(
-        const std::function<bool(size_t, vk::raii::PhysicalDevice, std::vector<const char*>)>& value
+        const std::function<bool(size_t, const vk::raii::PhysicalDevice&, std::vector<const char*>)>& value
     ) {
         resultObject.filterFunction = value;
         return *this;

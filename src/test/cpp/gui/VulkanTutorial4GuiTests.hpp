@@ -54,28 +54,43 @@ class VulkanTutorial4GuiTests: public testing::Test {
 
         static bool physicalDeviceFilter(
             size_t index,
-            VULKAN_HPP_NAMESPACE::raii::PhysicalDevice device,
+            const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& device,
             std::vector<const char*> requiredExtensions
         ) {
-            bool discreteGpu = false;
-            bool supportsVulkan1_4 = false;
             bool supportsGraphics = false;
-            bool supportsRequiredExtensions = false;
+            //bool discreteGpu = false;
+            //bool supportsVulkan1_4 = false;
             bool supportsRequiredFeatures = false;
+            bool supportsRequiredExtensions = false;
 
-            discreteGpu = device.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu;
+            //discreteGpu = device.getProperties().deviceType == VULKAN_HPP_NAMESPACE::PhysicalDeviceType::eDiscreteGpu;
 
-            supportsVulkan1_4 = device.getProperties().apiVersion >= VULKAN_HPP_NAMESPACE::ApiVersion14;
+            //supportsVulkan1_4 = device.getProperties().apiVersion >= VULKAN_HPP_NAMESPACE::ApiVersion14;
 
             std::vector<VULKAN_HPP_NAMESPACE::QueueFamilyProperties> queueFamilyProperties = {};
             queueFamilyProperties = device.getQueueFamilyProperties();
             for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
                 VULKAN_HPP_NAMESPACE::QueueFamilyProperties qfp = queueFamilyProperties.at(i);
-                if ((qfp.queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0)) {
+                if ((qfp.queueFlags & VULKAN_HPP_NAMESPACE::QueueFlagBits::eGraphics) != static_cast<VULKAN_HPP_NAMESPACE::QueueFlags>(0)) {
                     supportsGraphics = true;
                     break;
                 }
             }
+
+            /*auto features = device.getFeatures2<
+                VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
+                VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan13Features,
+                VULKAN_HPP_NAMESPACE::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+            >();
+            supportsRequiredFeatures = features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan13Features>().dynamicRendering
+            && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;*/
+            auto features = device.getFeatures2<
+                VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
+                VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures
+            >();
+            supportsRequiredFeatures = features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2>().features.samplerAnisotropy
+            && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2>().features.sampleRateShading
+            && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures>().hostQueryReset;
 
             std::set<std::string> requiredExtensionsSet(requiredExtensions.begin(), requiredExtensions.end());
             std::vector<VULKAN_HPP_NAMESPACE::ExtensionProperties> extensionProperties = {};
@@ -90,15 +105,11 @@ class VulkanTutorial4GuiTests: public testing::Test {
                 requiredExtensionsSet.begin(), requiredExtensionsSet.end()
             );
 
-            auto features = device.getFeatures2<
-                vk::PhysicalDeviceFeatures2,
-                vk::PhysicalDeviceVulkan13Features,
-                vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
-            >();
-            supportsRequiredFeatures = features.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering
-            && features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
-
-            return discreteGpu && supportsVulkan1_4 && supportsGraphics && supportsRequiredExtensions && supportsRequiredFeatures;
+            return supportsGraphics
+            //&& discreteGpu
+            //&& supportsVulkan1_4
+            && supportsRequiredFeatures
+            && supportsRequiredExtensions;
         }
 
     protected:
@@ -192,15 +203,16 @@ class VulkanTutorial4GuiTests: public testing::Test {
 
                     physicalDevice = exqudens::vulkan::PhysicalDevice::builder()
                     .setRequiredExtensions({
+                        //VULKAN_HPP_NAMESPACE::KHRSpirv14ExtensionName,
+                        //VULKAN_HPP_NAMESPACE::KHRSynchronization2ExtensionName,
+                        //VULKAN_HPP_NAMESPACE::KHRCreateRenderpass2ExtensionName,
                         VULKAN_HPP_NAMESPACE::KHRSwapchainExtensionName,
-                        VULKAN_HPP_NAMESPACE::KHRSpirv14ExtensionName,
-                        VULKAN_HPP_NAMESPACE::KHRSynchronization2ExtensionName,
-                        VULKAN_HPP_NAMESPACE::KHRCreateRenderpass2ExtensionName
+                        VULKAN_HPP_NAMESPACE::EXTHostQueryResetExtensionName
                     })
                     .setFilterFunction(&VulkanTutorial4GuiTests::physicalDeviceFilter)
                     .build(instance.get());
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "physical device: " << (physicalDevice.get() == nullptr);
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "physical device: " << (physicalDevice.get() != nullptr);
                 }
 
         };
