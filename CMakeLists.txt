@@ -438,8 +438,8 @@ endif()
 configure_file("${PROJECT_SOURCE_DIR}/versions.hpp.in" "${PROJECT_BINARY_DIR}/generated/src/main/cpp/${BASE_DIR}/versions.hpp" @ONLY NEWLINE_STYLE UNIX)
 
 add_library("${PROJECT_NAME}" INTERFACE
-    "src/main/cpp/exqudens/vulkan/Context.hpp"
     "src/main/cpp/exqudens/vulkan/Instance.hpp"
+    "src/main/cpp/exqudens/vulkan/DebugUtilsMessenger.hpp"
     "src/main/cpp/exqudens/vulkan/PhysicalDevice.hpp"
 )
 target_include_directories("${PROJECT_NAME}" INTERFACE

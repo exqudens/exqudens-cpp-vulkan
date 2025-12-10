@@ -22,11 +22,8 @@ namespace exqudens::vulkan {
             const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& device,
             std::vector<const char*> requiredExtensions
         )> filterFunction = {};
-        VULKAN_HPP_NAMESPACE::raii::PhysicalDevice targetObject = nullptr;
 
         static Builder builder();
-
-        VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& get();
 
     };
 
@@ -42,18 +39,17 @@ namespace exqudens::vulkan {
 
             Builder& setFilterFunction(const std::function<bool(size_t, const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice&, std::vector<const char*>)>& value);
 
-            PhysicalDevice build(VULKAN_HPP_NAMESPACE::raii::Instance& instance);
+            PhysicalDevice build(
+                VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
+                VULKAN_HPP_NAMESPACE::raii::Instance& instance
+            );
 
     };
 
-// implementation ---
+    // implementation ---
 
     inline PhysicalDevice::Builder PhysicalDevice::builder() {
         return {};
-    }
-
-    inline VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& PhysicalDevice::get() {
-        return targetObject;
     }
 
     inline PhysicalDevice::Builder& PhysicalDevice::Builder::setRequiredExtensions(const std::vector<const char*>& value) {
@@ -69,13 +65,16 @@ namespace exqudens::vulkan {
     }
 
 
-    inline PhysicalDevice PhysicalDevice::Builder::build(VULKAN_HPP_NAMESPACE::raii::Instance& instance) {
+    inline PhysicalDevice PhysicalDevice::Builder::build(
+        VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
+        VULKAN_HPP_NAMESPACE::raii::Instance& instance
+    ) {
         try {
             if (!resultObject.filterFunction) {
                 resultObject.filterFunction = [](size_t, VULKAN_HPP_NAMESPACE::raii::PhysicalDevice, std::vector<const char*>) { return true; };
             }
 
-            PhysicalDevice result;
+            PhysicalDevice result = {};
             result.requiredExtensions = resultObject.requiredExtensions;
             result.filterFunction = resultObject.filterFunction;
 
@@ -89,7 +88,7 @@ namespace exqudens::vulkan {
                 VULKAN_HPP_NAMESPACE::raii::PhysicalDevice device = devices.at(i);
                 bool found = result.filterFunction(i, device, result.requiredExtensions);
                 if (found) {
-                    result.targetObject = device;
+                    physicalDevice = device;
                     break;
                 }
             }

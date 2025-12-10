@@ -20,8 +20,8 @@
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
-#include "exqudens/vulkan/Context.hpp"
 #include "exqudens/vulkan/Instance.hpp"
+#include "exqudens/vulkan/DebugUtilsMessenger.hpp"
 #include "exqudens/vulkan/PhysicalDevice.hpp"
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
@@ -128,9 +128,10 @@ class VulkanTutorial4GuiTests: public testing::Test {
 #endif
                 GLFWwindow* window = nullptr;
 
-                exqudens::vulkan::Context context = {};
-                exqudens::vulkan::Instance instance = {};
-                exqudens::vulkan::PhysicalDevice physicalDevice = {};
+                VULKAN_HPP_NAMESPACE::raii::Context context = {};
+                VULKAN_HPP_NAMESPACE::raii::Instance instance = nullptr;
+                VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT debugUtilsMessenger = nullptr;
+                VULKAN_HPP_NAMESPACE::raii::PhysicalDevice physicalDevice = nullptr;
 
             public:
 
@@ -176,32 +177,39 @@ class VulkanTutorial4GuiTests: public testing::Test {
                         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
                     }
 
-                    context = {};
-
-                    instance = exqudens::vulkan::Instance::builder()
-                    .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
-                    .setApplicationName(LOGGER_ID)
-                    .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
-                    .setEngineName("No Engine")
-                    .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    exqudens::vulkan::Instance::builder()
+                    .setApplicationInfo(
+                        VULKAN_HPP_NAMESPACE::ApplicationInfo()
+                        .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
+                        .setPApplicationName(LOGGER_ID)
+                        .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
+                        .setPEngineName("No Engine")
+                        .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    )
                     .setEnabledExtensionNames(requiredExtensions)
                     .setEnabledLayerNames(requiredLayers)
-                    .setMessageSeverity(
-                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eError
-                    )
-                    .setMessageType(
-                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-                        //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
-                    )
-                    .setDebugCallback(&VulkanTutorial4GuiTests::debugCallback)
-                    .build(std::ref(context.get()));
+                    .build(instance, context);
 
-                    physicalDevice = exqudens::vulkan::PhysicalDevice::builder()
+                    exqudens::vulkan::DebugUtilsMessenger::builder()
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT()
+                        .setMessageSeverity(
+                            VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eError
+                        )
+                        .setMessageType(
+                            VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+                            //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
+                        )
+                        .setPfnUserCallback(&VulkanTutorial3GuiTests::debugCallback)
+                    )
+                    .build(debugUtilsMessenger, instance);
+
+                    exqudens::vulkan::PhysicalDevice::builder()
                     .setRequiredExtensions({
                         //VULKAN_HPP_NAMESPACE::KHRSpirv14ExtensionName,
                         //VULKAN_HPP_NAMESPACE::KHRSynchronization2ExtensionName,
@@ -210,9 +218,9 @@ class VulkanTutorial4GuiTests: public testing::Test {
                         VULKAN_HPP_NAMESPACE::EXTHostQueryResetExtensionName
                     })
                     .setFilterFunction(&VulkanTutorial4GuiTests::physicalDeviceFilter)
-                    .build(instance.get());
+                    .build(physicalDevice, instance);
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "physical device: " << (physicalDevice.get() != nullptr);
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "physicalDevice: " << (physicalDevice != nullptr);
                 }
 
         };
@@ -220,7 +228,7 @@ class VulkanTutorial4GuiTests: public testing::Test {
 };
 
 /*
-    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Setup/Validation_layers
+    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
 */
 TEST_F(VulkanTutorial4GuiTests, test1) {
     try {

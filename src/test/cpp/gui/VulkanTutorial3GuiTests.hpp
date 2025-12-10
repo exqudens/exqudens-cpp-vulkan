@@ -5,7 +5,6 @@
 #include <vector>
 #include <memory>
 #include <exception>
-#include <functional>
 #include <iostream>
 
 #include <gtest/gtest.h>
@@ -15,8 +14,8 @@
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
-#include "exqudens/vulkan/Context.hpp"
 #include "exqudens/vulkan/Instance.hpp"
+#include "exqudens/vulkan/DebugUtilsMessenger.hpp"
 
 class VulkanTutorial3GuiTests: public testing::Test {
 
@@ -60,8 +59,9 @@ class VulkanTutorial3GuiTests: public testing::Test {
 #endif
                 GLFWwindow* window = nullptr;
 
-                exqudens::vulkan::Context context = {};
-                exqudens::vulkan::Instance instance = {};
+                VULKAN_HPP_NAMESPACE::raii::Context context = {};
+                VULKAN_HPP_NAMESPACE::raii::Instance instance = nullptr;
+                VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT debugUtilsMessenger = nullptr;
 
             public:
 
@@ -107,35 +107,43 @@ class VulkanTutorial3GuiTests: public testing::Test {
                         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
                     }
 
-                    context = {};
-
-                    instance = exqudens::vulkan::Instance::builder()
-                    .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
-                    .setApplicationName(LOGGER_ID)
-                    .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
-                    .setEngineName("No Engine")
-                    .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    exqudens::vulkan::Instance::builder()
+                    .setApplicationInfo(
+                        VULKAN_HPP_NAMESPACE::ApplicationInfo()
+                        .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
+                        .setPApplicationName(LOGGER_ID)
+                        .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
+                        .setPEngineName("No Engine")
+                        .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    )
                     .setEnabledExtensionNames(requiredExtensions)
                     .setEnabledLayerNames(requiredLayers)
-                    .setMessageSeverity(
-                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eError
-                    )
-                    .setMessageType(
-                        VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-                        | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
-                        //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
-                    )
-                    .setDebugCallback(&VulkanTutorial3GuiTests::debugCallback)
-                    .build(std::ref(context.get()));
+                    .build(instance, context);
 
-                    instance.get().submitDebugUtilsMessageEXT(
+                    exqudens::vulkan::DebugUtilsMessenger::builder()
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT()
+                        .setMessageSeverity(
+                            VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eWarning
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eError
+                        )
+                        .setMessageType(
+                            VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+                            | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+                            //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
+                        )
+                        .setPfnUserCallback(&VulkanTutorial3GuiTests::debugCallback)
+                    )
+                    .build(debugUtilsMessenger, instance);
+
+                    std::string message = std::string("debugUtilsMessenger: ") + std::to_string(debugUtilsMessenger != nullptr);
+                    instance.submitDebugUtilsMessageEXT(
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral,
-                        VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCallbackDataEXT().setPMessage("instance build done")
+                        VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCallbackDataEXT().setPMessage(message.c_str())
                     );
                 }
 

@@ -19,14 +19,9 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::ApplicationInfo applicationInfo;
         std::vector<const char*> enabledExtensionNames = {};
         std::vector<const char*> enabledLayerNames = {};
-        VULKAN_HPP_NAMESPACE::InstanceCreateInfo instanceCreateInfo;
-        VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo;
-        VULKAN_HPP_NAMESPACE::raii::Instance targetObject = nullptr;
-        VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT debugUtilsMessengerObject = nullptr;
+        VULKAN_HPP_NAMESPACE::InstanceCreateInfo createInfo;
 
         static Builder builder();
-
-        VULKAN_HPP_NAMESPACE::raii::Instance& get();
 
     };
 
@@ -38,62 +33,29 @@ namespace exqudens::vulkan {
 
         public:
 
-            Builder& setApiVersion(const std::optional<uint32_t>& value);
-
-            Builder& setApplicationName(const std::optional<const char*>& value);
-
-            Builder& setApplicationVersion(const std::optional<uint32_t>& value);
-
-            Builder& setEngineName(const std::optional<const char*>& value);
-
-            Builder& setEngineVersion(const std::optional<uint32_t>& value);
+            Builder& setApplicationInfo(const VULKAN_HPP_NAMESPACE::ApplicationInfo& value);
 
             Builder& setEnabledExtensionNames(const std::vector<const char*>& value);
 
             Builder& setEnabledLayerNames(const std::vector<const char*>& value);
 
-            Builder& setMessageSeverity(const std::optional<VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagsEXT>& value);
+            Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::InstanceCreateInfo& value);
 
-            Builder& setMessageType(const std::optional<VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagsEXT>& value);
-
-            Builder& setDebugCallback(const std::optional<VULKAN_HPP_NAMESPACE::PFN_DebugUtilsMessengerCallbackEXT>& value);
-
-            Instance build(VULKAN_HPP_NAMESPACE::raii::Context& context);
+            Instance build(
+                VULKAN_HPP_NAMESPACE::raii::Instance& instance,
+                VULKAN_HPP_NAMESPACE::raii::Context& context
+            );
 
     };
 
-// implementation ---
+    // implementation ---
 
     inline Instance::Builder Instance::builder() {
         return {};
     }
 
-    inline VULKAN_HPP_NAMESPACE::raii::Instance& Instance::get() {
-        return targetObject;
-    }
-
-    inline Instance::Builder& Instance::Builder::setApiVersion(const std::optional<uint32_t>& value) {
-        resultObject.applicationInfo.apiVersion = value.value_or(resultObject.applicationInfo.apiVersion);
-        return *this;
-    }
-
-    inline Instance::Builder& Instance::Builder::setApplicationName(const std::optional<const char*>& value) {
-        resultObject.applicationInfo.pApplicationName = value.value_or(resultObject.applicationInfo.pApplicationName);
-        return *this;
-    }
-
-    inline Instance::Builder& Instance::Builder::setApplicationVersion(const std::optional<uint32_t>& value) {
-        resultObject.applicationInfo.applicationVersion = value.value_or(resultObject.applicationInfo.applicationVersion);
-        return *this;
-    }
-
-    inline Instance::Builder& Instance::Builder::setEngineName(const std::optional<const char*>& value) {
-        resultObject.applicationInfo.pEngineName = value.value_or(resultObject.applicationInfo.pEngineName);
-        return *this;
-    }
-
-    inline Instance::Builder& Instance::Builder::setEngineVersion(const std::optional<uint32_t>& value) {
-        resultObject.applicationInfo.engineVersion = value.value_or(resultObject.applicationInfo.engineVersion);
+    inline Instance::Builder& Instance::Builder::setApplicationInfo(const VULKAN_HPP_NAMESPACE::ApplicationInfo& value) {
+        resultObject.applicationInfo = value;
         return *this;
     }
 
@@ -107,28 +69,16 @@ namespace exqudens::vulkan {
         return *this;
     }
 
-    inline Instance::Builder& Instance::Builder::setMessageSeverity(
-        const std::optional<VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagsEXT>& value
-    ) {
-        resultObject.debugUtilsMessengerCreateInfo.messageSeverity = value.value_or(resultObject.debugUtilsMessengerCreateInfo.messageSeverity);
+    inline Instance::Builder& Instance::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::InstanceCreateInfo& value) {
+        resultObject.createInfo = value;
         return *this;
     }
 
-    inline Instance::Builder& Instance::Builder::setMessageType(
-        const std::optional<VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagsEXT>& value
-    ) {
-        resultObject.debugUtilsMessengerCreateInfo.messageType = value.value_or(resultObject.debugUtilsMessengerCreateInfo.messageType);
-        return *this;
-    }
 
-    inline Instance::Builder& Instance::Builder::setDebugCallback(
-        const std::optional<VULKAN_HPP_NAMESPACE::PFN_DebugUtilsMessengerCallbackEXT>& value
+    inline Instance Instance::Builder::build(
+        VULKAN_HPP_NAMESPACE::raii::Instance& instance,
+        VULKAN_HPP_NAMESPACE::raii::Context& context
     ) {
-        resultObject.debugUtilsMessengerCreateInfo.pfnUserCallback = value.value_or(resultObject.debugUtilsMessengerCreateInfo.pfnUserCallback);
-        return *this;
-    }
-
-    inline Instance Instance::Builder::build(VULKAN_HPP_NAMESPACE::raii::Context& context) {
         try {
             if (!resultObject.enabledExtensionNames.empty()) {
                 auto extensionProperties = context.enumerateInstanceExtensionProperties();
@@ -164,24 +114,17 @@ namespace exqudens::vulkan {
                 }
             }
 
-            Instance result;
+            Instance result = {};
             result.applicationInfo = resultObject.applicationInfo;
             result.enabledExtensionNames = resultObject.enabledExtensionNames;
             result.enabledLayerNames = resultObject.enabledLayerNames;
-            result.instanceCreateInfo = resultObject.instanceCreateInfo;
-            result.instanceCreateInfo.pApplicationInfo = &result.applicationInfo;
-            result.instanceCreateInfo.ppEnabledExtensionNames = result.enabledExtensionNames.data();
-            result.instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(result.enabledExtensionNames.size());
-            result.instanceCreateInfo.ppEnabledLayerNames = result.enabledLayerNames.data();
-            result.instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(result.enabledLayerNames.size());
-            result.targetObject = context.createInstance(result.instanceCreateInfo);
-
-            if (result.enabledLayerNames.empty()) {
-                return result;
-            }
-
-            result.debugUtilsMessengerCreateInfo = resultObject.debugUtilsMessengerCreateInfo;
-            result.debugUtilsMessengerObject = result.targetObject.createDebugUtilsMessengerEXT(result.debugUtilsMessengerCreateInfo);
+            result.createInfo = resultObject.createInfo;
+            result.createInfo.pApplicationInfo = &result.applicationInfo;
+            result.createInfo.ppEnabledExtensionNames = result.enabledExtensionNames.data();
+            result.createInfo.enabledExtensionCount = static_cast<uint32_t>(result.enabledExtensionNames.size());
+            result.createInfo.ppEnabledLayerNames = result.enabledLayerNames.data();
+            result.createInfo.enabledLayerCount = static_cast<uint32_t>(result.enabledLayerNames.size());
+            instance = context.createInstance(result.createInfo);
 
             return result;
         } catch (...) {

@@ -15,7 +15,6 @@
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
-#include "exqudens/vulkan/Context.hpp"
 #include "exqudens/vulkan/Instance.hpp"
 
 class VulkanTutorial2GuiTests: public testing::Test {
@@ -35,8 +34,8 @@ class VulkanTutorial2GuiTests: public testing::Test {
 
                 GLFWwindow* window = nullptr;
 
-                exqudens::vulkan::Context context = {};
-                exqudens::vulkan::Instance instance = {};
+                VULKAN_HPP_NAMESPACE::raii::Context context = {};
+                VULKAN_HPP_NAMESPACE::raii::Instance instance = nullptr;
 
             public:
 
@@ -75,18 +74,19 @@ class VulkanTutorial2GuiTests: public testing::Test {
                 void initVulkan() {
                     std::vector<const char*> requiredExtensions = TestGlfwUtils::getRequiredInstanceExtensions();
 
-                    context = {};
-
-                    instance = exqudens::vulkan::Instance::builder()
-                    .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
-                    .setApplicationName(LOGGER_ID)
-                    .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
-                    .setEngineName("No Engine")
-                    .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    exqudens::vulkan::Instance::builder()
+                    .setApplicationInfo(
+                        VULKAN_HPP_NAMESPACE::ApplicationInfo()
+                        .setApiVersion(VULKAN_HPP_NAMESPACE::ApiVersion14)
+                        .setPApplicationName(LOGGER_ID)
+                        .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
+                        .setPEngineName("No Engine")
+                        .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
+                    )
                     .setEnabledExtensionNames(requiredExtensions)
-                    .build(std::ref(context.get()));
+                    .build(instance, context);
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "instance.applicationInfo.pApplicationName: '" << instance.applicationInfo.pApplicationName << "'";
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "instance : " << (instance != nullptr);
                 }
 
         };
