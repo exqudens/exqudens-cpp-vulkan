@@ -22,6 +22,7 @@ namespace exqudens::vulkan {
             const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& device,
             std::vector<const char*> requiredExtensions
         )> filterFunction = {};
+        VULKAN_HPP_NAMESPACE::raii::PhysicalDevice target = nullptr;
 
         static Builder builder();
 
@@ -39,8 +40,8 @@ namespace exqudens::vulkan {
 
             Builder& setFilterFunction(const std::function<bool(size_t, const VULKAN_HPP_NAMESPACE::raii::PhysicalDevice&, std::vector<const char*>)>& value);
 
-            PhysicalDevice build(
-                VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
+            PhysicalDevice& build(
+                PhysicalDevice& physicalDevice,
                 VULKAN_HPP_NAMESPACE::raii::Instance& instance
             );
 
@@ -51,6 +52,7 @@ namespace exqudens::vulkan {
     inline PhysicalDevice::Builder PhysicalDevice::builder() {
         return {};
     }
+
 
     inline PhysicalDevice::Builder& PhysicalDevice::Builder::setRequiredExtensions(const std::vector<const char*>& value) {
         resultObject.requiredExtensions = value;
@@ -65,8 +67,8 @@ namespace exqudens::vulkan {
     }
 
 
-    inline PhysicalDevice PhysicalDevice::Builder::build(
-        VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
+    inline PhysicalDevice& PhysicalDevice::Builder::build(
+        PhysicalDevice& physicalDevice,
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {
         try {
@@ -74,9 +76,8 @@ namespace exqudens::vulkan {
                 resultObject.filterFunction = [](size_t, VULKAN_HPP_NAMESPACE::raii::PhysicalDevice, std::vector<const char*>) { return true; };
             }
 
-            PhysicalDevice result = {};
-            result.requiredExtensions = resultObject.requiredExtensions;
-            result.filterFunction = resultObject.filterFunction;
+            physicalDevice.requiredExtensions = resultObject.requiredExtensions;
+            physicalDevice.filterFunction = resultObject.filterFunction;
 
             std::vector<vk::raii::PhysicalDevice> devices = instance.enumeratePhysicalDevices();
 
@@ -86,14 +87,14 @@ namespace exqudens::vulkan {
 
             for (size_t i = 0; i < devices.size(); i++) {
                 VULKAN_HPP_NAMESPACE::raii::PhysicalDevice device = devices.at(i);
-                bool found = result.filterFunction(i, device, result.requiredExtensions);
+                bool found = physicalDevice.filterFunction(i, device, physicalDevice.requiredExtensions);
                 if (found) {
-                    physicalDevice = device;
+                    physicalDevice.target = device;
                     break;
                 }
             }
 
-            return result;
+            return physicalDevice;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

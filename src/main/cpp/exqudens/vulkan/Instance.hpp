@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <string>
-#include <optional>
 #include <vector>
 #include <filesystem>
 
@@ -20,6 +19,7 @@ namespace exqudens::vulkan {
         std::vector<const char*> enabledExtensionNames = {};
         std::vector<const char*> enabledLayerNames = {};
         VULKAN_HPP_NAMESPACE::InstanceCreateInfo createInfo;
+        VULKAN_HPP_NAMESPACE::raii::Instance target = nullptr;
 
         static Builder builder();
 
@@ -41,8 +41,8 @@ namespace exqudens::vulkan {
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::InstanceCreateInfo& value);
 
-            Instance build(
-                VULKAN_HPP_NAMESPACE::raii::Instance& instance,
+            Instance& build(
+                Instance& instance,
                 VULKAN_HPP_NAMESPACE::raii::Context& context
             );
 
@@ -74,9 +74,8 @@ namespace exqudens::vulkan {
         return *this;
     }
 
-
-    inline Instance Instance::Builder::build(
-        VULKAN_HPP_NAMESPACE::raii::Instance& instance,
+    inline Instance& Instance::Builder::build(
+        Instance& instance,
         VULKAN_HPP_NAMESPACE::raii::Context& context
     ) {
         try {
@@ -114,19 +113,18 @@ namespace exqudens::vulkan {
                 }
             }
 
-            Instance result = {};
-            result.applicationInfo = resultObject.applicationInfo;
-            result.enabledExtensionNames = resultObject.enabledExtensionNames;
-            result.enabledLayerNames = resultObject.enabledLayerNames;
-            result.createInfo = resultObject.createInfo;
-            result.createInfo.pApplicationInfo = &result.applicationInfo;
-            result.createInfo.ppEnabledExtensionNames = result.enabledExtensionNames.data();
-            result.createInfo.enabledExtensionCount = static_cast<uint32_t>(result.enabledExtensionNames.size());
-            result.createInfo.ppEnabledLayerNames = result.enabledLayerNames.data();
-            result.createInfo.enabledLayerCount = static_cast<uint32_t>(result.enabledLayerNames.size());
-            instance = context.createInstance(result.createInfo);
+            instance.applicationInfo = resultObject.applicationInfo;
+            instance.enabledExtensionNames = resultObject.enabledExtensionNames;
+            instance.enabledLayerNames = resultObject.enabledLayerNames;
+            instance.createInfo = resultObject.createInfo;
+            instance.createInfo.pApplicationInfo = &instance.applicationInfo;
+            instance.createInfo.ppEnabledExtensionNames = instance.enabledExtensionNames.data();
+            instance.createInfo.enabledExtensionCount = static_cast<uint32_t>(instance.enabledExtensionNames.size());
+            instance.createInfo.ppEnabledLayerNames = instance.enabledLayerNames.data();
+            instance.createInfo.enabledLayerCount = static_cast<uint32_t>(instance.enabledLayerNames.size());
+            instance.target = context.createInstance(instance.createInfo);
 
-            return result;
+            return instance;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

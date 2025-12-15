@@ -21,6 +21,7 @@
 #include "gui/VulkanTutorial2GuiTests.hpp"
 #include "gui/VulkanTutorial3GuiTests.hpp"
 #include "gui/VulkanTutorial4GuiTests.hpp"
+#include "gui/VulkanTutorial5GuiTests.hpp"
 
 #define CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
@@ -45,6 +46,7 @@ int TestApplication::run(int argc, char** argv) {
             VulkanTutorial2GuiTests::LOGGER_ID,
             VulkanTutorial3GuiTests::LOGGER_ID,
             VulkanTutorial4GuiTests::LOGGER_ID,
+            VulkanTutorial5GuiTests::LOGGER_ID,
             LOGGER_ID
         };
         std::string loggingConfigResult = exqudens::Log::configure(loggingFile, loggingFileSize, loggerIds);

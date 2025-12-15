@@ -24,11 +24,11 @@
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
-class VulkanTutorial4GuiTests: public testing::Test {
+class VulkanTutorial5GuiTests: public testing::Test {
 
     public:
 
-        inline static const char* LOGGER_ID = "VulkanTutorial4GuiTests";
+        inline static const char* LOGGER_ID = "VulkanTutorial5GuiTests";
 
         static VKAPI_ATTR VULKAN_HPP_NAMESPACE::Bool32 VKAPI_CALL debugCallback(
             VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -126,10 +126,17 @@ class VulkanTutorial4GuiTests: public testing::Test {
 #endif
                 GLFWwindow* window = nullptr;
 
+                VULKAN_HPP_NAMESPACE::StructureChain<
+                    VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
+                    VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures
+                > deviceFeatures;
+
                 exqudens::vulkan::Context context = {};
                 exqudens::vulkan::Instance instance = {};
                 exqudens::vulkan::DebugUtilsMessenger debugUtilsMessenger = {};
                 exqudens::vulkan::PhysicalDevice physicalDevice = {};
+                exqudens::vulkan::Device device = {};
+                exqudens::vulkan::Queue graphicsQueue = {};
 
             public:
 
@@ -175,6 +182,13 @@ class VulkanTutorial4GuiTests: public testing::Test {
                         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
                     }
 
+                    deviceFeatures = {
+                        VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2().setFeatures(
+                            VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures().setSamplerAnisotropy(true).setSampleRateShading(true)
+                        ),
+                        VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures().setHostQueryReset(true)
+                    };
+
                     exqudens::vulkan::Instance::builder()
                     .setApplicationInfo(
                         VULKAN_HPP_NAMESPACE::ApplicationInfo()
@@ -215,10 +229,44 @@ class VulkanTutorial4GuiTests: public testing::Test {
                         VULKAN_HPP_NAMESPACE::KHRSwapchainExtensionName,
                         VULKAN_HPP_NAMESPACE::EXTHostQueryResetExtensionName
                     })
-                    .setFilterFunction(&VulkanTutorial4GuiTests::physicalDeviceFilter)
+                    .setFilterFunction(&VulkanTutorial5GuiTests::physicalDeviceFilter)
                     .build(physicalDevice, instance.target);
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "physicalDevice: " << (physicalDevice.target != nullptr);
+                    std::vector<VULKAN_HPP_NAMESPACE::QueueFamilyProperties> queueFamilyProperties = physicalDevice.target.getQueueFamilyProperties();
+                    std::optional<uint32_t> graphicsIndex = {};
+                    for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+                        if ((queueFamilyProperties.at(i).queueFlags & VULKAN_HPP_NAMESPACE::QueueFlagBits::eGraphics) != static_cast<VULKAN_HPP_NAMESPACE::QueueFlags>(0)) {
+                            graphicsIndex = static_cast<uint32_t>(i);
+                            break;
+                        }
+                    }
+                    if (!graphicsIndex.has_value()) {
+                        throw std::runtime_error(CALL_INFO + ": No graphics queue family found!");
+                    }
+                    float queuePriority = 0.5f;
+
+                    exqudens::vulkan::Device::builder()
+                    .setQueueCreateInfos({
+                        VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo()
+                        .setQueueFamilyIndex(graphicsIndex.value())
+                        .setQueueCount(1)
+                        .setPQueuePriorities(&queuePriority)
+                    })
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::DeviceCreateInfo()
+                        .setPNext(&deviceFeatures.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2>())
+                        .setEnabledExtensionCount(static_cast<uint32_t>(physicalDevice.requiredExtensions.size()))
+                        .setPpEnabledExtensionNames(physicalDevice.requiredExtensions.data())
+                    )
+                    .build(device, physicalDevice.target);
+
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "device: " << (device.target != nullptr);
+
+                    exqudens::vulkan::Queue::builder()
+                    .setFamilyIndex(graphicsIndex.value())
+                    .build(graphicsQueue, device.target);
+
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "graphicsQueue: " << (graphicsQueue.target != nullptr);
                 }
 
         };
@@ -226,9 +274,9 @@ class VulkanTutorial4GuiTests: public testing::Test {
 };
 
 /*
-    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
+    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Setup/Logical_device_and_queues
 */
-TEST_F(VulkanTutorial4GuiTests, test1) {
+TEST_F(VulkanTutorial5GuiTests, test1) {
     try {
         std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
         std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();

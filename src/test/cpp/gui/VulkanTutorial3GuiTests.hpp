@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdlib>
 #include <cstdint>
 #include <vector>
 #include <memory>
@@ -14,8 +13,7 @@
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
-#include "exqudens/vulkan/Instance.hpp"
-#include "exqudens/vulkan/DebugUtilsMessenger.hpp"
+#include "exqudens/vulkan.hpp"
 
 class VulkanTutorial3GuiTests: public testing::Test {
 
@@ -59,9 +57,9 @@ class VulkanTutorial3GuiTests: public testing::Test {
 #endif
                 GLFWwindow* window = nullptr;
 
-                VULKAN_HPP_NAMESPACE::raii::Context context = {};
-                VULKAN_HPP_NAMESPACE::raii::Instance instance = nullptr;
-                VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT debugUtilsMessenger = nullptr;
+                exqudens::vulkan::Context context = {};
+                exqudens::vulkan::Instance instance = {};
+                exqudens::vulkan::DebugUtilsMessenger debugUtilsMessenger = {};
 
             public:
 
@@ -118,7 +116,7 @@ class VulkanTutorial3GuiTests: public testing::Test {
                     )
                     .setEnabledExtensionNames(requiredExtensions)
                     .setEnabledLayerNames(requiredLayers)
-                    .build(instance, context);
+                    .build(instance, context.target);
 
                     exqudens::vulkan::DebugUtilsMessenger::builder()
                     .setCreateInfo(
@@ -137,10 +135,10 @@ class VulkanTutorial3GuiTests: public testing::Test {
                         )
                         .setPfnUserCallback(&VulkanTutorial3GuiTests::debugCallback)
                     )
-                    .build(debugUtilsMessenger, instance);
+                    .build(debugUtilsMessenger, instance.target);
 
-                    std::string message = std::string("debugUtilsMessenger: ") + std::to_string(debugUtilsMessenger != nullptr);
-                    instance.submitDebugUtilsMessageEXT(
+                    std::string message = std::string("debugUtilsMessenger: ") + std::to_string(debugUtilsMessenger.target != nullptr);
+                    instance.target.submitDebugUtilsMessageEXT(
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT::eInfo,
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eGeneral,
                         VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCallbackDataEXT().setPMessage(message.c_str())

@@ -438,9 +438,14 @@ endif()
 configure_file("${PROJECT_SOURCE_DIR}/versions.hpp.in" "${PROJECT_BINARY_DIR}/generated/src/main/cpp/${BASE_DIR}/versions.hpp" @ONLY NEWLINE_STYLE UNIX)
 
 add_library("${PROJECT_NAME}" INTERFACE
+    "src/main/cpp/exqudens/vulkan/Context.hpp"
     "src/main/cpp/exqudens/vulkan/Instance.hpp"
     "src/main/cpp/exqudens/vulkan/DebugUtilsMessenger.hpp"
     "src/main/cpp/exqudens/vulkan/PhysicalDevice.hpp"
+    "src/main/cpp/exqudens/vulkan/Device.hpp"
+    "src/main/cpp/exqudens/vulkan/Queue.hpp"
+
+    "src/main/cpp/exqudens/vulkan.hpp"
 )
 target_include_directories("${PROJECT_NAME}" INTERFACE
     "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
@@ -504,6 +509,7 @@ if(NOT "${SKIP_TEST}")
         "src/test/cpp/gui/VulkanTutorial2GuiTests.hpp"
         "src/test/cpp/gui/VulkanTutorial3GuiTests.hpp"
         "src/test/cpp/gui/VulkanTutorial4GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial5GuiTests.hpp"
     )
     generate_export_header("test-lib"
         BASE_NAME "TEST_LIB"

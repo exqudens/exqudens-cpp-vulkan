@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstdint>
 #include <vector>
+#include <map>
 #include <memory>
 #include <exception>
 #include <functional>
@@ -15,7 +16,7 @@
 
 #include "TestUtils.hpp"
 #include "TestGlfwUtils.hpp"
-#include "exqudens/vulkan/Instance.hpp"
+#include "exqudens/vulkan.hpp"
 
 class VulkanTutorial2GuiTests: public testing::Test {
 
@@ -34,8 +35,8 @@ class VulkanTutorial2GuiTests: public testing::Test {
 
                 GLFWwindow* window = nullptr;
 
-                VULKAN_HPP_NAMESPACE::raii::Context context = {};
-                VULKAN_HPP_NAMESPACE::raii::Instance instance = nullptr;
+                exqudens::vulkan::Context context = {};
+                exqudens::vulkan::Instance instance = {};
 
             public:
 
@@ -84,9 +85,9 @@ class VulkanTutorial2GuiTests: public testing::Test {
                         .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
                     )
                     .setEnabledExtensionNames(requiredExtensions)
-                    .build(instance, context);
+                    .build(instance, context.target);
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "instance : " << (instance != nullptr);
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "instance : " << (instance.target != nullptr);
                 }
 
         };

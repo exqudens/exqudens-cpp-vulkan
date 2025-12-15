@@ -1,9 +1,6 @@
 #pragma once
 
-#include <cstdint>
 #include <string>
-#include <optional>
-#include <vector>
 #include <filesystem>
 
 #include <vulkan/vulkan_raii.hpp>
@@ -17,6 +14,7 @@ namespace exqudens::vulkan {
         class Builder;
 
         VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT createInfo;
+        VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT target = nullptr;
 
         static Builder builder();
 
@@ -32,8 +30,8 @@ namespace exqudens::vulkan {
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT& value);
 
-            DebugUtilsMessenger build(
-                VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT& debugUtilsMessenger,
+            DebugUtilsMessenger& build(
+                DebugUtilsMessenger& debugUtilsMessenger,
                 VULKAN_HPP_NAMESPACE::raii::Instance& instance
             );
 
@@ -50,14 +48,15 @@ namespace exqudens::vulkan {
         return *this;
     }
 
-    inline DebugUtilsMessenger DebugUtilsMessenger::Builder::build(VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT& debugUtilsMessenger, VULKAN_HPP_NAMESPACE::raii::Instance& instance) {
+    inline DebugUtilsMessenger& DebugUtilsMessenger::Builder::build(
+        DebugUtilsMessenger& debugUtilsMessenger,
+        VULKAN_HPP_NAMESPACE::raii::Instance& instance
+    ) {
         try {
-            DebugUtilsMessenger result = {};
+            debugUtilsMessenger.createInfo = resultObject.createInfo;
+            debugUtilsMessenger.target = instance.createDebugUtilsMessengerEXT(debugUtilsMessenger.createInfo);
 
-            result.createInfo = resultObject.createInfo;
-            debugUtilsMessenger = instance.createDebugUtilsMessengerEXT(result.createInfo);
-
-            return result;
+            return debugUtilsMessenger;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
