@@ -24,11 +24,11 @@
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
-class VulkanTutorial4GuiTests: public testing::Test {
+class VulkanTutorial7GuiTests: public testing::Test {
 
     public:
 
-        inline static const char* LOGGER_ID = "VulkanTutorial4GuiTests";
+        inline static const char* LOGGER_ID = "VulkanTutorial7GuiTests";
 
         static VKAPI_ATTR VULKAN_HPP_NAMESPACE::Bool32 VKAPI_CALL debugCallback(
             VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -126,10 +126,20 @@ class VulkanTutorial4GuiTests: public testing::Test {
 #endif
                 GLFWwindow* window = nullptr;
 
+                VULKAN_HPP_NAMESPACE::StructureChain<
+                    VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
+                    VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures
+                > deviceFeatures;
+
                 exqudens::vulkan::Context context = {};
                 exqudens::vulkan::Instance instance = {};
                 exqudens::vulkan::DebugUtilsMessenger debugUtilsMessenger = {};
+                exqudens::vulkan::Surface surface = {};
                 exqudens::vulkan::PhysicalDevice physicalDevice = {};
+                exqudens::vulkan::Device device = {};
+                exqudens::vulkan::Queue graphicsQueue = {};
+                exqudens::vulkan::Queue presentQueue = {};
+                exqudens::vulkan::Swapchain swapchain = {};
 
             public:
 
@@ -175,6 +185,17 @@ class VulkanTutorial4GuiTests: public testing::Test {
                         requiredLayers.emplace_back("VK_LAYER_KHRONOS_validation");
                     }
 
+                    deviceFeatures = {
+                        VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2().setFeatures(
+                            VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures().setSamplerAnisotropy(true).setSampleRateShading(true)
+                        ),
+                        VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures().setHostQueryReset(true)
+                    };
+
+                    int framebufferWidth = 0;
+                    int framebufferHeight = 0;
+                    glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+
                     exqudens::vulkan::Instance::builder()
                     .setApplicationInfo(
                         VULKAN_HPP_NAMESPACE::ApplicationInfo()
@@ -203,9 +224,18 @@ class VulkanTutorial4GuiTests: public testing::Test {
                             | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                             //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
                         )
-                        .setPfnUserCallback(&VulkanTutorial4GuiTests::debugCallback)
+                        .setPfnUserCallback(&VulkanTutorial7GuiTests::debugCallback)
                     )
                     .build(debugUtilsMessenger, instance.target);
+
+                    VkSurfaceKHR vkSurface = nullptr;
+                    if (glfwCreateWindowSurface(*instance.target, window, nullptr, &vkSurface) != VK_SUCCESS || vkSurface == nullptr) {
+                        throw std::runtime_error(CALL_INFO + ": failed to create surface!");
+                    }
+
+                    exqudens::vulkan::Surface::builder()
+                    .setSurface(vkSurface)
+                    .build(surface, instance.target);
 
                     exqudens::vulkan::PhysicalDevice::builder()
                     .setRequiredExtensions({
@@ -215,10 +245,78 @@ class VulkanTutorial4GuiTests: public testing::Test {
                         VULKAN_HPP_NAMESPACE::KHRSwapchainExtensionName,
                         VULKAN_HPP_NAMESPACE::EXTHostQueryResetExtensionName
                     })
-                    .setFilterFunction(&VulkanTutorial4GuiTests::physicalDeviceFilter)
+                    .setFilterFunction(&VulkanTutorial7GuiTests::physicalDeviceFilter)
                     .build(physicalDevice, instance.target);
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "physicalDevice: " << (physicalDevice.target != nullptr);
+                    std::vector<VULKAN_HPP_NAMESPACE::QueueFamilyProperties> queueFamilyProperties = physicalDevice.target.getQueueFamilyProperties();
+                    std::optional<uint32_t> graphicsIndex = {};
+                    std::optional<uint32_t> presentIndex = {};
+                    for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+                        if (
+                            (queueFamilyProperties.at(i).queueFlags & VULKAN_HPP_NAMESPACE::QueueFlagBits::eGraphics) != static_cast<VULKAN_HPP_NAMESPACE::QueueFlags>(0)
+                            && physicalDevice.target.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface.surface)
+                        ) {
+                            graphicsIndex = static_cast<uint32_t>(i);
+                            presentIndex = graphicsIndex.value();
+                        }
+                        if (graphicsIndex.has_value() && presentIndex.has_value()) {
+                            break;
+                        }
+                    }
+                    if (!graphicsIndex.has_value() || !presentIndex.has_value()) {
+                        throw std::runtime_error(CALL_INFO + ": No graphics and present queue family found!");
+                    }
+                    float queuePriority = 0.5f;
+
+                    exqudens::vulkan::Device::builder()
+                    .setQueueCreateInfos({
+                        VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo()
+                        .setQueueFamilyIndex(graphicsIndex.value())
+                        .setQueueCount(1)
+                        .setPQueuePriorities(&queuePriority)
+                    })
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::DeviceCreateInfo()
+                        .setPNext(&deviceFeatures.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2>())
+                        .setEnabledExtensionCount(static_cast<uint32_t>(physicalDevice.requiredExtensions.size()))
+                        .setPpEnabledExtensionNames(physicalDevice.requiredExtensions.data())
+                    )
+                    .build(device, physicalDevice.target);
+
+                    exqudens::vulkan::Queue::builder()
+                    .setFamilyIndex(graphicsIndex.value())
+                    .build(graphicsQueue, device.target);
+
+                    exqudens::vulkan::Queue::builder()
+                    .setFamilyIndex(presentIndex.value())
+                    .build(presentQueue, device.target);
+
+                    VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR swapchainCreateInfo = exqudens::vulkan::Utils::swapchainCreateInfo(
+                        physicalDevice.target,
+                        surface.target,
+                        framebufferWidth,
+                        framebufferHeight
+                    );
+
+                    exqudens::vulkan::Swapchain::builder()
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR()
+                        .setMinImageCount(swapchainCreateInfo.minImageCount)
+                        .setImageExtent(swapchainCreateInfo.imageExtent)
+                        .setPreTransform(swapchainCreateInfo.preTransform)
+                        .setImageFormat(swapchainCreateInfo.imageFormat)
+                        .setImageColorSpace(swapchainCreateInfo.imageColorSpace)
+                        .setPresentMode(swapchainCreateInfo.presentMode)
+                        .setImageArrayLayers(1)
+                        .setImageUsage(VULKAN_HPP_NAMESPACE::ImageUsageFlagBits::eColorAttachment)
+                        .setCompositeAlpha(VULKAN_HPP_NAMESPACE::CompositeAlphaFlagBitsKHR::eOpaque)
+                        .setClipped(true)
+                        .setSurface(*surface.target)
+                    )
+                    .setQueueFamilyIndices({graphicsQueue.familyIndex.value(), presentQueue.familyIndex.value()})
+                    .build(swapchain, device.target);
+
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "swapchain: " << (swapchain.target != nullptr);
                 }
 
         };
@@ -226,9 +324,9 @@ class VulkanTutorial4GuiTests: public testing::Test {
 };
 
 /*
-    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Setup/Physical_devices_and_queue_families
+*    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Presentation/Swap_chain
 */
-TEST_F(VulkanTutorial4GuiTests, test1) {
+TEST_F(VulkanTutorial7GuiTests, test1) {
     try {
         std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
         std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();

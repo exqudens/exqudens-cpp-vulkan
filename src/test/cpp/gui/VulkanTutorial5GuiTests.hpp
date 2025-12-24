@@ -217,7 +217,7 @@ class VulkanTutorial5GuiTests: public testing::Test {
                             | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                             //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
                         )
-                        .setPfnUserCallback(&VulkanTutorial3GuiTests::debugCallback)
+                        .setPfnUserCallback(&VulkanTutorial5GuiTests::debugCallback)
                     )
                     .build(debugUtilsMessenger, instance.target);
 

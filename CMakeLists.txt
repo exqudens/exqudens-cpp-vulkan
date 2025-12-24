@@ -441,9 +441,13 @@ add_library("${PROJECT_NAME}" INTERFACE
     "src/main/cpp/exqudens/vulkan/Context.hpp"
     "src/main/cpp/exqudens/vulkan/Instance.hpp"
     "src/main/cpp/exqudens/vulkan/DebugUtilsMessenger.hpp"
+    "src/main/cpp/exqudens/vulkan/Surface.hpp"
     "src/main/cpp/exqudens/vulkan/PhysicalDevice.hpp"
     "src/main/cpp/exqudens/vulkan/Device.hpp"
     "src/main/cpp/exqudens/vulkan/Queue.hpp"
+    "src/main/cpp/exqudens/vulkan/Swapchain.hpp"
+    "src/main/cpp/exqudens/vulkan/ImageView.hpp"
+    "src/main/cpp/exqudens/vulkan/Utils.hpp"
 
     "src/main/cpp/exqudens/vulkan.hpp"
 )
@@ -510,6 +514,9 @@ if(NOT "${SKIP_TEST}")
         "src/test/cpp/gui/VulkanTutorial3GuiTests.hpp"
         "src/test/cpp/gui/VulkanTutorial4GuiTests.hpp"
         "src/test/cpp/gui/VulkanTutorial5GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial6GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial7GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial8GuiTests.hpp"
     )
     generate_export_header("test-lib"
         BASE_NAME "TEST_LIB"
