@@ -1,16 +1,14 @@
 #pragma once
 
-#include <string>
 #include <vector>
-#include <filesystem>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct Device {
+    struct EXQUDENS_VULKAN_EXPORT Device {
 
         class Builder;
 
@@ -22,7 +20,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class Device::Builder {
+    class EXQUDENS_VULKAN_EXPORT Device::Builder {
 
         private:
 
@@ -40,24 +38,33 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline Device::Builder Device::builder() {
+#include <cstdint>
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE Device::Builder Device::builder() {
         return {};
     }
 
-    inline Device::Builder& Device::Builder::setQueueCreateInfos(const std::vector<VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo>& value) {
+    EXQUDENS_VULKAN_INLINE Device::Builder& Device::Builder::setQueueCreateInfos(const std::vector<VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo>& value) {
         resultObject.queueCreateInfos = value;
         return *this;
     }
 
-    inline Device::Builder& Device::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::DeviceCreateInfo& value) {
+    EXQUDENS_VULKAN_INLINE Device::Builder& Device::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::DeviceCreateInfo& value) {
         resultObject.createInfo = value;
         return *this;
     }
 
-    inline Device& Device::Builder::build(
+    EXQUDENS_VULKAN_INLINE Device& Device::Builder::build(
         Device& device,
         VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice
     ) {

@@ -1,17 +1,15 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <optional>
-#include <filesystem>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct Queue {
+    struct EXQUDENS_VULKAN_EXPORT Queue {
 
         class Builder;
 
@@ -23,7 +21,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class Queue::Builder {
+    class EXQUDENS_VULKAN_EXPORT Queue::Builder {
 
         private:
 
@@ -41,24 +39,32 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline Queue::Builder Queue::builder() {
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE Queue::Builder Queue::builder() {
         return {};
     }
 
-    inline Queue::Builder& Queue::Builder::setFamilyIndex(const std::optional<uint32_t>& value) {
+    EXQUDENS_VULKAN_INLINE Queue::Builder& Queue::Builder::setFamilyIndex(const std::optional<uint32_t>& value) {
         resultObject.familyIndex = value;
         return *this;
     }
 
-    inline Queue::Builder& Queue::Builder::setIndex(const std::optional<uint32_t>& value) {
+    EXQUDENS_VULKAN_INLINE Queue::Builder& Queue::Builder::setIndex(const std::optional<uint32_t>& value) {
         resultObject.index = value;
         return *this;
     }
 
-    inline Queue& Queue::Builder::build(
+    EXQUDENS_VULKAN_INLINE Queue& Queue::Builder::build(
         Queue& queue,
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {

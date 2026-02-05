@@ -1,15 +1,12 @@
 #pragma once
 
-#include <string>
-#include <filesystem>
-
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct DebugUtilsMessenger {
+    struct EXQUDENS_VULKAN_EXPORT DebugUtilsMessenger {
 
         class Builder;
 
@@ -20,7 +17,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class DebugUtilsMessenger::Builder {
+    class EXQUDENS_VULKAN_EXPORT DebugUtilsMessenger::Builder {
 
         private:
 
@@ -36,19 +33,27 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline DebugUtilsMessenger::Builder DebugUtilsMessenger::builder() {
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder DebugUtilsMessenger::builder() {
         return {};
     }
 
-    inline DebugUtilsMessenger::Builder& DebugUtilsMessenger::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT& value) {
+    EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder& DebugUtilsMessenger::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT& value) {
         resultObject.createInfo = value;
         return *this;
     }
 
-    inline DebugUtilsMessenger& DebugUtilsMessenger::Builder::build(
+    EXQUDENS_VULKAN_INLINE DebugUtilsMessenger& DebugUtilsMessenger::Builder::build(
         DebugUtilsMessenger& debugUtilsMessenger,
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {

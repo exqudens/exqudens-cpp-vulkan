@@ -1,18 +1,12 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <optional>
-#include <vector>
-#include <filesystem>
-
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct Utils {
+    struct EXQUDENS_VULKAN_EXPORT Utils {
 
         static VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR swapchainCreateInfo(
             VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
@@ -22,10 +16,21 @@ namespace exqudens::vulkan {
         );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR Utils::swapchainCreateInfo(
+#include <cstdint>
+#include <string>
+#include <optional>
+#include <vector>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR Utils::swapchainCreateInfo(
         VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
         VULKAN_HPP_NAMESPACE::raii::SurfaceKHR& surface,
         int framebufferWidth,

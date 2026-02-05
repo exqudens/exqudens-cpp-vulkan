@@ -60,7 +60,6 @@ if("msvc-x64-x64" IN_LIST "PRESET_NAME_ELEMENTS")
             OUTPUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/build/msvc-x64-x64-toolchain.cmake"
         )
     endif()
-    find_program(CONAN_COMMAND NAMES "conan.exe" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
 elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS)
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/build/gcc-toolchain.cmake")
         find_file(compilerFile NAMES "gcc" PATHS ENV GCC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
@@ -72,7 +71,6 @@ elseif("gcc" IN_LIST PRESET_NAME_ELEMENTS)
             OUTPUT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/build/gcc-toolchain.cmake"
         )
     endif()
-    find_program(CONAN_COMMAND NAMES "conan" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
 endif()
 
 message(STATUS "CMAKE_TOOLCHAIN_FILE: '${CMAKE_TOOLCHAIN_FILE}'")
@@ -82,14 +80,10 @@ string(JSON NAME GET "${NAME_VERSION_JSON}" "name")
 string(JSON VERSION GET "${NAME_VERSION_JSON}" "version")
 project("${NAME}" VERSION "${VERSION}" LANGUAGES "NONE")
 
+find_program(SLANGC_COMMAND NAMES "slangc.exe" "slangc" PATHS ENV SLANGC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+
 message(STATUS "PROJECT_NAME: '${PROJECT_NAME}'")
 message(STATUS "PROJECT_VERSION: '${PROJECT_VERSION}'")
-
-string(REPLACE "_" "-" BASE_DIR "${PROJECT_NAME}")
-string(REPLACE "-cpp-" "-" BASE_DIR "${BASE_DIR}")
-string(REPLACE "-" "/" BASE_DIR "${BASE_DIR}")
-
-message(STATUS "BASE_DIR: '${BASE_DIR}'")
 
 enable_language("C")
 enable_language("CXX")
@@ -142,6 +136,14 @@ if(MSVC)
 endif()
 string(JOIN " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})]]
 
+#[[if("msvc-x64-x64" IN_LIST "PRESET_NAME_ELEMENTS")
+    set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} -D_WINDOWS")
+    foreach(v IN LISTS "CMAKE_C_STANDARD_INCLUDE_DIRECTORIES")
+        cmake_path(NATIVE_PATH "v" NORMALIZE "vn")
+        set(CMAKE_RC_FLAGS "${CMAKE_RC_FLAGS} -I \"${vn}\"")
+    endforeach()
+endif()]]
+
 set(CONAN_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/conan-install")
 
 file(MAKE_DIRECTORY "${CONAN_INSTALL_PREFIX}/bin")
@@ -158,7 +160,7 @@ if("${USE_CONAN}")
     set_conan_compiler_runtime(CONAN_COMPILER_RUNTIME "${CMAKE_MSVC_RUNTIME_LIBRARY}")
     set_conan_compiler_runtime_type(CONAN_COMPILER_RUNTIME_TYPE "${CMAKE_MSVC_RUNTIME_LIBRARY}")
 
-    set_python_boolean(CONAN_INTERFACE_ONLY "${INTERFACE_ONLY}")
+    set_python_boolean(CONAN_HEADER_ONLY "${HEADER_ONLY}")
     set_python_boolean(CONAN_BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS}")
 
     set_conan_settings(CONAN_SETTINGS
@@ -174,6 +176,9 @@ if("${USE_CONAN}")
         "build_type=${CMAKE_BUILD_TYPE}"
     )
     set_conan_options(CONAN_OPTIONS
+        "exqudens-cpp-log/*:shared=False"
+        "exqudens-cpp-log/*:header_only=True"
+        "${PROJECT_NAME}/*:header_only=${CONAN_HEADER_ONLY}"
         "&:shared=${CONAN_BUILD_SHARED_LIBS}"
         "*:shared=${CONAN_BUILD_SHARED_LIBS}"
     )
@@ -435,26 +440,119 @@ if(NOT "" STREQUAL "${NOT_FOUND_PACKAGE_NAMES}")
     message(FATAL_ERROR "Some package not found!")
 endif()
 
+set(BASE_DIR "exqudens/vulkan")
+
 configure_file("${PROJECT_SOURCE_DIR}/versions.hpp.in" "${PROJECT_BINARY_DIR}/generated/src/main/cpp/${BASE_DIR}/versions.hpp" @ONLY NEWLINE_STYLE UNIX)
 
-add_library("${PROJECT_NAME}" INTERFACE
-    "src/main/cpp/exqudens/vulkan/Context.hpp"
-    "src/main/cpp/exqudens/vulkan/Instance.hpp"
-    "src/main/cpp/exqudens/vulkan/DebugUtilsMessenger.hpp"
-    "src/main/cpp/exqudens/vulkan/Surface.hpp"
-    "src/main/cpp/exqudens/vulkan/PhysicalDevice.hpp"
-    "src/main/cpp/exqudens/vulkan/Device.hpp"
-    "src/main/cpp/exqudens/vulkan/Queue.hpp"
-    "src/main/cpp/exqudens/vulkan/Swapchain.hpp"
-    "src/main/cpp/exqudens/vulkan/ImageView.hpp"
-    "src/main/cpp/exqudens/vulkan/Utils.hpp"
+set(LIB_SOURCES
+    "src/main/cpp/${BASE_DIR}/Instance.hpp"
+    "src/main/cpp/${BASE_DIR}/DebugUtilsMessenger.hpp"
+    "src/main/cpp/${BASE_DIR}/Surface.hpp"
+    "src/main/cpp/${BASE_DIR}/PhysicalDevice.hpp"
+    "src/main/cpp/${BASE_DIR}/Device.hpp"
+    "src/main/cpp/${BASE_DIR}/Queue.hpp"
+    "src/main/cpp/${BASE_DIR}/Swapchain.hpp"
+    "src/main/cpp/${BASE_DIR}/ImageView.hpp"
+    "src/main/cpp/${BASE_DIR}/ShaderModule.hpp"
+    "src/main/cpp/${BASE_DIR}/PipelineLayout.hpp"
+    "src/main/cpp/${BASE_DIR}/Pipeline.hpp"
+    "src/main/cpp/${BASE_DIR}/Utils.hpp"
 
-    "src/main/cpp/exqudens/vulkan.hpp"
+    "src/main/cpp/${BASE_DIR}.hpp"
 )
-target_include_directories("${PROJECT_NAME}" INTERFACE
-    "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/main/cpp>"
-    "$<INSTALL_INTERFACE:include>"
+
+if("${HEADER_ONLY}")
+    add_library("${PROJECT_NAME}" INTERFACE
+        ${LIB_SOURCES}
+    )
+    file(WRITE "${PROJECT_BINARY_DIR}/generated/src/main/cpp/${BASE_DIR}/export.hpp" "#define EXQUDENS_VULKAN_EXPORT\n#define EXQUDENS_VULKAN_INLINE inline\n")
+    target_include_directories("${PROJECT_NAME}" INTERFACE
+        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/main/cpp>"
+        "$<INSTALL_INTERFACE:include>"
+    )
+else()
+    set(LIB_SOURCES_COPY "${LIB_SOURCES}")
+    unset(LIB_SOURCES)
+    set(delimiter "// implementation ---")
+    foreach(v IN LISTS "LIB_SOURCES_COPY")
+        file(READ "${PROJECT_SOURCE_DIR}/${v}" vContent)
+        string(LENGTH "${vContent}" vContentLength)
+        string(LENGTH "${delimiter}" delimiterLength)
+        string(FIND "${vContent}" "${delimiter}" indexOfDelimiter)
+
+        if("${indexOfDelimiter}" STREQUAL "-1")
+            get_filename_component(vDir "${PROJECT_BINARY_DIR}/generated/${v}" DIRECTORY)
+            file(MAKE_DIRECTORY "${vDir}")
+            file(COPY_FILE "${PROJECT_SOURCE_DIR}/${v}" "${PROJECT_BINARY_DIR}/generated/${v}")
+            list(APPEND "LIB_SOURCES" "${PROJECT_BINARY_DIR}/generated/${v}")
+            continue()
+        endif()
+
+        get_filename_component(vDir "${v}" DIRECTORY)
+        file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/generated/${vDir}")
+
+        math(EXPR indexOfDelimiterEnd "${indexOfDelimiter} + ${delimiterLength}")
+        string(SUBSTRING "${vContent}" "0" "${indexOfDelimiter}" vContentHeader)
+        string(STRIP "${vContentHeader}" vContentHeader)
+        string(APPEND "vContentHeader" "\n")
+        file(WRITE "${PROJECT_BINARY_DIR}/generated/${v}" "${vContentHeader}")
+        list(APPEND "LIB_SOURCES" "${PROJECT_BINARY_DIR}/generated/${v}")
+
+        cmake_path(RELATIVE_PATH "v" BASE_DIRECTORY "src/main/cpp" OUTPUT_VARIABLE "vInclude")
+        cmake_path(GET "v" STEM vFileName)
+        string(SUBSTRING "${vContent}" "${indexOfDelimiterEnd}" "-1" vContentSource)
+        string(STRIP "${vContentSource}" vContentSource)
+        string(PREPEND "vContentSource" "#include \"${vInclude}\"\n\n")
+        string(APPEND "vContentSource" "\n")
+        file(WRITE "${PROJECT_BINARY_DIR}/generated/${vDir}/${vFileName}.cpp" "${vContentSource}")
+        list(APPEND "LIB_SOURCES" "${PROJECT_BINARY_DIR}/generated/${vDir}/${vFileName}.cpp")
+    endforeach()
+    if("${BUILD_SHARED_LIBS}")
+        add_library("${PROJECT_NAME}" SHARED
+            ${LIB_SOURCES}
+        )
+    else()
+        add_library("${PROJECT_NAME}" STATIC
+            ${LIB_SOURCES}
+        )
+        target_compile_definitions("${PROJECT_NAME}" PUBLIC
+            "EXQUDENS_VULKAN_STATIC_DEFINE"
+        )
+    endif()
+    set(GENERATE_EXPORT_HEADER_CUSTOM_CONTENT "#define EXQUDENS_VULKAN_INLINE\n")
+    generate_export_header("${PROJECT_NAME}"
+        BASE_NAME "EXQUDENS_VULKAN"
+        EXPORT_FILE_NAME "generated/src/main/cpp/${BASE_DIR}/export.hpp"
+        CUSTOM_CONTENT_FROM_VARIABLE "GENERATE_EXPORT_HEADER_CUSTOM_CONTENT"
+    )
+    target_include_directories("${PROJECT_NAME}" PUBLIC
+        "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/main/cpp>"
+        "$<BUILD_INTERFACE:${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH}/include>"
+        "$<INSTALL_INTERFACE:include>"
+    )
+    #[[target_link_libraries("${PROJECT_NAME}" PUBLIC
+        "Vulkan::Vulkan"
+    )]]
+endif()
+set_target_properties("${PROJECT_NAME}" PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/bin"
+    RUNTIME_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/main/bin"
+    RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/main/bin"
+    RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/main/bin"
+    RUNTIME_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/bin"
+
+    ARCHIVE_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/main/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/main/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/main/lib"
+    ARCHIVE_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/lib"
+
+    LIBRARY_OUTPUT_DIRECTORY                "${PROJECT_BINARY_DIR}/main/lib"
+    LIBRARY_OUTPUT_DIRECTORY_RELEASE        "${PROJECT_BINARY_DIR}/main/lib"
+    LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/main/lib"
+    LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL     "${PROJECT_BINARY_DIR}/main/lib"
+    LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/main/lib"
 )
 #set_property(TARGET "${PROJECT_NAME}" PROPERTY "VERSION" "${PROJECT_VERSION}")
 #set_property(TARGET "${PROJECT_NAME}" PROPERTY "SOVERSION" "${PROJECT_VERSION}")
@@ -498,8 +596,12 @@ install(
     ARCHIVE DESTINATION "lib"
 )
 
+set(TARGET_CMAKE_INSTALL_DEPENDS_ON "${PROJECT_NAME}")
+
 if(NOT "${SKIP_TEST}")
-    add_library("test-lib"
+    set(TARGET_CMAKE_INSTALL_DEPENDS_ON "cmake-test")
+
+    add_library("test-lib" EXCLUDE_FROM_ALL
         "src/test/cpp/TestUtils.hpp"
         "src/test/cpp/TestUtils.cpp"
         "src/test/cpp/TestGlfwUtils.hpp"
@@ -517,6 +619,9 @@ if(NOT "${SKIP_TEST}")
         "src/test/cpp/gui/VulkanTutorial6GuiTests.hpp"
         "src/test/cpp/gui/VulkanTutorial7GuiTests.hpp"
         "src/test/cpp/gui/VulkanTutorial8GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial9GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial10GuiTests.hpp"
+        "src/test/cpp/gui/VulkanTutorial11GuiTests.hpp"
     )
     generate_export_header("test-lib"
         BASE_NAME "TEST_LIB"
@@ -566,7 +671,56 @@ if(NOT "${SKIP_TEST}")
         LIBRARY_OUTPUT_DIRECTORY_DEBUG          "${PROJECT_BINARY_DIR}/test/lib"
     )
 
-    add_executable("test-app"
+    add_custom_command(
+        OUTPUT "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial9GuiTests/test1/shader-1.spv"
+               "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
+               "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial11GuiTests/test1/shader-1.spv"
+
+        COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial9GuiTests/test1"
+        COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-f" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial9GuiTests/test1/shader-1.spv"
+        COMMAND "${SLANGC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial9GuiTests/test1/shader-1.slang"
+                "-target" "spirv"
+                "-profile" "spirv_1_4"
+                "-emit-spirv-directly"
+                "-fvk-use-entrypoint-name"
+                "-entry" "vertMain"
+                "-entry" "fragMain"
+                "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial9GuiTests/test1/shader-1.spv"
+
+        COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1"
+        COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-f" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
+        COMMAND "${SLANGC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial10GuiTests/test1/shader-1.slang"
+            "-target" "spirv"
+            "-profile" "spirv_1_4"
+            "-emit-spirv-directly"
+            "-fvk-use-entrypoint-name"
+            "-entry" "vertMain"
+            "-entry" "fragMain"
+            "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
+
+        COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial11GuiTests/test1"
+        COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-f" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial11GuiTests/test1/shader-1.spv"
+        COMMAND "${SLANGC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial11GuiTests/test1/shader-1.slang"
+            "-target" "spirv"
+            "-profile" "spirv_1_4"
+            "-emit-spirv-directly"
+            "-fvk-use-entrypoint-name"
+            "-entry" "vertMain"
+            "-entry" "fragMain"
+            "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial11GuiTests/test1/shader-1.spv"
+
+        DEPENDS "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial9GuiTests/test1/shader-1.slang"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial10GuiTests/test1/shader-1.slang"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial11GuiTests/test1/shader-1.slang"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        USES_TERMINAL
+        VERBATIM
+    )
+
+    add_executable("test-app" EXCLUDE_FROM_ALL
+        "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial9GuiTests/test1/shader-1.spv"
+        "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
+        "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial11GuiTests/test1/shader-1.spv"
         "src/test/cpp/main.cpp"
     )
     target_link_libraries("test-app"
@@ -593,9 +747,17 @@ if(NOT "${SKIP_TEST}")
     )
     if("${BUILD_SHARED_LIBS}")
         if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+            if(NOT "${HEADER_ONLY}")
+                add_custom_command(TARGET "test-app"
+                    PRE_BUILD
+                    COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                    USES_TERMINAL
+                    VERBATIM
+                )
+            endif()
             add_custom_command(TARGET "test-app"
                 PRE_BUILD
-                #COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},RUNTIME_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 #COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/test/bin" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
@@ -603,9 +765,17 @@ if(NOT "${SKIP_TEST}")
                 VERBATIM
             )
         else()
+            if(NOT "${HEADER_ONLY}")
+                add_custom_command(TARGET "test-app"
+                    PRE_BUILD
+                    COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},LIBRARY_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
+                    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                    USES_TERMINAL
+                    VERBATIM
+                )
+            endif()
             add_custom_command(TARGET "test-app"
                 PRE_BUILD
-                #COMMAND "${CMAKE_COMMAND}" -E copy_directory "$<TARGET_PROPERTY:${PROJECT_NAME},LIBRARY_OUTPUT_DIRECTORY>" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 #COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CONAN_INSTALL_PREFIX}/test/lib" "$<TARGET_PROPERTY:test-app,RUNTIME_OUTPUT_DIRECTORY>"
                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
@@ -632,9 +802,17 @@ if(NOT "${SKIP_TEST}")
         PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:test-app>;${ENV_PATH}"
     )
 
+    add_custom_target("cmake-test-list"
+        COMMAND "${CMAKE_CTEST_COMMAND}" "--build-nocmake" "--preset" "${PRESET_NAME}" "--show-only=json-v1"
+        DEPENDS "test-app"
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+        USES_TERMINAL
+        VERBATIM
+    )
+
     add_custom_command(
         OUTPUT "${PROJECT_BINARY_DIR}/junit.xml"
-        COMMAND "${CMAKE_CTEST_COMMAND}" "--build-nocmake" "--output-junit" "${PROJECT_BINARY_DIR}/junit.xml" "--preset" "${PRESET_NAME}" "-R" "${TEST_REGEXP}"
+        COMMAND "${CMAKE_CTEST_COMMAND}" "--build-nocmake" "--output-junit" "${PROJECT_BINARY_DIR}/junit.xml" "--preset" "${PRESET_NAME}" "-R" "^.+UnitTests\\..+$"
         DEPENDS "test-app"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
         USES_TERMINAL
@@ -655,7 +833,7 @@ add_custom_command(
     VERBATIM
 )
 
-add_custom_target("cmake-install" ALL
+add_custom_target("cmake-install"
     DEPENDS "${CMAKE_INSTALL_PREFIX}/cmake/${PROJECT_NAME}-config.cmake"
 )
 
@@ -678,6 +856,7 @@ if("${USE_CONAN}")
         COMMAND "${CONAN_COMMAND}" "export-pkg"
                 "--output-folder" "${CMAKE_INSTALL_PREFIX}"
                 ${CONAN_SETTINGS}
+                ${CONAN_OPTIONS}
                 #"--user" "gitlab-group+gitlab-sub-group+${PROJECT_NAME}"
                 #"--channel" "stable"
                 "${PROJECT_SOURCE_DIR}/conanfile.py"

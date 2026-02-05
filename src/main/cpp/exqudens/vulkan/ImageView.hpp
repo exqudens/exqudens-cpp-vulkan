@@ -1,17 +1,14 @@
 #pragma once
 
-#include <cstddef>
-#include <string>
 #include <vector>
-#include <filesystem>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct ImageView {
+    struct EXQUDENS_VULKAN_EXPORT ImageView {
 
         class Builder;
 
@@ -22,7 +19,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class ImageView::Builder {
+    class EXQUDENS_VULKAN_EXPORT ImageView::Builder {
 
         private:
 
@@ -44,19 +41,28 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline ImageView::Builder ImageView::builder() {
+#include <cstddef>
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE ImageView::Builder ImageView::builder() {
         return {};
     }
 
-    inline ImageView::Builder& ImageView::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::ImageViewCreateInfo& value) {
+    EXQUDENS_VULKAN_INLINE ImageView::Builder& ImageView::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::ImageViewCreateInfo& value) {
         resultObject.createInfo = value;
         return *this;
     }
 
-    inline ImageView& ImageView::Builder::build(
+    EXQUDENS_VULKAN_INLINE ImageView& ImageView::Builder::build(
         ImageView& imageView,
         vk::raii::Device& device
     ) {
@@ -70,7 +76,7 @@ namespace exqudens::vulkan {
         }
     }
 
-    inline std::vector<ImageView>& ImageView::Builder::build(
+    EXQUDENS_VULKAN_INLINE std::vector<ImageView>& ImageView::Builder::build(
         std::vector<ImageView>& imageViews,
         vk::raii::Device& device,
         const std::vector<vk::Image>& images

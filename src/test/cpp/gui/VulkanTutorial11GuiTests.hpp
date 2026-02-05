@@ -4,9 +4,9 @@
 #include <cstdlib>
 #include <cstdint>
 #include <string>
+#include <optional>
 #include <vector>
 #include <set>
-#include <memory>
 #include <stdexcept>
 #include <functional>
 #include <filesystem>
@@ -24,11 +24,11 @@
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
-class VulkanTutorial7GuiTests: public testing::Test {
+class VulkanTutorial11GuiTests: public testing::Test {
 
     public:
 
-        inline static const char* LOGGER_ID = "VulkanTutorial7GuiTests";
+        inline static const char* LOGGER_ID = "VulkanTutorial11GuiTests";
 
         static VKAPI_ATTR VULKAN_HPP_NAMESPACE::Bool32 VKAPI_CALL debugCallback(
             VULKAN_HPP_NAMESPACE::DebugUtilsMessageSeverityFlagBitsEXT severity,
@@ -76,18 +76,22 @@ class VulkanTutorial7GuiTests: public testing::Test {
             }
 
             /*auto features = device.getFeatures2<
-                VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
-                VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan13Features,
-                VULKAN_HPP_NAMESPACE::PhysicalDeviceExtendedDynamicStateFeaturesEXT
+                vk::PhysicalDeviceFeatures2,
+                vk::PhysicalDeviceVulkan11Features,
+                vk::PhysicalDeviceVulkan13Features,
+                vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
             >();
-            supportsRequiredFeatures = features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan13Features>().dynamicRendering
-            && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;*/
+            supportsRequiredFeatures = features.get<vk::PhysicalDeviceVulkan11Features>().shaderDrawParameters
+            && features.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering
+            && features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;*/
             auto features = device.getFeatures2<
                 VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
+                VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan11Features,
                 VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures
             >();
             supportsRequiredFeatures = features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2>().features.samplerAnisotropy
             && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2>().features.sampleRateShading
+            && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan11Features>().shaderDrawParameters
             && features.get<VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures>().hostQueryReset;
 
             std::set<std::string> requiredExtensionsSet(requiredExtensions.begin(), requiredExtensions.end());
@@ -114,6 +118,11 @@ class VulkanTutorial7GuiTests: public testing::Test {
 
         class Application {
 
+            public:
+
+                std::optional<std::string> testInputDir = {};
+                std::optional<std::string> testOutputDir = {};
+
             private:
 
                 uint32_t width = 0;
@@ -128,6 +137,7 @@ class VulkanTutorial7GuiTests: public testing::Test {
 
                 VULKAN_HPP_NAMESPACE::StructureChain<
                     VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2,
+                    VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan11Features,
                     VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures
                 > deviceFeatures;
 
@@ -140,6 +150,10 @@ class VulkanTutorial7GuiTests: public testing::Test {
                 exqudens::vulkan::Queue graphicsQueue = {};
                 exqudens::vulkan::Queue presentQueue = {};
                 exqudens::vulkan::Swapchain swapchain = {};
+                std::vector<exqudens::vulkan::ImageView> imageViews = {};
+                exqudens::vulkan::ShaderModule shaderModule = {};
+                exqudens::vulkan::PipelineLayout pipelineLayout = {};
+                exqudens::vulkan::Pipeline pipeline = {};
 
             public:
 
@@ -189,6 +203,7 @@ class VulkanTutorial7GuiTests: public testing::Test {
                         VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures2().setFeatures(
                             VULKAN_HPP_NAMESPACE::PhysicalDeviceFeatures().setSamplerAnisotropy(true).setSampleRateShading(true)
                         ),
+                        VULKAN_HPP_NAMESPACE::PhysicalDeviceVulkan11Features().setShaderDrawParameters(true),
                         VULKAN_HPP_NAMESPACE::PhysicalDeviceHostQueryResetFeatures().setHostQueryReset(true)
                     };
 
@@ -224,7 +239,7 @@ class VulkanTutorial7GuiTests: public testing::Test {
                             | VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                             //| VULKAN_HPP_NAMESPACE::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
                         )
-                        .setPfnUserCallback(&VulkanTutorial7GuiTests::debugCallback)
+                        .setPfnUserCallback(&VulkanTutorial11GuiTests::debugCallback)
                     )
                     .build(debugUtilsMessenger, instance.target);
 
@@ -245,7 +260,7 @@ class VulkanTutorial7GuiTests: public testing::Test {
                         VULKAN_HPP_NAMESPACE::KHRSwapchainExtensionName,
                         VULKAN_HPP_NAMESPACE::EXTHostQueryResetExtensionName
                     })
-                    .setFilterFunction(&VulkanTutorial7GuiTests::physicalDeviceFilter)
+                    .setFilterFunction(&VulkanTutorial11GuiTests::physicalDeviceFilter)
                     .build(physicalDevice, instance.target);
 
                     std::vector<VULKAN_HPP_NAMESPACE::QueueFamilyProperties> queueFamilyProperties = physicalDevice.target.getQueueFamilyProperties();
@@ -316,7 +331,105 @@ class VulkanTutorial7GuiTests: public testing::Test {
                     .setQueueFamilyIndices({graphicsQueue.familyIndex.value(), presentQueue.familyIndex.value()})
                     .build(swapchain, device.target);
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "swapchain: " << (swapchain.target != nullptr);
+                    exqudens::vulkan::ImageView::builder()
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::ImageViewCreateInfo()
+                        .setFormat(swapchain.createInfo.imageFormat)
+                        .setViewType(VULKAN_HPP_NAMESPACE::ImageViewType::e2D)
+                        .setSubresourceRange(
+                            VULKAN_HPP_NAMESPACE::ImageSubresourceRange()
+                            .setAspectMask(VULKAN_HPP_NAMESPACE::ImageAspectFlagBits::eColor)
+                            .setBaseMipLevel(0)
+                            .setLevelCount(1)
+                            .setBaseArrayLayer(0)
+                            .setLayerCount(1)
+                        )
+                    )
+                    .build(imageViews, device.target, swapchain.target.getImages());
+
+                    exqudens::vulkan::ShaderModule::builder()
+                    .setFile(
+                        std::filesystem::path(testOutputDir.value())
+                        .append("shader-1.spv")
+                        .generic_string()
+                        .c_str()
+                    )
+                    .setReadFile(true)
+                    .build(shaderModule, device.target);
+
+                    exqudens::vulkan::PipelineLayout::builder()
+                    .setCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo()
+                        .setSetLayoutCount(0)
+                        .setPushConstantRangeCount(0)
+                    )
+                    .build(pipelineLayout, device.target);
+
+                    exqudens::vulkan::Pipeline::builder()
+                    .addShaderStageCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo()
+                        .setModule(shaderModule.target)
+                        .setStage(VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eVertex)
+                        .setPName("vertMain")
+                    )
+                    .addShaderStageCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo()
+                        .setModule(shaderModule.target)
+                        .setStage(VULKAN_HPP_NAMESPACE::ShaderStageFlagBits::eFragment)
+                        .setPName("fragMain")
+                    )
+                    .setVertexInputStateCreateInfo(VULKAN_HPP_NAMESPACE::PipelineVertexInputStateCreateInfo())
+                    .setInputAssemblyStateCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineInputAssemblyStateCreateInfo()
+                        .setTopology(VULKAN_HPP_NAMESPACE::PrimitiveTopology::eTriangleList)
+                    )
+                    .setViewportStateCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineViewportStateCreateInfo()
+                        .setViewportCount(1)
+                        .setScissorCount(1)
+                    )
+                    .setRasterizationStateCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineRasterizationStateCreateInfo()
+                        .setDepthClampEnable(false)
+                        .setRasterizerDiscardEnable(false)
+                        .setPolygonMode(VULKAN_HPP_NAMESPACE::PolygonMode::eFill)
+                        .setCullMode(VULKAN_HPP_NAMESPACE::CullModeFlagBits::eBack)
+                        .setFrontFace(VULKAN_HPP_NAMESPACE::FrontFace::eClockwise)
+                        .setDepthBiasEnable(false)
+                        .setDepthBiasSlopeFactor(1.0f)
+                        .setLineWidth(1.0f)
+                    )
+                    .setMultisampleStateCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineMultisampleStateCreateInfo()
+                        .setRasterizationSamples(VULKAN_HPP_NAMESPACE::SampleCountFlagBits::e1)
+                        .setSampleShadingEnable(false)
+                    )
+                    .addColorBlendAttachmentState(
+                        VULKAN_HPP_NAMESPACE::PipelineColorBlendAttachmentState()
+                        .setBlendEnable(false)
+                        .setColorWriteMask(
+                            VULKAN_HPP_NAMESPACE::ColorComponentFlagBits::eR
+                            | VULKAN_HPP_NAMESPACE::ColorComponentFlagBits::eG
+                            | VULKAN_HPP_NAMESPACE::ColorComponentFlagBits::eB
+                            | VULKAN_HPP_NAMESPACE::ColorComponentFlagBits::eA
+                        )
+                    )
+                    .setColorBlendStateCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineColorBlendStateCreateInfo()
+                        .setLogicOpEnable(false)
+                        .setLogicOp(VULKAN_HPP_NAMESPACE::LogicOp::eCopy)
+                    )
+                    .addDynamicState(vk::DynamicState::eViewport)
+                    .addDynamicState(vk::DynamicState::eScissor)
+                    .setRenderingCreateInfo(
+                        VULKAN_HPP_NAMESPACE::PipelineRenderingCreateInfo()
+                        .setColorAttachmentCount(1)
+                        .setPColorAttachmentFormats(&swapchain.createInfo.imageFormat)
+                    )
+                    .setGraphicsCreateInfo(VULKAN_HPP_NAMESPACE::GraphicsPipelineCreateInfo())
+                    .build(pipeline, pipelineLayout.target, device.target);
+
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "pipeline: " << (pipeline.target != nullptr);
                 }
 
         };
@@ -324,15 +437,18 @@ class VulkanTutorial7GuiTests: public testing::Test {
 };
 
 /*
-*    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Presentation/Swap_chain
+*    @brief docs.vulkan.org/tutorial/latest/Drawing_a_triangle/Graphics_pipeline_basics/Conclusion
 */
-TEST_F(VulkanTutorial7GuiTests, test1) {
+TEST_F(VulkanTutorial11GuiTests, test1) {
     try {
         std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
         std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
         EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
 
         Application app;
+
+        app.testInputDir = TestUtils::getTestInputDir(testGroup, testCase);
+        app.testOutputDir = TestUtils::getTestOutputDir(testGroup, testCase);
 
         app.run();
 

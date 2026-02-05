@@ -1,16 +1,15 @@
 #pragma once
 
-#include <string>
+#include <cstdint>
 #include <vector>
-#include <filesystem>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct Swapchain {
+    struct EXQUDENS_VULKAN_EXPORT Swapchain {
 
         class Builder;
 
@@ -22,7 +21,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class Swapchain::Builder {
+    class EXQUDENS_VULKAN_EXPORT Swapchain::Builder {
 
         private:
 
@@ -40,25 +39,33 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline Swapchain::Builder Swapchain::builder() {
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE Swapchain::Builder Swapchain::builder() {
         return {};
     }
 
-    inline Swapchain::Builder& Swapchain::Builder::setQueueFamilyIndices(const std::vector<uint32_t>& value) {
+    EXQUDENS_VULKAN_INLINE Swapchain::Builder& Swapchain::Builder::setQueueFamilyIndices(const std::vector<uint32_t>& value) {
         resultObject.queueFamilyIndices = value;
         return *this;
     }
 
 
-    inline Swapchain::Builder& Swapchain::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR& value) {
+    EXQUDENS_VULKAN_INLINE Swapchain::Builder& Swapchain::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR& value) {
         resultObject.createInfo = value;
         return *this;
     }
 
-    inline Swapchain& Swapchain::Builder::build(
+    EXQUDENS_VULKAN_INLINE Swapchain& Swapchain::Builder::build(
         Swapchain& swapchain,
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {

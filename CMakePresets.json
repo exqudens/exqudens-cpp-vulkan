@@ -97,7 +97,7 @@
             "name": "interface",
             "hidden": true,
             "cacheVariables": {
-                "INTERFACE_ONLY": {
+                "HEADER_ONLY": {
                     "type": "BOOL",
                     "value": true
                 }
@@ -193,25 +193,21 @@
         },
         {
             "name": "windows.ninja.msvc-x64-x64.debug.static",
-            "hidden": true,
             "inherits": ["default", "windows", "ninja", "msvc-x64-x64", "debug", "static", "mtd"],
             "binaryDir": "${sourceDir}/build/1"
         },
         {
             "name": "windows.ninja.msvc-x64-x64.debug.shared",
-            "hidden": true,
             "inherits": ["default", "windows", "ninja", "msvc-x64-x64", "debug", "shared", "mdd"],
             "binaryDir": "${sourceDir}/build/2"
         },
         {
             "name": "windows.ninja.msvc-x64-x64.release.static",
-            "hidden": true,
             "inherits": ["default", "windows", "ninja", "msvc-x64-x64", "release", "static", "mt"],
             "binaryDir": "${sourceDir}/build/3"
         },
         {
             "name": "windows.ninja.msvc-x64-x64.release.shared",
-            "hidden": true,
             "inherits": ["default", "windows", "ninja", "msvc-x64-x64", "release", "shared", "md"],
             "binaryDir": "${sourceDir}/build/4"
         },

@@ -1,17 +1,14 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
 #include <vector>
-#include <filesystem>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct Instance {
+    struct EXQUDENS_VULKAN_EXPORT Instance {
 
         class Builder;
 
@@ -25,7 +22,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class Instance::Builder {
+    class EXQUDENS_VULKAN_EXPORT Instance::Builder {
 
         private:
 
@@ -47,34 +44,44 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline Instance::Builder Instance::builder() {
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE Instance::Builder Instance::builder() {
         return {};
     }
 
-    inline Instance::Builder& Instance::Builder::setApplicationInfo(const VULKAN_HPP_NAMESPACE::ApplicationInfo& value) {
+    EXQUDENS_VULKAN_INLINE Instance::Builder& Instance::Builder::setApplicationInfo(const VULKAN_HPP_NAMESPACE::ApplicationInfo& value) {
         resultObject.applicationInfo = value;
         return *this;
     }
 
-    inline Instance::Builder& Instance::Builder::setEnabledExtensionNames(const std::vector<const char*>& value) {
+    EXQUDENS_VULKAN_INLINE Instance::Builder& Instance::Builder::setEnabledExtensionNames(const std::vector<const char*>& value) {
         resultObject.enabledExtensionNames = value;
         return *this;
     }
 
-    inline Instance::Builder& Instance::Builder::setEnabledLayerNames(const std::vector<const char*>& value) {
+    EXQUDENS_VULKAN_INLINE Instance::Builder& Instance::Builder::setEnabledLayerNames(const std::vector<const char*>& value) {
         resultObject.enabledLayerNames = value;
         return *this;
     }
 
-    inline Instance::Builder& Instance::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::InstanceCreateInfo& value) {
+    EXQUDENS_VULKAN_INLINE Instance::Builder& Instance::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::InstanceCreateInfo& value) {
         resultObject.createInfo = value;
         return *this;
     }
 
-    inline Instance& Instance::Builder::build(
+    EXQUDENS_VULKAN_INLINE Instance& Instance::Builder::build(
         Instance& instance,
         VULKAN_HPP_NAMESPACE::raii::Context& context
     ) {

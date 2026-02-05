@@ -1,15 +1,12 @@
 #pragma once
 
-#include <string>
-#include <filesystem>
-
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct Surface {
+    struct EXQUDENS_VULKAN_EXPORT Surface {
 
         class Builder;
 
@@ -20,7 +17,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class Surface::Builder {
+    class EXQUDENS_VULKAN_EXPORT Surface::Builder {
 
         private:
 
@@ -36,19 +33,27 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline Surface::Builder Surface::builder() {
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE Surface::Builder Surface::builder() {
         return {};
     }
 
-    inline Surface::Builder& Surface::Builder::setSurface(const VkSurfaceKHR& value) {
+    EXQUDENS_VULKAN_INLINE Surface::Builder& Surface::Builder::setSurface(const VkSurfaceKHR& value) {
         resultObject.surface = value;
         return *this;
     }
 
-    inline Surface& Surface::Builder::build(
+    EXQUDENS_VULKAN_INLINE Surface& Surface::Builder::build(
         Surface& surface,
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {
@@ -61,7 +66,6 @@ namespace exqudens::vulkan {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
     }
-
 
 }
 

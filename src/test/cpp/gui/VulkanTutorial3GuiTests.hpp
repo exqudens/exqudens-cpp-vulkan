@@ -57,7 +57,7 @@ class VulkanTutorial3GuiTests: public testing::Test {
 #endif
                 GLFWwindow* window = nullptr;
 
-                exqudens::vulkan::Context context = {};
+                VULKAN_HPP_NAMESPACE::raii::Context context;
                 exqudens::vulkan::Instance instance = {};
                 exqudens::vulkan::DebugUtilsMessenger debugUtilsMessenger = {};
 
@@ -116,7 +116,7 @@ class VulkanTutorial3GuiTests: public testing::Test {
                     )
                     .setEnabledExtensionNames(requiredExtensions)
                     .setEnabledLayerNames(requiredLayers)
-                    .build(instance, context.target);
+                    .build(instance, context);
 
                     exqudens::vulkan::DebugUtilsMessenger::builder()
                     .setCreateInfo(

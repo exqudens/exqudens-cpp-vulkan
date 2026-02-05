@@ -35,7 +35,7 @@ class VulkanTutorial2GuiTests: public testing::Test {
 
                 GLFWwindow* window = nullptr;
 
-                exqudens::vulkan::Context context = {};
+                VULKAN_HPP_NAMESPACE::raii::Context context;
                 exqudens::vulkan::Instance instance = {};
 
             public:
@@ -85,7 +85,7 @@ class VulkanTutorial2GuiTests: public testing::Test {
                         .setEngineVersion(VK_MAKE_VERSION(0, 0, 1))
                     )
                     .setEnabledExtensionNames(requiredExtensions)
-                    .build(instance, context.target);
+                    .build(instance, context);
 
                     EXQUDENS_LOG_INFO(LOGGER_ID) << "instance : " << (instance.target != nullptr);
                 }

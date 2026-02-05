@@ -1,18 +1,16 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
 #include <vector>
-#include <filesystem>
 #include <functional>
 
 #include <vulkan/vulkan_raii.hpp>
 
-#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+#include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
 
-    struct PhysicalDevice {
+    struct EXQUDENS_VULKAN_EXPORT PhysicalDevice {
 
         class Builder;
 
@@ -28,7 +26,7 @@ namespace exqudens::vulkan {
 
     };
 
-    class PhysicalDevice::Builder {
+    class EXQUDENS_VULKAN_EXPORT PhysicalDevice::Builder {
 
         private:
 
@@ -46,20 +44,28 @@ namespace exqudens::vulkan {
             );
 
     };
+}
 
-    // implementation ---
+// implementation ---
 
-    inline PhysicalDevice::Builder PhysicalDevice::builder() {
+#include <string>
+#include <filesystem>
+
+#define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
+
+namespace exqudens::vulkan {
+
+    EXQUDENS_VULKAN_INLINE PhysicalDevice::Builder PhysicalDevice::builder() {
         return {};
     }
 
 
-    inline PhysicalDevice::Builder& PhysicalDevice::Builder::setRequiredExtensions(const std::vector<const char*>& value) {
+    EXQUDENS_VULKAN_INLINE PhysicalDevice::Builder& PhysicalDevice::Builder::setRequiredExtensions(const std::vector<const char*>& value) {
         resultObject.requiredExtensions = value;
         return *this;
     }
 
-    inline PhysicalDevice::Builder& PhysicalDevice::Builder::setFilterFunction(
+    EXQUDENS_VULKAN_INLINE PhysicalDevice::Builder& PhysicalDevice::Builder::setFilterFunction(
         const std::function<bool(size_t, const vk::raii::PhysicalDevice&, std::vector<const char*>)>& value
     ) {
         resultObject.filterFunction = value;
@@ -67,7 +73,7 @@ namespace exqudens::vulkan {
     }
 
 
-    inline PhysicalDevice& PhysicalDevice::Builder::build(
+    EXQUDENS_VULKAN_INLINE PhysicalDevice& PhysicalDevice::Builder::build(
         PhysicalDevice& physicalDevice,
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {
@@ -99,7 +105,6 @@ namespace exqudens::vulkan {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
     }
-
 
 }
 
