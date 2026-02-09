@@ -17,7 +17,7 @@ namespace exqudens::vulkan {
         std::optional<uint32_t> index = {};
         VULKAN_HPP_NAMESPACE::raii::Queue target = nullptr;
 
-        static Builder builder();
+        static Builder builder(Queue& object);
 
     };
 
@@ -25,16 +25,17 @@ namespace exqudens::vulkan {
 
         private:
 
-            Queue resultObject = {};
+            Queue& object;
 
         public:
+
+            explicit Builder(Queue& object);
 
             Builder& setFamilyIndex(const std::optional<uint32_t>& value);
 
             Builder& setIndex(const std::optional<uint32_t>& value);
 
             Queue& build(
-                Queue& queue,
                 VULKAN_HPP_NAMESPACE::raii::Device& device
             );
 
@@ -50,43 +51,42 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE Queue::Builder Queue::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE Queue::Builder Queue::builder(Queue& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE Queue::Builder::Builder(Queue& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE Queue::Builder& Queue::Builder::setFamilyIndex(const std::optional<uint32_t>& value) {
-        resultObject.familyIndex = value;
+        object.familyIndex = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Queue::Builder& Queue::Builder::setIndex(const std::optional<uint32_t>& value) {
-        resultObject.index = value;
+        object.index = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Queue& Queue::Builder::build(
-        Queue& queue,
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            if (!resultObject.familyIndex.has_value()) {
+            if (!object.familyIndex.has_value()) {
                 throw std::runtime_error(CALL_INFO + ": family index not set");
             }
 
-            if (!resultObject.index.has_value()) {
-                resultObject.index = 0;
+            if (!object.index.has_value()) {
+                object.index = 0;
             }
 
-            queue.familyIndex = resultObject.familyIndex;
-            queue.index = resultObject.index;
-            queue.target = device.getQueue(queue.familyIndex.value(), queue.index.value());
+            object.target = device.getQueue(object.familyIndex.value(), object.index.value());
 
-            return queue;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
     }
-
 
 }
 

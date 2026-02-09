@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
@@ -15,7 +13,7 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::ImageViewCreateInfo createInfo;
         VULKAN_HPP_NAMESPACE::raii::ImageView target = nullptr;
 
-        static Builder builder();
+        static Builder builder(ImageView& object);
 
     };
 
@@ -23,21 +21,16 @@ namespace exqudens::vulkan {
 
         private:
 
-            ImageView resultObject = {};
+            ImageView& object;
 
         public:
+
+            explicit Builder(ImageView& object);
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::ImageViewCreateInfo& value);
 
             ImageView& build(
-                ImageView& imageView,
                 VULKAN_HPP_NAMESPACE::raii::Device& device
-            );
-
-            std::vector<ImageView>& build(
-                std::vector<ImageView>& imageViews,
-                VULKAN_HPP_NAMESPACE::raii::Device& device,
-                const std::vector<VULKAN_HPP_NAMESPACE::Image>& images
             );
 
     };
@@ -45,7 +38,6 @@ namespace exqudens::vulkan {
 
 // implementation ---
 
-#include <cstddef>
 #include <string>
 #include <filesystem>
 
@@ -53,51 +45,25 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE ImageView::Builder ImageView::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE ImageView::Builder ImageView::builder(ImageView& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE ImageView::Builder::Builder(ImageView& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE ImageView::Builder& ImageView::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::ImageViewCreateInfo& value) {
-        resultObject.createInfo = value;
+        object.createInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE ImageView& ImageView::Builder::build(
-        ImageView& imageView,
         vk::raii::Device& device
     ) {
         try {
-            imageView.createInfo = resultObject.createInfo;
-            imageView.target = device.createImageView(resultObject.createInfo);
+            object.target = device.createImageView(object.createInfo);
 
-            return imageView;
-        } catch (...) {
-            std::throw_with_nested(std::runtime_error(CALL_INFO));
-        }
-    }
-
-    EXQUDENS_VULKAN_INLINE std::vector<ImageView>& ImageView::Builder::build(
-        std::vector<ImageView>& imageViews,
-        vk::raii::Device& device,
-        const std::vector<vk::Image>& images
-    ) {
-        try {
-            imageViews.clear();
-            imageViews.resize(images.size());
-
-            for (size_t i = 0; i < images.size(); i++) {
-                imageViews.at(i).createInfo = resultObject.createInfo;
-                imageViews.at(i).createInfo.image = images.at(i);
-
-                builder()
-                .setCreateInfo(imageViews.at(i).createInfo)
-                .build(
-                    imageViews.at(i),
-                    device
-                );
-            }
-
-            return imageViews;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

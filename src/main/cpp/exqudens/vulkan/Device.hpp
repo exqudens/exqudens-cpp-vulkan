@@ -16,7 +16,7 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::DeviceCreateInfo createInfo;
         VULKAN_HPP_NAMESPACE::raii::Device target = nullptr;
 
-        static Builder builder();
+        static Builder builder(Device& object);
 
     };
 
@@ -24,16 +24,21 @@ namespace exqudens::vulkan {
 
         private:
 
-            Device resultObject = {};
+            Device& object;
 
         public:
 
+            explicit Builder(Device& object);
+
             Builder& setQueueCreateInfos(const std::vector<VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo>& value);
+
+            Builder& addQueueCreateInfos(const VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo& value);
+
+            Builder& addUniqQueueCreateInfos(const VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo& value);
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::DeviceCreateInfo& value);
 
             Device& build(
-                Device& device,
                 VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice
             );
 
@@ -50,32 +55,51 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE Device::Builder Device::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE Device::Builder Device::builder(Device& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE Device::Builder::Builder(Device& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE Device::Builder& Device::Builder::setQueueCreateInfos(const std::vector<VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo>& value) {
-        resultObject.queueCreateInfos = value;
+        object.queueCreateInfos = value;
+        return *this;
+    }
+
+    EXQUDENS_VULKAN_INLINE Device::Builder& Device::Builder::addQueueCreateInfos(const VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo& value) {
+        object.queueCreateInfos.emplace_back(value);
+        return *this;
+    }
+
+    EXQUDENS_VULKAN_INLINE Device::Builder& Device::Builder::addUniqQueueCreateInfos(const VULKAN_HPP_NAMESPACE::DeviceQueueCreateInfo& value) {
+        bool containsQueueCreateInfos = false;
+        for (const auto& v : object.queueCreateInfos) {
+            if (v.queueFamilyIndex == value.queueFamilyIndex) {
+                containsQueueCreateInfos = true;
+                break;
+            }
+        }
+        if (!containsQueueCreateInfos) {
+            object.queueCreateInfos.emplace_back(value);
+        }
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Device::Builder& Device::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::DeviceCreateInfo& value) {
-        resultObject.createInfo = value;
+        object.createInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Device& Device::Builder::build(
-        Device& device,
         VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice
     ) {
         try {
-            device.queueCreateInfos = resultObject.queueCreateInfos;
-            device.createInfo = resultObject.createInfo;
-            device.createInfo.queueCreateInfoCount = static_cast<uint32_t>(device.queueCreateInfos.size());
-            device.createInfo.pQueueCreateInfos = device.queueCreateInfos.data();
-            device.target = physicalDevice.createDevice(device.createInfo);
+            object.createInfo.queueCreateInfoCount = static_cast<uint32_t>(object.queueCreateInfos.size());
+            object.createInfo.pQueueCreateInfos = object.queueCreateInfos.data();
+            object.target = physicalDevice.createDevice(object.createInfo);
 
-            return device;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

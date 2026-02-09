@@ -31,7 +31,7 @@ namespace exqudens::vulkan {
         std::optional<VULKAN_HPP_NAMESPACE::GraphicsPipelineCreateInfo> graphicsCreateInfo = {};
         VULKAN_HPP_NAMESPACE::raii::Pipeline target = nullptr;
 
-        static Builder builder();
+        static Builder builder(Pipeline& object);
 
     };
 
@@ -39,9 +39,11 @@ namespace exqudens::vulkan {
 
         private:
 
-            Pipeline resultObject = {};
+            Pipeline& object;
 
         public:
+
+            explicit Builder(Pipeline& object);
 
             Builder& setShaderStageCreateInfos(const std::vector<VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo>& value);
 
@@ -86,8 +88,11 @@ namespace exqudens::vulkan {
             Builder& setGraphicsCreateInfo(const VULKAN_HPP_NAMESPACE::GraphicsPipelineCreateInfo& value);
 
             Pipeline& build(
-                Pipeline& pipeline,
-                VULKAN_HPP_NAMESPACE::raii::PipelineLayout& layout,
+                VULKAN_HPP_NAMESPACE::raii::Device& device,
+                VULKAN_HPP_NAMESPACE::raii::PipelineCache& cache
+            );
+
+            Pipeline& build(
                 VULKAN_HPP_NAMESPACE::raii::Device& device
             );
 
@@ -104,225 +109,219 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE Pipeline::Builder Pipeline::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE Pipeline::Builder Pipeline::builder(Pipeline& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE Pipeline::Builder::Builder(Pipeline& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setShaderStageCreateInfos(const std::vector<VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo>& value) {
-        resultObject.shaderStageCreateInfos = value;
+        object.shaderStageCreateInfos = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addShaderStageCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo& value) {
-        resultObject.shaderStageCreateInfos.emplace_back(value);
+        object.shaderStageCreateInfos.emplace_back(value);
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setVertexInputStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineVertexInputStateCreateInfo& value) {
-        resultObject.vertexInputStateCreateInfo = value;
+        object.vertexInputStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setInputAssemblyStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineInputAssemblyStateCreateInfo& value) {
-        resultObject.inputAssemblyStateCreateInfo = value;
+        object.inputAssemblyStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setViewports(const std::vector<VULKAN_HPP_NAMESPACE::Viewport>& value) {
-        resultObject.viewports = value;
+        object.viewports = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addViewport(const VULKAN_HPP_NAMESPACE::Viewport& value) {
-        resultObject.viewports.emplace_back(value);
+        object.viewports.emplace_back(value);
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setScissors(const std::vector<VULKAN_HPP_NAMESPACE::Rect2D>& value) {
-        resultObject.scissors = value;
+        object.scissors = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addScissor(const vk::Rect2D& value) {
-        resultObject.scissors.emplace_back(value);
+        object.scissors.emplace_back(value);
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setViewportStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineViewportStateCreateInfo& value) {
-        resultObject.viewportStateCreateInfo = value;
+        object.viewportStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setRasterizationStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineRasterizationStateCreateInfo& value) {
-        resultObject.rasterizationStateCreateInfo = value;
+        object.rasterizationStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setMultisampleStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineMultisampleStateCreateInfo& value) {
-        resultObject.multisampleStateCreateInfo = value;
+        object.multisampleStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setColorBlendAttachmentStates(const std::vector<VULKAN_HPP_NAMESPACE::PipelineColorBlendAttachmentState>& value) {
-        resultObject.colorBlendAttachmentStates = value;
+        object.colorBlendAttachmentStates = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addColorBlendAttachmentState(const VULKAN_HPP_NAMESPACE::PipelineColorBlendAttachmentState& value) {
-        resultObject.colorBlendAttachmentStates.emplace_back(value);
+        object.colorBlendAttachmentStates.emplace_back(value);
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setColorBlendStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineColorBlendStateCreateInfo& value) {
-        resultObject.colorBlendStateCreateInfo = value;
+        object.colorBlendStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setDynamicStates(const std::vector<VULKAN_HPP_NAMESPACE::DynamicState>& value) {
-        resultObject.dynamicStates = value;
+        object.dynamicStates = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addDynamicState(const VULKAN_HPP_NAMESPACE::DynamicState& value) {
-        resultObject.dynamicStates.emplace_back(value);
+        object.dynamicStates.emplace_back(value);
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setDynamicStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineDynamicStateCreateInfo& value) {
-        resultObject.dynamicStateCreateInfo = value;
+        object.dynamicStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setDepthStencilStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineDepthStencilStateCreateInfo& value) {
-        resultObject.depthStencilStateCreateInfo = value;
+        object.depthStencilStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setTessellationStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineTessellationStateCreateInfo& value) {
-        resultObject.tessellationStateCreateInfo = value;
+        object.tessellationStateCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setRenderingCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineRenderingCreateInfo& value) {
-        resultObject.renderingCreateInfo = value;
+        object.renderingCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setGraphicsCreateInfo(const VULKAN_HPP_NAMESPACE::GraphicsPipelineCreateInfo& value) {
-        resultObject.graphicsCreateInfo = value;
+        object.graphicsCreateInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline& Pipeline::Builder::build(
-        Pipeline& pipeline,
-        VULKAN_HPP_NAMESPACE::raii::PipelineLayout& layout,
+        VULKAN_HPP_NAMESPACE::raii::Device& device,
+        VULKAN_HPP_NAMESPACE::raii::PipelineCache& cache
+    ) {
+        try {
+            if (!object.viewports.empty() || !object.scissors.empty()) {
+                if (!object.viewportStateCreateInfo.has_value()) {
+                    VULKAN_HPP_NAMESPACE::PipelineViewportStateCreateInfo v;
+                    object.viewportStateCreateInfo = v;
+                }
+
+                if (!object.viewports.empty()) {
+                    object.viewportStateCreateInfo.value().viewportCount = static_cast<uint32_t>(object.viewports.size());
+                    object.viewportStateCreateInfo.value().pViewports = object.viewports.data();
+                }
+
+                if (!object.scissors.empty()) {
+                    object.viewportStateCreateInfo.value().scissorCount = static_cast<uint32_t>(object.scissors.size());
+                    object.viewportStateCreateInfo.value().pScissors = object.scissors.data();
+                }
+            }
+
+            if (!object.colorBlendAttachmentStates.empty()) {
+                if (!object.colorBlendStateCreateInfo.has_value()) {
+                    VULKAN_HPP_NAMESPACE::PipelineColorBlendStateCreateInfo v;
+                    object.colorBlendStateCreateInfo = v;
+                }
+                object.colorBlendStateCreateInfo.value().attachmentCount = static_cast<uint32_t>(object.colorBlendAttachmentStates.size());
+                object.colorBlendStateCreateInfo.value().pAttachments = object.colorBlendAttachmentStates.data();
+            }
+
+            if (!object.dynamicStates.empty()) {
+                if (!object.dynamicStateCreateInfo.has_value()) {
+                    VULKAN_HPP_NAMESPACE::PipelineDynamicStateCreateInfo v;
+                    object.dynamicStateCreateInfo = v;
+                }
+                object.dynamicStateCreateInfo.value().dynamicStateCount = static_cast<uint32_t>(object.dynamicStates.size());
+                object.dynamicStateCreateInfo.value().pDynamicStates = object.dynamicStates.data();
+            }
+
+            if (object.graphicsCreateInfo.has_value()) {
+                if (!object.shaderStageCreateInfos.empty()) {
+                    object.graphicsCreateInfo.value().stageCount = static_cast<uint32_t>(object.shaderStageCreateInfos.size());
+                    object.graphicsCreateInfo.value().pStages = object.shaderStageCreateInfos.data();
+                }
+
+                if (object.vertexInputStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pVertexInputState = &object.vertexInputStateCreateInfo.value();
+                }
+
+                if (object.inputAssemblyStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pInputAssemblyState = &object.inputAssemblyStateCreateInfo.value();
+                }
+
+                if (object.viewportStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pViewportState = &object.viewportStateCreateInfo.value();
+                }
+
+                if (object.rasterizationStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pRasterizationState = &object.rasterizationStateCreateInfo.value();
+                }
+
+                if (object.multisampleStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pMultisampleState = &object.multisampleStateCreateInfo.value();
+                }
+
+                if (object.colorBlendStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pColorBlendState = &object.colorBlendStateCreateInfo.value();
+                }
+
+                if (object.dynamicStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pDynamicState = &object.dynamicStateCreateInfo.value();
+                }
+
+                if (object.depthStencilStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pDepthStencilState = &object.depthStencilStateCreateInfo.value();
+                }
+
+                if (object.tessellationStateCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pTessellationState = &object.tessellationStateCreateInfo.value();
+                }
+
+                if (object.renderingCreateInfo.has_value()) {
+                    object.graphicsCreateInfo.value().pNext = &object.renderingCreateInfo.value();
+                }
+
+                object.target = device.createGraphicsPipeline(cache, object.graphicsCreateInfo.value());
+            }
+
+            return object;
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE Pipeline& Pipeline::Builder::build(
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            pipeline.shaderStageCreateInfos = resultObject.shaderStageCreateInfos;
-            pipeline.vertexInputStateCreateInfo = resultObject.vertexInputStateCreateInfo;
-            pipeline.inputAssemblyStateCreateInfo = resultObject.inputAssemblyStateCreateInfo;
-            pipeline.viewports = resultObject.viewports;
-            pipeline.scissors = resultObject.scissors;
-            pipeline.viewportStateCreateInfo = resultObject.viewportStateCreateInfo;
-            pipeline.rasterizationStateCreateInfo = resultObject.rasterizationStateCreateInfo;
-            pipeline.multisampleStateCreateInfo = resultObject.multisampleStateCreateInfo;
-            pipeline.colorBlendAttachmentStates = resultObject.colorBlendAttachmentStates;
-            pipeline.colorBlendStateCreateInfo = resultObject.colorBlendStateCreateInfo;
-            pipeline.dynamicStates = resultObject.dynamicStates;
-            pipeline.dynamicStateCreateInfo = resultObject.dynamicStateCreateInfo;
-            pipeline.depthStencilStateCreateInfo = resultObject.depthStencilStateCreateInfo;
-            pipeline.tessellationStateCreateInfo = resultObject.tessellationStateCreateInfo;
-            pipeline.renderingCreateInfo = resultObject.renderingCreateInfo;
-            pipeline.graphicsCreateInfo = resultObject.graphicsCreateInfo;
-
-            if (!pipeline.viewports.empty() || !pipeline.scissors.empty()) {
-                if (!pipeline.viewportStateCreateInfo.has_value()) {
-                    VULKAN_HPP_NAMESPACE::PipelineViewportStateCreateInfo v;
-                    pipeline.viewportStateCreateInfo = v;
-                }
-
-                if (!pipeline.viewports.empty()) {
-                    pipeline.viewportStateCreateInfo.value().viewportCount = static_cast<uint32_t>(pipeline.viewports.size());
-                    pipeline.viewportStateCreateInfo.value().pViewports = pipeline.viewports.data();
-                }
-
-                if (!pipeline.scissors.empty()) {
-                    pipeline.viewportStateCreateInfo.value().scissorCount = static_cast<uint32_t>(pipeline.scissors.size());
-                    pipeline.viewportStateCreateInfo.value().pScissors = pipeline.scissors.data();
-                }
-            }
-
-            if (!pipeline.colorBlendAttachmentStates.empty()) {
-                if (!pipeline.colorBlendStateCreateInfo.has_value()) {
-                    VULKAN_HPP_NAMESPACE::PipelineColorBlendStateCreateInfo v;
-                    pipeline.colorBlendStateCreateInfo = v;
-                }
-                pipeline.colorBlendStateCreateInfo.value().attachmentCount = static_cast<uint32_t>(pipeline.colorBlendAttachmentStates.size());
-                pipeline.colorBlendStateCreateInfo.value().pAttachments = pipeline.colorBlendAttachmentStates.data();
-            }
-
-            if (!pipeline.dynamicStates.empty()) {
-                if (!pipeline.dynamicStateCreateInfo.has_value()) {
-                    VULKAN_HPP_NAMESPACE::PipelineDynamicStateCreateInfo v;
-                    pipeline.dynamicStateCreateInfo = v;
-                }
-                pipeline.dynamicStateCreateInfo.value().dynamicStateCount = static_cast<uint32_t>(pipeline.dynamicStates.size());
-                pipeline.dynamicStateCreateInfo.value().pDynamicStates = pipeline.dynamicStates.data();
-            }
-
-            if (pipeline.graphicsCreateInfo.has_value()) {
-                if (!pipeline.shaderStageCreateInfos.empty()) {
-                    pipeline.graphicsCreateInfo.value().stageCount = static_cast<uint32_t>(pipeline.shaderStageCreateInfos.size());
-                    pipeline.graphicsCreateInfo.value().pStages = pipeline.shaderStageCreateInfos.data();
-                }
-
-                if (pipeline.vertexInputStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pVertexInputState = &pipeline.vertexInputStateCreateInfo.value();
-                }
-
-                if (pipeline.inputAssemblyStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pInputAssemblyState = &pipeline.inputAssemblyStateCreateInfo.value();
-                }
-
-                if (pipeline.viewportStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pViewportState = &pipeline.viewportStateCreateInfo.value();
-                }
-
-                if (pipeline.rasterizationStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pRasterizationState = &pipeline.rasterizationStateCreateInfo.value();
-                }
-
-                if (pipeline.multisampleStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pMultisampleState = &pipeline.multisampleStateCreateInfo.value();
-                }
-
-                if (pipeline.colorBlendStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pColorBlendState = &pipeline.colorBlendStateCreateInfo.value();
-                }
-
-                if (pipeline.dynamicStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pDynamicState = &pipeline.dynamicStateCreateInfo.value();
-                }
-
-                if (pipeline.depthStencilStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pDepthStencilState = &pipeline.depthStencilStateCreateInfo.value();
-                }
-
-                if (pipeline.tessellationStateCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pTessellationState = &pipeline.tessellationStateCreateInfo.value();
-                }
-
-                if (pipeline.renderingCreateInfo.has_value()) {
-                    pipeline.graphicsCreateInfo.value().pNext = &pipeline.renderingCreateInfo.value();
-                }
-
-                pipeline.graphicsCreateInfo.value().layout = layout;
-                pipeline.graphicsCreateInfo.value().renderPass = nullptr;
-                pipeline.target = device.createGraphicsPipeline(nullptr, pipeline.graphicsCreateInfo.value());
-            }
-
-            return pipeline;
+            VULKAN_HPP_NAMESPACE::raii::PipelineCache cache = nullptr;
+            return build(device, cache);
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

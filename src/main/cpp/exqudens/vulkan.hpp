@@ -9,6 +9,7 @@
 #include "exqudens/vulkan/Swapchain.hpp"
 #include "exqudens/vulkan/ImageView.hpp"
 #include "exqudens/vulkan/ShaderModule.hpp"
+#include "exqudens/vulkan/RenderPass.hpp"
 #include "exqudens/vulkan/PipelineLayout.hpp"
 #include "exqudens/vulkan/Pipeline.hpp"
 #include "exqudens/vulkan/Utils.hpp"

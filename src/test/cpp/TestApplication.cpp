@@ -18,16 +18,6 @@
 #include "unit/OtherUnitTests.hpp"
 #include "unit/StringVectorUnitTests.hpp"
 #include "gui/VulkanTutorial1GuiTests.hpp"
-#include "gui/VulkanTutorial2GuiTests.hpp"
-#include "gui/VulkanTutorial3GuiTests.hpp"
-#include "gui/VulkanTutorial4GuiTests.hpp"
-#include "gui/VulkanTutorial5GuiTests.hpp"
-#include "gui/VulkanTutorial6GuiTests.hpp"
-#include "gui/VulkanTutorial7GuiTests.hpp"
-#include "gui/VulkanTutorial8GuiTests.hpp"
-#include "gui/VulkanTutorial9GuiTests.hpp"
-#include "gui/VulkanTutorial10GuiTests.hpp"
-#include "gui/VulkanTutorial11GuiTests.hpp"
 
 #define CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
@@ -49,16 +39,6 @@ int TestApplication::run(int argc, char** argv) {
             OtherUnitTests::LOGGER_ID,
             StringVectorUnitTests::LOGGER_ID,
             VulkanTutorial1GuiTests::LOGGER_ID,
-            VulkanTutorial2GuiTests::LOGGER_ID,
-            VulkanTutorial3GuiTests::LOGGER_ID,
-            VulkanTutorial4GuiTests::LOGGER_ID,
-            VulkanTutorial5GuiTests::LOGGER_ID,
-            VulkanTutorial6GuiTests::LOGGER_ID,
-            VulkanTutorial7GuiTests::LOGGER_ID,
-            VulkanTutorial8GuiTests::LOGGER_ID,
-            VulkanTutorial9GuiTests::LOGGER_ID,
-            VulkanTutorial10GuiTests::LOGGER_ID,
-            VulkanTutorial11GuiTests::LOGGER_ID,
             LOGGER_ID
         };
         std::string loggingConfigResult = exqudens::Log::configure(loggingFile, loggingFileSize, loggerIds);

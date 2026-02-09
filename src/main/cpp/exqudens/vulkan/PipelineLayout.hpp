@@ -13,7 +13,7 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo createInfo;
         VULKAN_HPP_NAMESPACE::raii::PipelineLayout target = nullptr;
 
-        static Builder builder();
+        static Builder builder(PipelineLayout& object);
 
     };
 
@@ -21,14 +21,15 @@ namespace exqudens::vulkan {
 
         private:
 
-            PipelineLayout resultObject = {};
+            PipelineLayout& object;
 
         public:
+
+            explicit Builder(PipelineLayout& object);
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo& value);
 
             PipelineLayout& build(
-                PipelineLayout& pipelineLayout,
                 VULKAN_HPP_NAMESPACE::raii::Device& device
             );
 
@@ -44,24 +45,25 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE PipelineLayout::Builder PipelineLayout::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE PipelineLayout::Builder PipelineLayout::builder(PipelineLayout& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE PipelineLayout::Builder::Builder(PipelineLayout& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE PipelineLayout::Builder& PipelineLayout::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo& value) {
-        resultObject.createInfo = value;
+        object.createInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE PipelineLayout& PipelineLayout::Builder::build(
-        PipelineLayout& pipelineLayout,
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            pipelineLayout.createInfo = resultObject.createInfo;
-            pipelineLayout.target = device.createPipelineLayout(pipelineLayout.createInfo);
+            object.target = device.createPipelineLayout(object.createInfo);
 
-            return pipelineLayout;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

@@ -17,7 +17,14 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR createInfo;
         VULKAN_HPP_NAMESPACE::raii::SwapchainKHR target = nullptr;
 
-        static Builder builder();
+        static VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR createInfoFrom(
+            VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
+            VULKAN_HPP_NAMESPACE::raii::SurfaceKHR& surface,
+            int framebufferWidth,
+            int framebufferHeight
+        );
+
+        static Builder builder(Swapchain& object);
 
     };
 
@@ -25,16 +32,17 @@ namespace exqudens::vulkan {
 
         private:
 
-            Swapchain resultObject = {};
+            Swapchain& object;
 
         public:
+
+            explicit Builder(Swapchain& object);
 
             Builder& setQueueFamilyIndices(const std::vector<uint32_t>& value);
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR& value);
 
             Swapchain& build(
-                Swapchain& swapchain,
                 VULKAN_HPP_NAMESPACE::raii::Device& device
             );
 
@@ -50,46 +58,150 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE Swapchain::Builder Swapchain::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR Swapchain::createInfoFrom(
+        VULKAN_HPP_NAMESPACE::raii::PhysicalDevice& physicalDevice,
+        VULKAN_HPP_NAMESPACE::raii::SurfaceKHR& surface,
+        int framebufferWidth,
+        int framebufferHeight
+    ) {
+        try {
+            std::optional<uint32_t> surfaceMinImageCount = {};
+            std::optional<VULKAN_HPP_NAMESPACE::Extent2D> surfaceExtent = {};
+            VULKAN_HPP_NAMESPACE::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+
+            if (!surfaceMinImageCount.has_value()) {
+                uint32_t minImageCount = 3u > surfaceCapabilities.minImageCount ? 3u : surfaceCapabilities.minImageCount;
+                if (0 < surfaceCapabilities.maxImageCount && surfaceCapabilities.maxImageCount < minImageCount) {
+                    minImageCount = surfaceCapabilities.maxImageCount;
+                }
+                surfaceMinImageCount = minImageCount;
+            }
+
+            if (!surfaceExtent.has_value()) {
+                if (surfaceCapabilities.currentExtent.width != 0xFFFFFFFF) {
+                    surfaceExtent = surfaceCapabilities.currentExtent;
+                } else {
+                    surfaceExtent = VULKAN_HPP_NAMESPACE::Extent2D(
+                        std::clamp<uint32_t>(framebufferWidth, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
+                        std::clamp<uint32_t>(framebufferHeight, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
+                    );
+                }
+            }
+
+            if (!surfaceMinImageCount.has_value()) {
+                throw std::runtime_error(CALL_INFO + ": 'surfaceMinImageCount' is not initialized");
+            }
+
+            if (!surfaceExtent.has_value()) {
+                throw std::runtime_error(CALL_INFO + ": 'surfaceExtent' is not initialized");
+            }
+
+            std::optional<VULKAN_HPP_NAMESPACE::SurfaceFormatKHR> surfaceFormat = {};
+            std::vector<VULKAN_HPP_NAMESPACE::SurfaceFormatKHR> surfaceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
+
+            if (surfaceFormats.empty()) {
+                throw std::runtime_error(CALL_INFO + ": No surface formats available!");
+            }
+
+            if (!surfaceFormat.has_value()) {
+                for (const auto& format : surfaceFormats) {
+                    if (format.format == VULKAN_HPP_NAMESPACE::Format::eB8G8R8A8Srgb && format.colorSpace == VULKAN_HPP_NAMESPACE::ColorSpaceKHR::eSrgbNonlinear) {
+                        surfaceFormat = format;
+                    }
+                }
+                if (!surfaceFormat.has_value()) {
+                    surfaceFormat = surfaceFormats.at(0);
+                }
+            }
+
+            if (!surfaceFormat.has_value()) {
+                throw std::runtime_error(CALL_INFO + ": 'surfaceFormat' is not initialized");
+            }
+
+            std::optional<VULKAN_HPP_NAMESPACE::PresentModeKHR> surfacePresentMode = {};
+            std::vector<VULKAN_HPP_NAMESPACE::PresentModeKHR> surfacePresentModes = physicalDevice.getSurfacePresentModesKHR(surface);
+
+            if (surfacePresentModes.empty()) {
+                throw std::runtime_error(CALL_INFO + ": No surface present modes available!");
+            }
+
+            if (!surfacePresentMode.has_value()) {
+                bool fifoFound = false;
+                bool mailboxFound = false;
+                for (const auto& mode : surfacePresentModes) {
+                    if (!fifoFound && mode == VULKAN_HPP_NAMESPACE::PresentModeKHR::eFifo) {
+                        fifoFound = true;
+                    }
+                    if (!mailboxFound && mode == VULKAN_HPP_NAMESPACE::PresentModeKHR::eMailbox) {
+                        mailboxFound = true;
+                    }
+                    if (fifoFound && mailboxFound) {
+                        break;
+                    }
+                }
+                if (!fifoFound) {
+                    throw std::runtime_error(CALL_INFO + ": Surface present mode fifo not found!");
+                }
+                surfacePresentMode = mailboxFound ? VULKAN_HPP_NAMESPACE::PresentModeKHR::eMailbox : VULKAN_HPP_NAMESPACE::PresentModeKHR::eFifo;
+            }
+
+            if (!surfacePresentMode.has_value()) {
+                throw std::runtime_error(CALL_INFO + ": 'surfacePresentMode' is not initialized");
+            }
+
+            VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR result;
+
+            result.minImageCount = surfaceMinImageCount.value();
+            result.imageExtent = surfaceExtent.value();
+            result.preTransform = surfaceCapabilities.currentTransform;
+            result.imageFormat = surfaceFormat.value().format;
+            result.imageColorSpace = surfaceFormat.value().colorSpace;
+            result.presentMode = surfacePresentMode.value();
+
+            return result;
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE Swapchain::Builder Swapchain::builder(Swapchain& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE Swapchain::Builder::Builder(Swapchain& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE Swapchain::Builder& Swapchain::Builder::setQueueFamilyIndices(const std::vector<uint32_t>& value) {
-        resultObject.queueFamilyIndices = value;
+        object.queueFamilyIndices = value;
         return *this;
     }
 
-
     EXQUDENS_VULKAN_INLINE Swapchain::Builder& Swapchain::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR& value) {
-        resultObject.createInfo = value;
+        object.createInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Swapchain& Swapchain::Builder::build(
-        Swapchain& swapchain,
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            if (resultObject.queueFamilyIndices.size() > 2) {
+            if (object.queueFamilyIndices.size() > 2) {
                 throw std::runtime_error(CALL_INFO + "Queue family indices size greater than 2");
             }
 
-            swapchain.queueFamilyIndices = resultObject.queueFamilyIndices;
-            swapchain.createInfo = resultObject.createInfo;
-
-            if (swapchain.queueFamilyIndices.size() == 2 && swapchain.queueFamilyIndices.at(0) != swapchain.queueFamilyIndices.at(1)) {
-                swapchain.createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
-                swapchain.createInfo.queueFamilyIndexCount = static_cast<uint32_t>(swapchain.queueFamilyIndices.size());
-                swapchain.createInfo.pQueueFamilyIndices = swapchain.queueFamilyIndices.data();
+            if (object.queueFamilyIndices.size() == 2 && object.queueFamilyIndices.at(0) != object.queueFamilyIndices.at(1)) {
+                object.createInfo.imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eConcurrent;
+                object.createInfo.queueFamilyIndexCount = static_cast<uint32_t>(object.queueFamilyIndices.size());
+                object.createInfo.pQueueFamilyIndices = object.queueFamilyIndices.data();
             } else {
-                swapchain.createInfo.imageSharingMode = vk::SharingMode::eExclusive;
-                swapchain.createInfo.queueFamilyIndexCount = 0;
-                swapchain.createInfo.pQueueFamilyIndices = nullptr;
+                object.createInfo.imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eExclusive;
+                object.createInfo.queueFamilyIndexCount = 0;
+                object.createInfo.pQueueFamilyIndices = nullptr;
             }
 
-            swapchain.target = device.createSwapchainKHR(resultObject.createInfo);
+            object.target = device.createSwapchainKHR(object.createInfo);
 
-            return swapchain;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

@@ -19,7 +19,7 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::ShaderModuleCreateInfo createInfo;
         VULKAN_HPP_NAMESPACE::raii::ShaderModule target = nullptr;
 
-        static Builder builder();
+        static Builder builder(ShaderModule& object);
 
     };
 
@@ -27,9 +27,11 @@ namespace exqudens::vulkan {
 
         private:
 
-            ShaderModule resultObject = {};
+            ShaderModule& object;
 
         public:
+
+            explicit Builder(ShaderModule& object);
 
             Builder& setFile(const std::optional<const char*>& value);
 
@@ -40,7 +42,6 @@ namespace exqudens::vulkan {
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::ShaderModuleCreateInfo& value);
 
             ShaderModule& build(
-                ShaderModule& shaderModule,
                 VULKAN_HPP_NAMESPACE::raii::Device& device
             );
 
@@ -58,41 +59,39 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE ShaderModule::Builder ShaderModule::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE ShaderModule::Builder ShaderModule::builder(ShaderModule& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE ShaderModule::Builder::Builder(ShaderModule& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE ShaderModule::Builder& ShaderModule::Builder::setFile(const std::optional<const char*>& value) {
-        resultObject.file = value;
+        object.file = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE ShaderModule::Builder& ShaderModule::Builder::setCode(const std::vector<char>& value) {
-        resultObject.code = value;
+        object.code = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE ShaderModule::Builder& ShaderModule::Builder::setReadFile(bool value) {
-        resultObject.readFile = value;
+        object.readFile = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE ShaderModule::Builder& ShaderModule::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::ShaderModuleCreateInfo& value) {
-        resultObject.createInfo = value;
+        object.createInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE ShaderModule& ShaderModule::Builder::build(
-        ShaderModule& shaderModule,
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            shaderModule.file = resultObject.file;
-            shaderModule.code = resultObject.code;
-            shaderModule.readFile = resultObject.readFile;
-
-            if (shaderModule.readFile) {
-                std::string filePath = shaderModule.file.value();
+            if (object.readFile) {
+                std::string filePath = object.file.value();
                 std::ifstream fileStream(filePath, std::ios::ate | std::ios::binary);
 
                 if (!fileStream.is_open()) {
@@ -103,15 +102,14 @@ namespace exqudens::vulkan {
                 fileStream.seekg(0, std::ios::beg);
                 fileStream.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
                 fileStream.close();
-                shaderModule.code = buffer;
+                object.code = buffer;
             }
 
-            shaderModule.createInfo = resultObject.createInfo;
-            shaderModule.createInfo.codeSize = shaderModule.code.size() * sizeof(char);
-            shaderModule.createInfo.pCode = reinterpret_cast<const uint32_t*>(shaderModule.code.data());
-            shaderModule.target = device.createShaderModule(shaderModule.createInfo);
+            object.createInfo.codeSize = object.code.size() * sizeof(char);
+            object.createInfo.pCode = reinterpret_cast<const uint32_t*>(object.code.data());
+            object.target = device.createShaderModule(object.createInfo);
 
-            return shaderModule;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

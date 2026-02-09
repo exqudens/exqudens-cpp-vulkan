@@ -13,7 +13,7 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT createInfo;
         VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT target = nullptr;
 
-        static Builder builder();
+        static Builder builder(DebugUtilsMessenger& object);
 
     };
 
@@ -21,14 +21,15 @@ namespace exqudens::vulkan {
 
         private:
 
-            DebugUtilsMessenger resultObject = {};
+            DebugUtilsMessenger& object;
 
         public:
+
+            explicit Builder(DebugUtilsMessenger& object);
 
             Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT& value);
 
             DebugUtilsMessenger& build(
-                DebugUtilsMessenger& debugUtilsMessenger,
                 VULKAN_HPP_NAMESPACE::raii::Instance& instance
             );
 
@@ -44,24 +45,25 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder DebugUtilsMessenger::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder DebugUtilsMessenger::builder(DebugUtilsMessenger& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder::Builder(DebugUtilsMessenger& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder& DebugUtilsMessenger::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT& value) {
-        resultObject.createInfo = value;
+        object.createInfo = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE DebugUtilsMessenger& DebugUtilsMessenger::Builder::build(
-        DebugUtilsMessenger& debugUtilsMessenger,
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {
         try {
-            debugUtilsMessenger.createInfo = resultObject.createInfo;
-            debugUtilsMessenger.target = instance.createDebugUtilsMessengerEXT(debugUtilsMessenger.createInfo);
+            object.target = instance.createDebugUtilsMessengerEXT(object.createInfo);
 
-            return debugUtilsMessenger;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }

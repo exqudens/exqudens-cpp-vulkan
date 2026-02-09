@@ -13,7 +13,7 @@ namespace exqudens::vulkan {
         VkSurfaceKHR surface = nullptr;
         VULKAN_HPP_NAMESPACE::raii::SurfaceKHR target = nullptr;
 
-        static Builder builder();
+        static Builder builder(Surface& object);
 
     };
 
@@ -21,14 +21,15 @@ namespace exqudens::vulkan {
 
         private:
 
-            Surface resultObject = {};
+            Surface& object;
 
         public:
+
+            explicit Builder(Surface& object);
 
             Builder& setSurface(const VkSurfaceKHR& value);
 
             Surface& build(
-                Surface& surface,
                 VULKAN_HPP_NAMESPACE::raii::Instance& instance
             );
 
@@ -44,24 +45,25 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE Surface::Builder Surface::builder() {
-        return {};
+    EXQUDENS_VULKAN_INLINE Surface::Builder Surface::builder(Surface& object) {
+        return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE Surface::Builder::Builder(Surface& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE Surface::Builder& Surface::Builder::setSurface(const VkSurfaceKHR& value) {
-        resultObject.surface = value;
+        object.surface = value;
         return *this;
     }
 
     EXQUDENS_VULKAN_INLINE Surface& Surface::Builder::build(
-        Surface& surface,
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {
         try {
-            surface.surface = resultObject.surface;
-            surface.target = VULKAN_HPP_NAMESPACE::raii::SurfaceKHR(instance, surface.surface);
+            object.target = VULKAN_HPP_NAMESPACE::raii::SurfaceKHR(instance, object.surface);
 
-            return surface;
+            return object;
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
