@@ -52,7 +52,10 @@ namespace exqudens::vulkan {
 // implementation ---
 
 #include <string>
+#include <optional>
+#include <algorithm>
 #include <filesystem>
+#include <stdexcept>
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
@@ -70,6 +73,11 @@ namespace exqudens::vulkan {
             VULKAN_HPP_NAMESPACE::SurfaceCapabilitiesKHR surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
 
             if (!surfaceMinImageCount.has_value()) {
+                /*uint32_t minImageCount = surfaceCapabilities.minImageCount + 1;
+                if (surfaceCapabilities.maxImageCount > 0 && minImageCount > surfaceCapabilities.maxImageCount) {
+                    minImageCount = surfaceCapabilities.maxImageCount;
+                }
+                surfaceMinImageCount = minImageCount;*/
                 uint32_t minImageCount = 3u > surfaceCapabilities.minImageCount ? 3u : surfaceCapabilities.minImageCount;
                 if (0 < surfaceCapabilities.maxImageCount && surfaceCapabilities.maxImageCount < minImageCount) {
                     minImageCount = surfaceCapabilities.maxImageCount;

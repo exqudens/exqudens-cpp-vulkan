@@ -4,7 +4,6 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "Queue.hpp"
 #include "exqudens/vulkan/export.hpp"
 
 namespace exqudens::vulkan {
@@ -66,6 +65,7 @@ namespace exqudens::vulkan {
 #include <cstdint>
 #include <string>
 #include <filesystem>
+#include <stdexcept>
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 

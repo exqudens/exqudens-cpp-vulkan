@@ -457,7 +457,11 @@ set(LIB_SOURCES
     "src/main/cpp/${BASE_DIR}/ShaderModule.hpp"
     "src/main/cpp/${BASE_DIR}/PipelineLayout.hpp"
     "src/main/cpp/${BASE_DIR}/Pipeline.hpp"
-    "src/main/cpp/${BASE_DIR}/Utils.hpp"
+    "src/main/cpp/${BASE_DIR}/Framebuffer.hpp"
+    "src/main/cpp/${BASE_DIR}/CommandPool.hpp"
+    "src/main/cpp/${BASE_DIR}/CommandBuffers.hpp"
+    "src/main/cpp/${BASE_DIR}/Semaphore.hpp"
+    "src/main/cpp/${BASE_DIR}/Fence.hpp"
 
     "src/main/cpp/${BASE_DIR}.hpp"
 )

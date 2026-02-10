@@ -84,6 +84,15 @@ class VulkanTutorial1GuiTests: public testing::Test {
                 exqudens::vulkan::RenderPass renderPass = {};
                 exqudens::vulkan::PipelineLayout pipelineLayout = {};
                 exqudens::vulkan::Pipeline pipeline = {};
+                std::vector<exqudens::vulkan::Framebuffer> framebuffers = {};
+                exqudens::vulkan::CommandPool commandPool = {};
+                exqudens::vulkan::CommandBuffers commandBuffers = {};
+
+                std::vector<exqudens::vulkan::Semaphore> imageAvailableSemaphores = {};
+                std::vector<exqudens::vulkan::Semaphore> renderFinishedSemaphores = {};
+                std::vector<exqudens::vulkan::Fence> inFlightFences = {};
+
+                uint32_t currentFrame = 0;
 
             public:
 
@@ -112,7 +121,10 @@ class VulkanTutorial1GuiTests: public testing::Test {
                 void loop() {
                     while (!glfwWindowShouldClose(window)) {
                         glfwPollEvents();
+                        drawFrame();
                     }
+
+                    device.target.waitIdle();
                 }
 
                 void cleanup() {
@@ -121,6 +133,8 @@ class VulkanTutorial1GuiTests: public testing::Test {
                 }
 
                 void initVulkan() {
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
+
                     std::vector<const char*> instanceRequiredExtensions = TestGlfwUtils::getRequiredInstanceExtensions();
                     std::vector<const char*> deviceRequiredExtensions = {
                         vk::KHRSwapchainExtensionName
@@ -417,9 +431,146 @@ class VulkanTutorial1GuiTests: public testing::Test {
                     fragShaderModule.target.clear();
                     fragShaderModule.target.release();
 
-                    EXQUDENS_LOG_INFO(LOGGER_ID) << "pipeline: " << (pipeline.target != nullptr);
+                    framebuffers.resize(swapchain.target.getImages().size());
+                    for (size_t i = 0; i < framebuffers.size(); i++) {
+                        exqudens::vulkan::Framebuffer::builder(framebuffers.at(i))
+                        .addAttachment(*imageViews.at(i).target)
+                        .setCreateInfo(
+                            vk::FramebufferCreateInfo()
+                            .setRenderPass(*renderPass.target)
+                            .setWidth(swapchain.createInfo.imageExtent.width)
+                            .setHeight(swapchain.createInfo.imageExtent.height)
+                            .setLayers(1)
+                        )
+                        .build(device.target);
+                    }
 
-                    // TODO
+                    exqudens::vulkan::CommandPool::builder(commandPool)
+                    .setCreateInfo(
+                        vk::CommandPoolCreateInfo()
+                        .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                        .setQueueFamilyIndex(graphicsQueue.familyIndex.value())
+                    )
+                    .build(device.target);
+
+                    exqudens::vulkan::CommandBuffers::builder(commandBuffers)
+                    .setAllocateInfo(
+                        vk::CommandBufferAllocateInfo()
+                        .setCommandPool(*commandPool.target)
+                        .setLevel(vk::CommandBufferLevel::ePrimary)
+                        .setCommandBufferCount(static_cast<uint32_t>(swapchain.target.getImages().size()))
+                    )
+                    .build(device.target);
+
+                    imageAvailableSemaphores.resize(swapchain.target.getImages().size());
+                    for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
+                        exqudens::vulkan::Semaphore::builder(imageAvailableSemaphores.at(i)).build(device.target);
+                    }
+
+                    renderFinishedSemaphores.resize(swapchain.target.getImages().size());
+                    for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+                        exqudens::vulkan::Semaphore::builder(renderFinishedSemaphores.at(i)).build(device.target);
+                    }
+
+                    inFlightFences.resize(swapchain.target.getImages().size());
+                    for (size_t i = 0; i < inFlightFences.size(); i++) {
+                        exqudens::vulkan::Fence::builder(inFlightFences.at(i)).setCreateInfo(vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled)).build(device.target);
+                    }
+
+                    EXQUDENS_LOG_INFO(LOGGER_ID) << "end";
+                }
+
+                void recordCommandBuffer(vk::raii::CommandBuffer& commandBuffer, size_t imageIndex) {
+                    commandBuffer.begin(vk::CommandBufferBeginInfo());
+
+                    vk::ClearValue clearValue = vk::ClearValue().setColor({0.0f, 0.0f, 0.0f, 1.0f});
+                    commandBuffer.beginRenderPass(
+                        vk::RenderPassBeginInfo()
+                        .setRenderPass(*renderPass.target)
+                        .setFramebuffer(*framebuffers.at(imageIndex).target)
+                        .setRenderArea(
+                            vk::Rect2D()
+                            .setOffset(vk::Offset2D()
+                                .setX(0)
+                                .setY(0)
+                            )
+                            .setExtent(swapchain.createInfo.imageExtent)
+                        )
+                        .setClearValueCount(1)
+                        .setPClearValues(&clearValue),
+
+                        vk::SubpassContents::eInline
+                    );
+
+                    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *pipeline.target);
+
+                    commandBuffer.setViewport(0, {
+                        vk::Viewport()
+                        .setX(0.0f)
+                        .setY(0.0f)
+                        .setWidth(static_cast<float>(swapchain.createInfo.imageExtent.width))
+                        .setHeight(static_cast<float>(swapchain.createInfo.imageExtent.height))
+                        .setMinDepth(0.0f)
+                        .setMaxDepth(1.0f)
+                    });
+
+                    commandBuffer.setScissor(0, {
+                        vk::Rect2D()
+                        .setOffset(vk::Offset2D().setY(0).setY(0))
+                        .setExtent(swapchain.createInfo.imageExtent)
+                    });
+
+                    commandBuffer.draw(3, 1, 0, 0);
+
+                    commandBuffer.endRenderPass();
+                    commandBuffer.end();
+                }
+
+                void drawFrame() {
+                    (void) device.target.waitForFences({*inFlightFences.at(currentFrame).target}, true, UINT64_MAX);
+                    device.target.resetFences({*inFlightFences.at(currentFrame).target});
+
+                    uint32_t imageIndex = swapchain.target.acquireNextImage(UINT64_MAX, *imageAvailableSemaphores.at(currentFrame).target, nullptr).value;
+
+                    commandBuffers.targets.at(currentFrame).reset();
+                    recordCommandBuffer(commandBuffers.targets.at(currentFrame), imageIndex);
+
+                    std::vector<vk::Semaphore> waitSemaphores = {
+                        *imageAvailableSemaphores.at(currentFrame).target
+                    };
+                    std::vector<vk::PipelineStageFlags> waitStages = {
+                        vk::PipelineStageFlagBits::eColorAttachmentOutput
+                    };
+                    std::vector<vk::CommandBuffer> waitCommandBuffers = {
+                        *commandBuffers.targets.at(currentFrame)
+                    };
+                    std::vector<vk::Semaphore> signalSemaphores = {
+                        *renderFinishedSemaphores.at(currentFrame).target
+                    };
+
+                    graphicsQueue.target.submit(
+                        {
+                            vk::SubmitInfo()
+                            .setWaitSemaphores(waitSemaphores)
+                            .setWaitDstStageMask(waitStages)
+                            .setCommandBuffers(waitCommandBuffers)
+                            .setSignalSemaphores(signalSemaphores)
+                        },
+                        *inFlightFences.at(currentFrame).target
+                    );
+
+                    std::vector<vk::SwapchainKHR> swapchains = {
+                        *swapchain.target
+                    };
+
+                    (void) presentQueue.target.presentKHR(
+                        vk::PresentInfoKHR()
+                        .setWaitSemaphores(signalSemaphores)
+                        .setSwapchains(swapchains)
+                        .setPImageIndices(&imageIndex)
+                    );
+
+                    currentFrame = (currentFrame + 1) % static_cast<uint32_t>(swapchain.target.getImages().size());
                 }
 
         };
