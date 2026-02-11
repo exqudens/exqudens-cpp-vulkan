@@ -16,10 +16,14 @@ namespace exqudens::vulkan {
         std::optional<const char*> file = {};
         std::vector<char> code = {};
         bool readFile = false;
-        VULKAN_HPP_NAMESPACE::ShaderModuleCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::ShaderModuleCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::ShaderModule target = nullptr;
 
         static Builder builder(ShaderModule& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -64,6 +68,27 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void ShaderModule::clear() {
+        try {
+            file.reset();
+            code.clear();
+            readFile = false;
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void ShaderModule::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE ShaderModule::Builder::Builder(ShaderModule& object): object(object) {
     }
 
@@ -106,9 +131,13 @@ namespace exqudens::vulkan {
                 object.code = buffer;
             }
 
-            object.createInfo.codeSize = object.code.size() * sizeof(char);
-            object.createInfo.pCode = reinterpret_cast<const uint32_t*>(object.code.data());
-            object.target = device.createShaderModule(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::ShaderModuleCreateInfo();
+            }
+
+            object.createInfo.value().codeSize = object.code.size() * sizeof(char);
+            object.createInfo.value().pCode = reinterpret_cast<const uint32_t*>(object.code.data());
+            object.target = device.createShaderModule(object.createInfo.value());
 
             return object;
         } catch (...) {

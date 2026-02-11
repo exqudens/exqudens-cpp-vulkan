@@ -19,6 +19,10 @@ namespace exqudens::vulkan {
 
         static Builder builder(Queue& object);
 
+        void clear();
+
+        void clearAndRelease();
+
     };
 
     class EXQUDENS_VULKAN_EXPORT Queue::Builder {
@@ -54,6 +58,25 @@ namespace exqudens::vulkan {
 
     EXQUDENS_VULKAN_INLINE Queue::Builder Queue::builder(Queue& object) {
         return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE void Queue::clear() {
+        try {
+            familyIndex.reset();
+            index.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Queue::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
     }
 
     EXQUDENS_VULKAN_INLINE Queue::Builder::Builder(Queue& object): object(object) {

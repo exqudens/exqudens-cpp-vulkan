@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
@@ -10,10 +12,14 @@ namespace exqudens::vulkan {
 
         class Builder;
 
-        VULKAN_HPP_NAMESPACE::ImageViewCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::ImageViewCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::ImageView target = nullptr;
 
         static Builder builder(ImageView& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -50,6 +56,24 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void ImageView::clear() {
+        try {
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void ImageView::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE ImageView::Builder::Builder(ImageView& object): object(object) {
     }
 
@@ -62,7 +86,11 @@ namespace exqudens::vulkan {
         vk::raii::Device& device
     ) {
         try {
-            object.target = device.createImageView(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::ImageViewCreateInfo();
+            }
+
+            object.target = device.createImageView(object.createInfo.value());
 
             return object;
         } catch (...) {

@@ -11,6 +11,7 @@
 #include "exqudens/vulkan/ShaderModule.hpp"
 #include "exqudens/vulkan/RenderPass.hpp"
 #include "exqudens/vulkan/PipelineLayout.hpp"
+#include "exqudens/vulkan/PipelineCache.hpp"
 #include "exqudens/vulkan/Pipeline.hpp"
 #include "exqudens/vulkan/Framebuffer.hpp"
 #include "exqudens/vulkan/CommandPool.hpp"

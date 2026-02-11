@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
@@ -10,10 +12,14 @@ namespace exqudens::vulkan {
 
         class Builder;
 
-        VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::DebugUtilsMessengerEXT target = nullptr;
 
         static Builder builder(DebugUtilsMessenger& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -50,6 +56,24 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void DebugUtilsMessenger::clear() {
+        try {
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void DebugUtilsMessenger::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE DebugUtilsMessenger::Builder::Builder(DebugUtilsMessenger& object): object(object) {
     }
 
@@ -62,7 +86,11 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::raii::Instance& instance
     ) {
         try {
-            object.target = instance.createDebugUtilsMessengerEXT(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCreateInfoEXT();
+            }
+
+            object.target = instance.createDebugUtilsMessengerEXT(object.createInfo.value());
 
             return object;
         } catch (...) {

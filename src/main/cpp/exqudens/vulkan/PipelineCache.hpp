@@ -8,34 +8,33 @@
 
 namespace exqudens::vulkan {
 
-    struct EXQUDENS_VULKAN_EXPORT Semaphore {
+    struct EXQUDENS_VULKAN_EXPORT PipelineCache {
 
         class Builder;
 
-        std::optional<VULKAN_HPP_NAMESPACE::SemaphoreCreateInfo> createInfo = {};
-        VULKAN_HPP_NAMESPACE::raii::Semaphore target = nullptr;
+        std::optional<VULKAN_HPP_NAMESPACE::PipelineCacheCreateInfo> createInfo = {};
+        VULKAN_HPP_NAMESPACE::raii::PipelineCache target = nullptr;
 
-        static Builder builder(Semaphore& object);
+        static Builder builder(PipelineCache& object);
 
         void clear();
 
         void clearAndRelease();
-
     };
 
-    class EXQUDENS_VULKAN_EXPORT Semaphore::Builder {
+    class EXQUDENS_VULKAN_EXPORT PipelineCache::Builder {
 
         private:
 
-            Semaphore& object;
+            PipelineCache& object;
 
         public:
 
-            explicit Builder(Semaphore& object);
+            explicit Builder(PipelineCache& object);
 
-            Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::SemaphoreCreateInfo& value);
+            Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineCacheCreateInfo& value);
 
-            Semaphore& build(
+            PipelineCache& build(
                 VULKAN_HPP_NAMESPACE::raii::Device& device
             );
 
@@ -53,11 +52,11 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE Semaphore::Builder Semaphore::builder(Semaphore& object) {
+    EXQUDENS_VULKAN_INLINE PipelineCache::Builder PipelineCache::builder(PipelineCache& object) {
         return Builder(object);
     }
 
-    EXQUDENS_VULKAN_INLINE void Semaphore::clear() {
+    EXQUDENS_VULKAN_INLINE void PipelineCache::clear() {
         try {
             createInfo.reset();
             target.clear();
@@ -66,7 +65,7 @@ namespace exqudens::vulkan {
         }
     }
 
-    EXQUDENS_VULKAN_INLINE void Semaphore::clearAndRelease() {
+    EXQUDENS_VULKAN_INLINE void PipelineCache::clearAndRelease() {
         try {
             clear();
             target.release();
@@ -75,23 +74,23 @@ namespace exqudens::vulkan {
         }
     }
 
-    EXQUDENS_VULKAN_INLINE Semaphore::Builder::Builder(Semaphore& object): object(object) {
+    EXQUDENS_VULKAN_INLINE PipelineCache::Builder::Builder(PipelineCache& object): object(object) {
     }
 
-    EXQUDENS_VULKAN_INLINE Semaphore::Builder& Semaphore::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::SemaphoreCreateInfo& value) {
+    EXQUDENS_VULKAN_INLINE PipelineCache::Builder& PipelineCache::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineCacheCreateInfo& value) {
         object.createInfo = value;
         return *this;
     }
 
-    EXQUDENS_VULKAN_INLINE Semaphore& Semaphore::Builder::build(
+    EXQUDENS_VULKAN_INLINE PipelineCache& PipelineCache::Builder::build(
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
             if (!object.createInfo.has_value()) {
-                object.createInfo = VULKAN_HPP_NAMESPACE::SemaphoreCreateInfo();
+                object.createInfo = VULKAN_HPP_NAMESPACE::PipelineCacheCreateInfo();
             }
 
-            object.target = device.createSemaphore(object.createInfo.value());
+            object.target = device.createPipelineCache(object.createInfo.value());
 
             return object;
         } catch (...) {

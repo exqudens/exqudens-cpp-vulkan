@@ -17,6 +17,10 @@ namespace exqudens::vulkan {
 
         static Builder builder(PhysicalDevice& object);
 
+        void clear();
+
+        void clearAndRelease();
+
     };
 
     class EXQUDENS_VULKAN_EXPORT PhysicalDevice::Builder {
@@ -50,6 +54,24 @@ namespace exqudens::vulkan {
 
     EXQUDENS_VULKAN_INLINE PhysicalDevice::Builder PhysicalDevice::builder(PhysicalDevice& object) {
         return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE void PhysicalDevice::clear() {
+        try {
+            requiredExtensions.clear();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void PhysicalDevice::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
     }
 
     EXQUDENS_VULKAN_INLINE PhysicalDevice::Builder::Builder(PhysicalDevice& object): object(object) {

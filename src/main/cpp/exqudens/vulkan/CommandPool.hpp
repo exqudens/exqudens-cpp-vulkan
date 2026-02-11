@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
@@ -10,10 +12,14 @@ namespace exqudens::vulkan {
 
         class Builder;
 
-        VULKAN_HPP_NAMESPACE::CommandPoolCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::CommandPoolCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::CommandPool target = nullptr;
 
         static Builder builder(CommandPool& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -51,6 +57,24 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void CommandPool::clear() {
+        try {
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void CommandPool::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE CommandPool::Builder::Builder(CommandPool& object): object(object) {
     }
 
@@ -63,7 +87,11 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            object.target = device.createCommandPool(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::CommandPoolCreateInfo();
+            }
+
+            object.target = device.createCommandPool(object.createInfo.value());
 
             return object;
         } catch (...) {

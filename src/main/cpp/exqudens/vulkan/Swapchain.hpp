@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan_raii.hpp>
@@ -14,7 +15,7 @@ namespace exqudens::vulkan {
         class Builder;
 
         std::vector<uint32_t> queueFamilyIndices = {};
-        VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::SwapchainKHR target = nullptr;
 
         static VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR createInfoFrom(
@@ -25,6 +26,10 @@ namespace exqudens::vulkan {
         );
 
         static Builder builder(Swapchain& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -52,7 +57,6 @@ namespace exqudens::vulkan {
 // implementation ---
 
 #include <string>
-#include <optional>
 #include <algorithm>
 #include <filesystem>
 #include <stdexcept>
@@ -176,6 +180,25 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void Swapchain::clear() {
+        try {
+            queueFamilyIndices.clear();
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Swapchain::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE Swapchain::Builder::Builder(Swapchain& object): object(object) {
     }
 
@@ -197,17 +220,21 @@ namespace exqudens::vulkan {
                 throw std::runtime_error(CALL_INFO + "Queue family indices size greater than 2");
             }
 
-            if (object.queueFamilyIndices.size() == 2 && object.queueFamilyIndices.at(0) != object.queueFamilyIndices.at(1)) {
-                object.createInfo.imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eConcurrent;
-                object.createInfo.queueFamilyIndexCount = static_cast<uint32_t>(object.queueFamilyIndices.size());
-                object.createInfo.pQueueFamilyIndices = object.queueFamilyIndices.data();
-            } else {
-                object.createInfo.imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eExclusive;
-                object.createInfo.queueFamilyIndexCount = 0;
-                object.createInfo.pQueueFamilyIndices = nullptr;
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::SwapchainCreateInfoKHR();
             }
 
-            object.target = device.createSwapchainKHR(object.createInfo);
+            if (object.queueFamilyIndices.size() == 2 && object.queueFamilyIndices.at(0) != object.queueFamilyIndices.at(1)) {
+                object.createInfo.value().imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eConcurrent;
+                object.createInfo.value().queueFamilyIndexCount = static_cast<uint32_t>(object.queueFamilyIndices.size());
+                object.createInfo.value().pQueueFamilyIndices = object.queueFamilyIndices.data();
+            } else {
+                object.createInfo.value().imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eExclusive;
+                object.createInfo.value().queueFamilyIndexCount = 0;
+                object.createInfo.value().pQueueFamilyIndices = nullptr;
+            }
+
+            object.target = device.createSwapchainKHR(object.createInfo.value());
 
             return object;
         } catch (...) {

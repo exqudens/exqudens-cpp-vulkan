@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan_raii.hpp>
@@ -16,10 +17,14 @@ namespace exqudens::vulkan {
         std::vector<std::vector<VULKAN_HPP_NAMESPACE::AttachmentReference>> subpassDescriptionAttachmentReferences = {};
         std::vector<VULKAN_HPP_NAMESPACE::SubpassDescription> subpassDescriptions = {};
         std::vector<VULKAN_HPP_NAMESPACE::SubpassDependency> subpassDependencies = {};
-        VULKAN_HPP_NAMESPACE::RenderPassCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::RenderPassCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::RenderPass target = nullptr;
 
         static Builder builder(RenderPass& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -75,6 +80,28 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void RenderPass::clear() {
+        try {
+            attachmentDescriptions.clear();
+            subpassDescriptionAttachmentReferences.clear();
+            subpassDescriptions.clear();
+            subpassDependencies.clear();
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void RenderPass::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE RenderPass::Builder::Builder(RenderPass& object): object(object) {
     }
 
@@ -127,8 +154,13 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            object.createInfo.attachmentCount = static_cast<uint32_t>(object.attachmentDescriptions.size());
-            object.createInfo.pAttachments = object.attachmentDescriptions.empty() ? nullptr : object.attachmentDescriptions.data();
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::RenderPassCreateInfo();
+            }
+
+            object.createInfo.value().attachmentCount = static_cast<uint32_t>(object.attachmentDescriptions.size());
+            object.createInfo.value().pAttachments = object.attachmentDescriptions.empty() ? nullptr : object.attachmentDescriptions.data();
+
             if (!object.subpassDescriptions.empty()) {
                 if (object.subpassDescriptions.size() != object.subpassDescriptionAttachmentReferences.size()) {
                     throw std::runtime_error(CALL_INFO + ": 'subpassDescriptions.size' not equal to 'subpassDescriptionAttachmentReferences.size'");
@@ -140,11 +172,12 @@ namespace exqudens::vulkan {
                     }
                 }
             }
-            object.createInfo.subpassCount = static_cast<uint32_t>(object.subpassDescriptions.size());
-            object.createInfo.pSubpasses = object.subpassDescriptions.empty() ? nullptr :object.subpassDescriptions.data();
-            object.createInfo.dependencyCount = static_cast<uint32_t>(object.subpassDependencies.size());
-            object.createInfo.pDependencies = object.subpassDependencies.empty() ? nullptr : object.subpassDependencies.data();
-            object.target = device.createRenderPass(object.createInfo);
+
+            object.createInfo.value().subpassCount = static_cast<uint32_t>(object.subpassDescriptions.size());
+            object.createInfo.value().pSubpasses = object.subpassDescriptions.empty() ? nullptr :object.subpassDescriptions.data();
+            object.createInfo.value().dependencyCount = static_cast<uint32_t>(object.subpassDependencies.size());
+            object.createInfo.value().pDependencies = object.subpassDependencies.empty() ? nullptr : object.subpassDependencies.data();
+            object.target = device.createRenderPass(object.createInfo.value());
 
             return object;
         } catch (...) {

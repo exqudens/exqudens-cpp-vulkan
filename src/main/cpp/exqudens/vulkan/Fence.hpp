@@ -17,6 +17,10 @@ namespace exqudens::vulkan {
 
         static Builder builder(Fence& object);
 
+        void clear();
+
+        void clearAndRelease();
+
     };
 
     class EXQUDENS_VULKAN_EXPORT Fence::Builder {
@@ -51,6 +55,24 @@ namespace exqudens::vulkan {
 
     EXQUDENS_VULKAN_INLINE Fence::Builder Fence::builder(Fence& object) {
         return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE void Fence::clear() {
+        try {
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Fence::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
     }
 
     EXQUDENS_VULKAN_INLINE Fence::Builder::Builder(Fence& object): object(object) {

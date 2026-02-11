@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan_raii.hpp>
@@ -12,13 +13,17 @@ namespace exqudens::vulkan {
 
         class Builder;
 
-        VULKAN_HPP_NAMESPACE::ApplicationInfo applicationInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::ApplicationInfo> applicationInfo = {};
         std::vector<const char*> enabledExtensionNames = {};
         std::vector<const char*> enabledLayerNames = {};
-        VULKAN_HPP_NAMESPACE::InstanceCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::InstanceCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::Instance target = nullptr;
 
         static Builder builder(Instance& object);
+
+        void clear();
+
+        void clearAndRelease();
 
         void submitDebugUtilsMessage(
             const VULKAN_HPP_NAMESPACE::DebugUtilsMessengerCallbackDataEXT& callbackData,
@@ -75,7 +80,25 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
-    EXQUDENS_VULKAN_INLINE Instance::Builder::Builder(Instance& object): object(object) {
+    EXQUDENS_VULKAN_INLINE void Instance::clear() {
+        try {
+            applicationInfo.reset();
+            enabledExtensionNames.clear();
+            enabledLayerNames.clear();
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Instance::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
     }
 
     EXQUDENS_VULKAN_INLINE void Instance::submitDebugUtilsMessage(
@@ -108,6 +131,9 @@ namespace exqudens::vulkan {
         } catch (...) {
             std::throw_with_nested(std::runtime_error(CALL_INFO));
         }
+    }
+
+    EXQUDENS_VULKAN_INLINE Instance::Builder::Builder(Instance& object): object(object) {
     }
 
     EXQUDENS_VULKAN_INLINE Instance::Builder& Instance::Builder::setApplicationInfo(const VULKAN_HPP_NAMESPACE::ApplicationInfo& value) {
@@ -168,12 +194,16 @@ namespace exqudens::vulkan {
                 }
             }
 
-            object.createInfo.pApplicationInfo = &object.applicationInfo;
-            object.createInfo.ppEnabledExtensionNames = object.enabledExtensionNames.data();
-            object.createInfo.enabledExtensionCount = static_cast<uint32_t>(object.enabledExtensionNames.size());
-            object.createInfo.ppEnabledLayerNames = object.enabledLayerNames.data();
-            object.createInfo.enabledLayerCount = static_cast<uint32_t>(object.enabledLayerNames.size());
-            object.target = context.createInstance(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::InstanceCreateInfo();
+            }
+
+            object.createInfo.value().pApplicationInfo = &object.applicationInfo.value();
+            object.createInfo.value().ppEnabledExtensionNames = object.enabledExtensionNames.data();
+            object.createInfo.value().enabledExtensionCount = static_cast<uint32_t>(object.enabledExtensionNames.size());
+            object.createInfo.value().ppEnabledLayerNames = object.enabledLayerNames.data();
+            object.createInfo.value().enabledLayerCount = static_cast<uint32_t>(object.enabledLayerNames.size());
+            object.target = context.createInstance(object.createInfo.value());
 
             return object;
         } catch (...) {

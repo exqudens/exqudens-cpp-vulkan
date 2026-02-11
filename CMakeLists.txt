@@ -456,6 +456,7 @@ set(LIB_SOURCES
     "src/main/cpp/${BASE_DIR}/RenderPass.hpp"
     "src/main/cpp/${BASE_DIR}/ShaderModule.hpp"
     "src/main/cpp/${BASE_DIR}/PipelineLayout.hpp"
+    "src/main/cpp/${BASE_DIR}/PipelineCache.hpp"
     "src/main/cpp/${BASE_DIR}/Pipeline.hpp"
     "src/main/cpp/${BASE_DIR}/Framebuffer.hpp"
     "src/main/cpp/${BASE_DIR}/CommandPool.hpp"

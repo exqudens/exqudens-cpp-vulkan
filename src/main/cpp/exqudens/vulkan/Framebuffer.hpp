@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include <vulkan/vulkan_raii.hpp>
@@ -13,10 +14,14 @@ namespace exqudens::vulkan {
         class Builder;
 
         std::vector<VULKAN_HPP_NAMESPACE::ImageView> attachments = {};
-        VULKAN_HPP_NAMESPACE::FramebufferCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::FramebufferCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::Framebuffer target = nullptr;
 
         static Builder builder(Framebuffer& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -58,6 +63,25 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void Framebuffer::clear() {
+        try {
+            attachments.clear();
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Framebuffer::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE Framebuffer::Builder::Builder(Framebuffer& object): object(object) {
     }
 
@@ -80,9 +104,13 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            object.createInfo.attachmentCount = static_cast<uint32_t>(object.attachments.size());
-            object.createInfo.pAttachments = object.attachments.empty() ? nullptr : object.attachments.data();
-            object.target = device.createFramebuffer(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::FramebufferCreateInfo();
+            }
+
+            object.createInfo.value().attachmentCount = static_cast<uint32_t>(object.attachments.size());
+            object.createInfo.value().pAttachments = object.attachments.empty() ? nullptr : object.attachments.data();
+            object.target = device.createFramebuffer(object.createInfo.value());
 
             return object;
         } catch (...) {

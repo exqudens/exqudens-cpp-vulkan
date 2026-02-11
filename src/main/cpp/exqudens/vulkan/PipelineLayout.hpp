@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
@@ -10,10 +12,14 @@ namespace exqudens::vulkan {
 
         class Builder;
 
-        VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo createInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo> createInfo = {};
         VULKAN_HPP_NAMESPACE::raii::PipelineLayout target = nullptr;
 
         static Builder builder(PipelineLayout& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -50,6 +56,24 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void PipelineLayout::clear() {
+        try {
+            createInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void PipelineLayout::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE PipelineLayout::Builder::Builder(PipelineLayout& object): object(object) {
     }
 
@@ -62,7 +86,11 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            object.target = device.createPipelineLayout(object.createInfo);
+            if (!object.createInfo.has_value()) {
+                object.createInfo = VULKAN_HPP_NAMESPACE::PipelineLayoutCreateInfo();
+            }
+
+            object.target = device.createPipelineLayout(object.createInfo.value());
 
             return object;
         } catch (...) {

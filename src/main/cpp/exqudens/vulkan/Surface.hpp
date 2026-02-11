@@ -15,6 +15,10 @@ namespace exqudens::vulkan {
 
         static Builder builder(Surface& object);
 
+        void clear();
+
+        void clearAndRelease();
+
     };
 
     class EXQUDENS_VULKAN_EXPORT Surface::Builder {
@@ -48,6 +52,24 @@ namespace exqudens::vulkan {
 
     EXQUDENS_VULKAN_INLINE Surface::Builder Surface::builder(Surface& object) {
         return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE void Surface::clear() {
+        try {
+            surface = nullptr;
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Surface::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
     }
 
     EXQUDENS_VULKAN_INLINE Surface::Builder::Builder(Surface& object): object(object) {

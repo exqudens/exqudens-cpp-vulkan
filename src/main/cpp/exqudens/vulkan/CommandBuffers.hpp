@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include "exqudens/vulkan/export.hpp"
@@ -10,10 +12,14 @@ namespace exqudens::vulkan {
 
         class Builder;
 
-        VULKAN_HPP_NAMESPACE::CommandBufferAllocateInfo allocateInfo;
+        std::optional<VULKAN_HPP_NAMESPACE::CommandBufferAllocateInfo> allocateInfo = {};
         VULKAN_HPP_NAMESPACE::raii::CommandBuffers targets = nullptr;
 
         static Builder builder(CommandBuffers& object);
+
+        void clear();
+
+        void clearAndRelease();
 
     };
 
@@ -51,6 +57,24 @@ namespace exqudens::vulkan {
         return Builder(object);
     }
 
+    EXQUDENS_VULKAN_INLINE void CommandBuffers::clear() {
+        try {
+            allocateInfo.reset();
+            targets.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void CommandBuffers::clearAndRelease() {
+        try {
+            clear();
+            targets = nullptr;
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
     EXQUDENS_VULKAN_INLINE CommandBuffers::Builder::Builder(CommandBuffers& object): object(object) {
     }
 
@@ -63,7 +87,11 @@ namespace exqudens::vulkan {
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
-            object.targets = VULKAN_HPP_NAMESPACE::raii::CommandBuffers(device, object.allocateInfo);
+            if (!object.allocateInfo.has_value()) {
+                object.allocateInfo = VULKAN_HPP_NAMESPACE::CommandBufferAllocateInfo();
+            }
+
+            object.targets = VULKAN_HPP_NAMESPACE::raii::CommandBuffers(device, object.allocateInfo.value());
 
             return object;
         } catch (...) {

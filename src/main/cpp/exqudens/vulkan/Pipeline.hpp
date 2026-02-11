@@ -33,6 +33,10 @@ namespace exqudens::vulkan {
 
         static Builder builder(Pipeline& object);
 
+        void clear();
+
+        void clearAndRelease();
+
     };
 
     class EXQUDENS_VULKAN_EXPORT Pipeline::Builder {
@@ -112,6 +116,39 @@ namespace exqudens::vulkan {
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder Pipeline::builder(Pipeline& object) {
         return Builder(object);
+    }
+
+    EXQUDENS_VULKAN_INLINE void Pipeline::clear() {
+        try {
+            shaderStageCreateInfos.clear();
+            vertexInputStateCreateInfo.reset();
+            inputAssemblyStateCreateInfo.reset();
+            viewports.clear();
+            scissors.clear();
+            viewportStateCreateInfo.reset();
+            rasterizationStateCreateInfo.reset();
+            multisampleStateCreateInfo.reset();
+            colorBlendAttachmentStates.clear();
+            colorBlendStateCreateInfo.reset();
+            dynamicStates.clear();
+            dynamicStateCreateInfo.reset();
+            depthStencilStateCreateInfo.reset();
+            tessellationStateCreateInfo.reset();
+            renderingCreateInfo.reset();
+            graphicsCreateInfo.reset();
+            target.clear();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
+    }
+
+    EXQUDENS_VULKAN_INLINE void Pipeline::clearAndRelease() {
+        try {
+            clear();
+            target.release();
+        } catch (...) {
+            std::throw_with_nested(std::runtime_error(CALL_INFO));
+        }
     }
 
     EXQUDENS_VULKAN_INLINE Pipeline::Builder::Builder(Pipeline& object): object(object) {
