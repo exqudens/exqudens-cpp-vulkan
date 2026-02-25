@@ -136,7 +136,8 @@ namespace exqudens::vulkan {
             }
 
             object.createInfo.value().codeSize = object.code.size() * sizeof(char);
-            object.createInfo.value().pCode = reinterpret_cast<const uint32_t*>(object.code.data());
+            object.createInfo.value().pCode = object.code.empty() ? nullptr : reinterpret_cast<const uint32_t*>(object.code.data());
+
             object.target = device.createShaderModule(object.createInfo.value());
 
             return object;

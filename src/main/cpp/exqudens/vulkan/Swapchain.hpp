@@ -227,7 +227,7 @@ namespace exqudens::vulkan {
             if (object.queueFamilyIndices.size() == 2 && object.queueFamilyIndices.at(0) != object.queueFamilyIndices.at(1)) {
                 object.createInfo.value().imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eConcurrent;
                 object.createInfo.value().queueFamilyIndexCount = static_cast<uint32_t>(object.queueFamilyIndices.size());
-                object.createInfo.value().pQueueFamilyIndices = object.queueFamilyIndices.data();
+                object.createInfo.value().pQueueFamilyIndices = object.queueFamilyIndices.empty() ? nullptr : object.queueFamilyIndices.data();
             } else {
                 object.createInfo.value().imageSharingMode = VULKAN_HPP_NAMESPACE::SharingMode::eExclusive;
                 object.createInfo.value().queueFamilyIndexCount = 0;

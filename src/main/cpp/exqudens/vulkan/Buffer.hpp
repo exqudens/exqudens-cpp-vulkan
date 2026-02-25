@@ -8,14 +8,14 @@
 
 namespace exqudens::vulkan {
 
-    struct EXQUDENS_VULKAN_EXPORT ImageView {
+    struct EXQUDENS_VULKAN_EXPORT Buffer {
 
         class Builder;
 
-        std::optional<VULKAN_HPP_NAMESPACE::ImageViewCreateInfo> createInfo = {};
-        VULKAN_HPP_NAMESPACE::raii::ImageView target = nullptr;
+        std::optional<VULKAN_HPP_NAMESPACE::BufferCreateInfo> createInfo = {};
+        VULKAN_HPP_NAMESPACE::raii::Buffer target = nullptr;
 
-        static Builder builder(ImageView& object);
+        static Builder builder(Buffer& object);
 
         void clear();
 
@@ -23,23 +23,24 @@ namespace exqudens::vulkan {
 
     };
 
-    class EXQUDENS_VULKAN_EXPORT ImageView::Builder {
+    class EXQUDENS_VULKAN_EXPORT Buffer::Builder {
 
-        private:
+    private:
 
-            ImageView& object;
+        Buffer& object;
 
-        public:
+    public:
 
-            explicit Builder(ImageView& object);
+        explicit Builder(Buffer& object);
 
-            Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::ImageViewCreateInfo& value);
+        Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::BufferCreateInfo& value);
 
-            ImageView& build(
-                VULKAN_HPP_NAMESPACE::raii::Device& device
-            );
+        Buffer& build(
+            VULKAN_HPP_NAMESPACE::raii::Device& device
+        );
 
     };
+
 }
 
 // implementation ---
@@ -52,11 +53,11 @@ namespace exqudens::vulkan {
 
 namespace exqudens::vulkan {
 
-    EXQUDENS_VULKAN_INLINE ImageView::Builder ImageView::builder(ImageView& object) {
+    EXQUDENS_VULKAN_INLINE Buffer::Builder Buffer::builder(Buffer& object) {
         return Builder(object);
     }
 
-    EXQUDENS_VULKAN_INLINE void ImageView::clear() {
+    EXQUDENS_VULKAN_INLINE void Buffer::clear() {
         try {
             createInfo.reset();
             target.clear();
@@ -65,7 +66,7 @@ namespace exqudens::vulkan {
         }
     }
 
-    EXQUDENS_VULKAN_INLINE void ImageView::clearAndRelease() {
+    EXQUDENS_VULKAN_INLINE void Buffer::clearAndRelease() {
         try {
             clear();
             target.release();
@@ -74,23 +75,23 @@ namespace exqudens::vulkan {
         }
     }
 
-    EXQUDENS_VULKAN_INLINE ImageView::Builder::Builder(ImageView& object): object(object) {
+    EXQUDENS_VULKAN_INLINE Buffer::Builder::Builder(Buffer& object): object(object) {
     }
 
-    EXQUDENS_VULKAN_INLINE ImageView::Builder& ImageView::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::ImageViewCreateInfo& value) {
+    EXQUDENS_VULKAN_INLINE Buffer::Builder& Buffer::Builder::setCreateInfo(const VULKAN_HPP_NAMESPACE::BufferCreateInfo& value) {
         object.createInfo = value;
         return *this;
     }
 
-    EXQUDENS_VULKAN_INLINE ImageView& ImageView::Builder::build(
+    EXQUDENS_VULKAN_INLINE Buffer& Buffer::Builder::build(
         VULKAN_HPP_NAMESPACE::raii::Device& device
     ) {
         try {
             if (!object.createInfo.has_value()) {
-                object.createInfo = VULKAN_HPP_NAMESPACE::ImageViewCreateInfo();
+                object.createInfo = VULKAN_HPP_NAMESPACE::BufferCreateInfo();
             }
 
-            object.target = device.createImageView(object.createInfo.value());
+            object.target = device.createBuffer(object.createInfo.value());
 
             return object;
         } catch (...) {

@@ -14,6 +14,8 @@
 #include "exqudens/vulkan/PipelineCache.hpp"
 #include "exqudens/vulkan/Pipeline.hpp"
 #include "exqudens/vulkan/Framebuffer.hpp"
+#include "exqudens/vulkan/Buffer.hpp"
+#include "exqudens/vulkan/DeviceMemory.hpp"
 #include "exqudens/vulkan/CommandPool.hpp"
 #include "exqudens/vulkan/CommandBuffers.hpp"
 #include "exqudens/vulkan/Semaphore.hpp"

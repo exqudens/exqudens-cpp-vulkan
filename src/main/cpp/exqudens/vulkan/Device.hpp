@@ -125,7 +125,8 @@ namespace exqudens::vulkan {
             }
 
             object.createInfo.value().queueCreateInfoCount = static_cast<uint32_t>(object.queueCreateInfos.size());
-            object.createInfo.value().pQueueCreateInfos = object.queueCreateInfos.data();
+            object.createInfo.value().pQueueCreateInfos = object.queueCreateInfos.empty() ? nullptr : object.queueCreateInfos.data();
+
             object.target = physicalDevice.createDevice(object.createInfo.value());
 
             return object;

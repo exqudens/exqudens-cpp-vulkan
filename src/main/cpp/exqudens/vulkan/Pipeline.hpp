@@ -14,7 +14,11 @@ namespace exqudens::vulkan {
         class Builder;
 
         std::vector<VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo> shaderStageCreateInfos = {};
+
+        std::vector<VULKAN_HPP_NAMESPACE::VertexInputBindingDescription> vertexInputStateCreateInfoBindings = {};
+        std::vector<VULKAN_HPP_NAMESPACE::VertexInputAttributeDescription> vertexInputStateCreateInfoAttributes = {};
         std::optional<VULKAN_HPP_NAMESPACE::PipelineVertexInputStateCreateInfo> vertexInputStateCreateInfo = {};
+
         std::optional<VULKAN_HPP_NAMESPACE::PipelineInputAssemblyStateCreateInfo> inputAssemblyStateCreateInfo = {};
         std::vector<VULKAN_HPP_NAMESPACE::Viewport> viewports = {};
         std::vector<VULKAN_HPP_NAMESPACE::Rect2D> scissors = {};
@@ -53,6 +57,8 @@ namespace exqudens::vulkan {
 
             Builder& addShaderStageCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineShaderStageCreateInfo& value);
 
+            Builder& setVertexInputStateCreateInfoBindings(const std::vector<VULKAN_HPP_NAMESPACE::VertexInputBindingDescription>& value);
+            Builder& setVertexInputStateCreateInfoAttributes(const std::vector<VULKAN_HPP_NAMESPACE::VertexInputAttributeDescription>& value);
             Builder& setVertexInputStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineVertexInputStateCreateInfo& value);
 
             Builder& setInputAssemblyStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineInputAssemblyStateCreateInfo& value);
@@ -164,6 +170,16 @@ namespace exqudens::vulkan {
         return *this;
     }
 
+    EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setVertexInputStateCreateInfoBindings(const std::vector<VULKAN_HPP_NAMESPACE::VertexInputBindingDescription>& value) {
+        object.vertexInputStateCreateInfoBindings = value;
+        return *this;
+    }
+
+    EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setVertexInputStateCreateInfoAttributes(const std::vector<VULKAN_HPP_NAMESPACE::VertexInputAttributeDescription>& value) {
+        object.vertexInputStateCreateInfoAttributes = value;
+        return *this;
+    }
+
     EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::setVertexInputStateCreateInfo(const VULKAN_HPP_NAMESPACE::PipelineVertexInputStateCreateInfo& value) {
         object.vertexInputStateCreateInfo = value;
         return *this;
@@ -189,7 +205,7 @@ namespace exqudens::vulkan {
         return *this;
     }
 
-    EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addScissor(const vk::Rect2D& value) {
+    EXQUDENS_VULKAN_INLINE Pipeline::Builder& Pipeline::Builder::addScissor(const VULKAN_HPP_NAMESPACE::Rect2D& value) {
         object.scissors.emplace_back(value);
         return *this;
     }
@@ -266,84 +282,53 @@ namespace exqudens::vulkan {
         try {
             if (!object.viewports.empty() || !object.scissors.empty()) {
                 if (!object.viewportStateCreateInfo.has_value()) {
-                    VULKAN_HPP_NAMESPACE::PipelineViewportStateCreateInfo v;
-                    object.viewportStateCreateInfo = v;
+                    object.viewportStateCreateInfo = VULKAN_HPP_NAMESPACE::PipelineViewportStateCreateInfo();
                 }
 
-                if (!object.viewports.empty()) {
-                    object.viewportStateCreateInfo.value().viewportCount = static_cast<uint32_t>(object.viewports.size());
-                    object.viewportStateCreateInfo.value().pViewports = object.viewports.data();
-                }
+                object.viewportStateCreateInfo.value().viewportCount = static_cast<uint32_t>(object.viewports.size());
+                object.viewportStateCreateInfo.value().pViewports = object.viewports.empty() ? nullptr : object.viewports.data();
 
-                if (!object.scissors.empty()) {
-                    object.viewportStateCreateInfo.value().scissorCount = static_cast<uint32_t>(object.scissors.size());
-                    object.viewportStateCreateInfo.value().pScissors = object.scissors.data();
-                }
+                object.viewportStateCreateInfo.value().scissorCount = static_cast<uint32_t>(object.scissors.size());
+                object.viewportStateCreateInfo.value().pScissors = object.scissors.empty() ? nullptr : object.scissors.data();
             }
 
             if (!object.colorBlendAttachmentStates.empty()) {
                 if (!object.colorBlendStateCreateInfo.has_value()) {
-                    VULKAN_HPP_NAMESPACE::PipelineColorBlendStateCreateInfo v;
-                    object.colorBlendStateCreateInfo = v;
+                    object.colorBlendStateCreateInfo = VULKAN_HPP_NAMESPACE::PipelineColorBlendStateCreateInfo();
                 }
                 object.colorBlendStateCreateInfo.value().attachmentCount = static_cast<uint32_t>(object.colorBlendAttachmentStates.size());
-                object.colorBlendStateCreateInfo.value().pAttachments = object.colorBlendAttachmentStates.data();
+                object.colorBlendStateCreateInfo.value().pAttachments = object.colorBlendAttachmentStates.empty() ? nullptr : object.colorBlendAttachmentStates.data();
             }
 
             if (!object.dynamicStates.empty()) {
                 if (!object.dynamicStateCreateInfo.has_value()) {
-                    VULKAN_HPP_NAMESPACE::PipelineDynamicStateCreateInfo v;
-                    object.dynamicStateCreateInfo = v;
+                    object.dynamicStateCreateInfo = VULKAN_HPP_NAMESPACE::PipelineDynamicStateCreateInfo();
                 }
                 object.dynamicStateCreateInfo.value().dynamicStateCount = static_cast<uint32_t>(object.dynamicStates.size());
-                object.dynamicStateCreateInfo.value().pDynamicStates = object.dynamicStates.data();
+                object.dynamicStateCreateInfo.value().pDynamicStates = object.dynamicStates.empty() ? nullptr : object.dynamicStates.data();
             }
 
             if (object.graphicsCreateInfo.has_value()) {
-                if (!object.shaderStageCreateInfos.empty()) {
-                    object.graphicsCreateInfo.value().stageCount = static_cast<uint32_t>(object.shaderStageCreateInfos.size());
-                    object.graphicsCreateInfo.value().pStages = object.shaderStageCreateInfos.data();
-                }
+                object.graphicsCreateInfo.value().stageCount = static_cast<uint32_t>(object.shaderStageCreateInfos.size());
+                object.graphicsCreateInfo.value().pStages = object.shaderStageCreateInfos.empty() ? nullptr : object.shaderStageCreateInfos.data();
 
                 if (object.vertexInputStateCreateInfo.has_value()) {
+                    object.vertexInputStateCreateInfo.value().vertexBindingDescriptionCount = static_cast<uint32_t>(object.vertexInputStateCreateInfoBindings.size());
+                    object.vertexInputStateCreateInfo.value().pVertexBindingDescriptions = object.vertexInputStateCreateInfoBindings.empty() ? nullptr : object.vertexInputStateCreateInfoBindings.data();
+                    object.vertexInputStateCreateInfo.value().vertexAttributeDescriptionCount = static_cast<uint32_t>(object.vertexInputStateCreateInfoAttributes.size());
+                    object.vertexInputStateCreateInfo.value().pVertexAttributeDescriptions = object.vertexInputStateCreateInfoAttributes.empty() ? nullptr : object.vertexInputStateCreateInfoAttributes.data();
                     object.graphicsCreateInfo.value().pVertexInputState = &object.vertexInputStateCreateInfo.value();
                 }
 
-                if (object.inputAssemblyStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pInputAssemblyState = &object.inputAssemblyStateCreateInfo.value();
-                }
-
-                if (object.viewportStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pViewportState = &object.viewportStateCreateInfo.value();
-                }
-
-                if (object.rasterizationStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pRasterizationState = &object.rasterizationStateCreateInfo.value();
-                }
-
-                if (object.multisampleStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pMultisampleState = &object.multisampleStateCreateInfo.value();
-                }
-
-                if (object.colorBlendStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pColorBlendState = &object.colorBlendStateCreateInfo.value();
-                }
-
-                if (object.dynamicStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pDynamicState = &object.dynamicStateCreateInfo.value();
-                }
-
-                if (object.depthStencilStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pDepthStencilState = &object.depthStencilStateCreateInfo.value();
-                }
-
-                if (object.tessellationStateCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pTessellationState = &object.tessellationStateCreateInfo.value();
-                }
-
-                if (object.renderingCreateInfo.has_value()) {
-                    object.graphicsCreateInfo.value().pNext = &object.renderingCreateInfo.value();
-                }
+                object.graphicsCreateInfo.value().pInputAssemblyState = object.inputAssemblyStateCreateInfo.has_value() ? &object.inputAssemblyStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pViewportState = object.viewportStateCreateInfo.has_value() ? &object.viewportStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pRasterizationState = object.rasterizationStateCreateInfo.has_value() ? &object.rasterizationStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pMultisampleState = object.multisampleStateCreateInfo.has_value() ? &object.multisampleStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pColorBlendState = object.colorBlendStateCreateInfo.has_value() ? &object.colorBlendStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pDynamicState = object.dynamicStateCreateInfo.has_value() ? &object.dynamicStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pDepthStencilState = object.depthStencilStateCreateInfo.has_value() ? &object.depthStencilStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pTessellationState = object.tessellationStateCreateInfo.has_value() ? &object.tessellationStateCreateInfo.value() : nullptr;
+                object.graphicsCreateInfo.value().pNext = object.renderingCreateInfo.has_value() ? &object.renderingCreateInfo.value() : nullptr;
 
                 object.target = device.createGraphicsPipeline(cache, object.graphicsCreateInfo.value());
             }

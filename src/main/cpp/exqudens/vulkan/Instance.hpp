@@ -198,11 +198,12 @@ namespace exqudens::vulkan {
                 object.createInfo = VULKAN_HPP_NAMESPACE::InstanceCreateInfo();
             }
 
-            object.createInfo.value().pApplicationInfo = &object.applicationInfo.value();
-            object.createInfo.value().ppEnabledExtensionNames = object.enabledExtensionNames.data();
+            object.createInfo.value().pApplicationInfo = object.applicationInfo.has_value() ? &object.applicationInfo.value() : nullptr;
             object.createInfo.value().enabledExtensionCount = static_cast<uint32_t>(object.enabledExtensionNames.size());
-            object.createInfo.value().ppEnabledLayerNames = object.enabledLayerNames.data();
+            object.createInfo.value().ppEnabledExtensionNames = object.enabledExtensionNames.empty() ? nullptr : object.enabledExtensionNames.data();
             object.createInfo.value().enabledLayerCount = static_cast<uint32_t>(object.enabledLayerNames.size());
+            object.createInfo.value().ppEnabledLayerNames = object.enabledLayerNames.empty() ? nullptr : object.enabledLayerNames.data();
+
             object.target = context.createInstance(object.createInfo.value());
 
             return object;

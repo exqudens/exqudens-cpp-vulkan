@@ -12,20 +12,25 @@
 #include <gtest/gtest.h>
 #include <exqudens/Log.hpp>
 #include <exqudens/log/api/Logging.hpp>
+
+#ifndef GLFW_INCLUDE_VULKAN
+#define GLFW_INCLUDE_VULKAN
+#endif
+#include <GLFW/glfw3.h>
+
 #include <vulkan/vulkan_raii.hpp>
 
 #include "TestUtils.hpp"
-#include "TestGlfwUtils.hpp"
 #include "exqudens/vulkan.hpp"
 #include "exqudens/vulkan/ShaderModule.hpp"
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
-class VulkanTutorial1GuiTests: public testing::Test {
+class VulkanTutorialCom1GuiTests: public testing::Test {
 
     public:
 
-        inline static const char* LOGGER_ID = "VulkanTutorial1GuiTests";
+        inline static const char* LOGGER_ID = "VulkanTutorialCom1GuiTests";
 
     private:
 
@@ -167,7 +172,11 @@ class VulkanTutorial1GuiTests: public testing::Test {
                     try {
                         EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
 
-                        std::vector<const char*> instanceRequiredExtensions = TestGlfwUtils::getRequiredInstanceExtensions();
+                        uint32_t glfwExtensionCount = 0;
+                        const char** glfwExtensions = nullptr;
+                        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+                        std::vector<const char*> instanceRequiredExtensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
                         std::vector<const char*> deviceRequiredExtensions = {
                             vk::KHRSwapchainExtensionName
                         };
@@ -212,7 +221,7 @@ class VulkanTutorial1GuiTests: public testing::Test {
                                 | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                                 //| vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
                             )
-                            .setPfnUserCallback(&VulkanTutorial1GuiTests::debugCallback)
+                            .setPfnUserCallback(&VulkanTutorialCom1GuiTests::debugCallback)
                         )
                         .build(instance.target);
 
@@ -692,7 +701,7 @@ class VulkanTutorial1GuiTests: public testing::Test {
 /*
     @brief vulkan-tutorial.com/Drawing_a_triangle/Swap_chain_recreation
 */
-TEST_F(VulkanTutorial1GuiTests, test1) {
+TEST_F(VulkanTutorialCom1GuiTests, test1) {
     try {
         std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
         std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
