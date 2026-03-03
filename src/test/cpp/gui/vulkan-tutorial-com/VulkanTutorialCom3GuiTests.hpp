@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 #include <set>
+#include <chrono>
 #include <filesystem>
 #include <stdexcept>
 #include <iostream>
@@ -15,12 +16,10 @@
 #include <exqudens/Log.hpp>
 #include <exqudens/log/api/Logging.hpp>
 
-#ifndef GLFW_INCLUDE_VULKAN
-#define GLFW_INCLUDE_VULKAN
-#endif
-#include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <GLFW/glfw3.h>
 
 #include <vulkan/vulkan_raii.hpp>
 
@@ -30,11 +29,11 @@
 
 #define CALL_INFO std::string(__FUNCTION__) + " (" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
 
-class VulkanTutorialCom2GuiTests: public testing::Test {
+class VulkanTutorialCom3GuiTests: public testing::Test {
 
     public:
 
-        inline static const char* LOGGER_ID = "VulkanTutorialCom2GuiTests";
+        inline static const char* LOGGER_ID = "VulkanTutorialCom3GuiTests";
 
     private:
 
@@ -86,6 +85,12 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
             }
         };
 
+        struct UniformBufferObject {
+            glm::mat4 model;
+            glm::mat4 view;
+            glm::mat4 proj;
+        };
+
         class Application {
 
             public:
@@ -135,6 +140,7 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                 exqudens::vulkan::Queue transferQueue = {};
                 exqudens::vulkan::Queue graphicsQueue = {};
                 exqudens::vulkan::Queue presentQueue = {};
+                exqudens::vulkan::DescriptorSetLayout descriptorSetLayout = {};
                 exqudens::vulkan::PipelineLayout pipelineLayout = {};
                 exqudens::vulkan::PipelineCache pipelineCache = {};
                 exqudens::vulkan::ShaderModule vertShaderModule = {};
@@ -152,6 +158,11 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                 exqudens::vulkan::CommandPool graphicsCommandPool = {};
 
                 exqudens::vulkan::Swapchain swapchain = {};
+                exqudens::vulkan::DescriptorPool descriptorPool = {};
+                exqudens::vulkan::DescriptorSets descriptorSets = {};
+                std::vector<exqudens::vulkan::Buffer> uniformBuffers = {};
+                std::vector<exqudens::vulkan::DeviceMemory> uniformBufferMemories = {};
+                std::vector<void*> uniformBufferMappedMemories = {};
                 std::vector<exqudens::vulkan::ImageView> imageViews = {};
                 exqudens::vulkan::RenderPass renderPass = {};
                 exqudens::vulkan::Pipeline pipeline = {};
@@ -281,7 +292,7 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                                 | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
                                 //| vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding
                             )
-                            .setPfnUserCallback(&VulkanTutorialCom2GuiTests::debugCallback)
+                            .setPfnUserCallback(&VulkanTutorialCom3GuiTests::debugCallback)
                         )
                         .build(instance.target);
 
@@ -376,10 +387,22 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         .setFamilyIndex(presentIndex.value())
                         .build(device.target);
 
+                        exqudens::vulkan::DescriptorSetLayout::builder(descriptorSetLayout)
+                        .addBinding(
+                            vk::DescriptorSetLayoutBinding()
+                            .setBinding(0)
+                            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                            .setDescriptorCount(1)
+                            .setStageFlags(vk::ShaderStageFlagBits::eVertex)
+                            .setPImmutableSamplers(nullptr)
+                        )
+                        .build(device.target);
+
                         exqudens::vulkan::PipelineLayout::builder(pipelineLayout)
                         .setCreateInfo(
                             vk::PipelineLayoutCreateInfo()
-                            .setSetLayoutCount(0)
+                            .setSetLayoutCount(1)
+                            .setPSetLayouts(&*descriptorSetLayout.target)
                             .setPushConstantRangeCount(0)
                         )
                         .build(device.target);
@@ -516,10 +539,6 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         )
                         .build(device.target);
 
-                        /*void* data = vertexStagingBufferMemory.target.mapMemory(0, vertexStagingBufferMemory.allocateInfo.value().allocationSize);
-                        memcpy(data, vertices.data(), vertexStagingBuffer.createInfo.value().size);
-                        vertexStagingBufferMemory.target.unmapMemory();*/
-
                         vertexStagingBufferMemory.fill(vertices.data());
                         indexStagingBufferMemory.fill(indices.data());
 
@@ -580,14 +599,68 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         })
                         .build(device.target);
 
+                        exqudens::vulkan::DescriptorPool::builder(descriptorPool)
+                        .addSize(
+                            vk::DescriptorPoolSize()
+                            .setType(vk::DescriptorType::eUniformBuffer)
+                            .setDescriptorCount(static_cast<uint32_t>(swapchain.target.getImages().size()))
+                        )
+                        .setCreateInfo(
+                            vk::DescriptorPoolCreateInfo()
+                            .setMaxSets(static_cast<uint32_t>(swapchain.target.getImages().size()))
+                            .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+                        )
+                        .build(device.target);
+
+                        exqudens::vulkan::DescriptorSets::builder(descriptorSets)
+                        .setLayouts(std::vector<vk::DescriptorSetLayout>(swapchain.target.getImages().size(), *descriptorSetLayout.target))
+                        .setAllocateInfo(
+                            vk::DescriptorSetAllocateInfo()
+                            .setDescriptorPool(*descriptorPool.target)
+                        )
+                        .build(device.target);
+
+                        uniformBuffers.resize(swapchain.target.getImages().size());
+                        uniformBufferMemories.resize(swapchain.target.getImages().size());
+                        uniformBufferMappedMemories.resize(swapchain.target.getImages().size());
                         imageViews.resize(swapchain.target.getImages().size());
-                        for (size_t i = 0; i < imageViews.size(); i++) {
+                        for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
+                            exqudens::vulkan::Buffer::builder(uniformBuffers.at(i))
+                            .setCreateInfo(
+                                vk::BufferCreateInfo()
+                                .setSize(sizeof(UniformBufferObject))
+                                .setUsage(vk::BufferUsageFlagBits::eUniformBuffer)
+                                .setSharingMode(vk::SharingMode::eExclusive)
+                            )
+                            .build(device.target);
+
+                            exqudens::vulkan::DeviceMemory::builder(uniformBufferMemories.at(i))
+                            .setAllocateInfo(
+                                exqudens::vulkan::DeviceMemory::allocateInfoFrom(
+                                    physicalDevice.target,
+                                    uniformBuffers.at(i).target,
+                                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+                                )
+                            )
+                            .build(device.target);
+
+                            uniformBuffers.at(i).target.bindMemory(*uniformBufferMemories.at(i).target, 0);
+
+                            uniformBufferMappedMemories.at(i) = uniformBufferMemories.at(i).target.mapMemory(0, uniformBufferMemories.at(i).allocateInfo->allocationSize);
+
                             exqudens::vulkan::ImageView::builder(imageViews.at(i))
                             .setCreateInfo(
                                 vk::ImageViewCreateInfo()
                                 .setImage(swapchain.target.getImages().at(i))
-                                .setFormat(swapchain.createInfo.value().imageFormat)
                                 .setViewType(vk::ImageViewType::e2D)
+                                .setFormat(swapchain.createInfo.value().imageFormat)
+                                .setComponents(
+                                    vk::ComponentMapping()
+                                    .setR(vk::ComponentSwizzle::eIdentity)
+                                    .setG(vk::ComponentSwizzle::eIdentity)
+                                    .setB(vk::ComponentSwizzle::eIdentity)
+                                    .setA(vk::ComponentSwizzle::eIdentity)
+                                )
                                 .setSubresourceRange(
                                     vk::ImageSubresourceRange()
                                     .setAspectMask(vk::ImageAspectFlagBits::eColor)
@@ -598,6 +671,21 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                                 )
                             )
                             .build(device.target);
+
+                            vk::DescriptorBufferInfo descriptorBufferInfo = vk::DescriptorBufferInfo()
+                            .setBuffer(*uniformBuffers.at(i).target)
+                            .setOffset(0)
+                            .setRange(sizeof(UniformBufferObject));
+
+                            vk::WriteDescriptorSet writeDescriptorSet = vk::WriteDescriptorSet()
+                            .setDstSet(*descriptorSets.targets.at(i))
+                            .setDstBinding(0)
+                            .setDstArrayElement(0)
+                            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                            .setDescriptorCount(1)
+                            .setPBufferInfo(&descriptorBufferInfo);
+
+                            device.target.updateDescriptorSets({writeDescriptorSet}, {});
                         }
 
                         exqudens::vulkan::RenderPass::builder(renderPass)
@@ -670,13 +758,17 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         )
                         .setRasterizationStateCreateInfo(
                             vk::PipelineRasterizationStateCreateInfo()
+                            .setFlags({})
                             .setDepthClampEnable(false)
                             .setRasterizerDiscardEnable(false)
                             .setPolygonMode(vk::PolygonMode::eFill)
-                            .setLineWidth(1.0f)
                             .setCullMode(vk::CullModeFlagBits::eBack)
-                            .setFrontFace(vk::FrontFace::eClockwise)
+                            .setFrontFace(vk::FrontFace::eCounterClockwise)
                             .setDepthBiasEnable(false)
+                            .setDepthBiasConstantFactor(0.0f)
+                            .setDepthBiasClamp(0.0f)
+                            .setDepthBiasSlopeFactor(1.0f)
+                            .setLineWidth(1.0f)
                         )
                         .setMultisampleStateCreateInfo(
                             vk::PipelineMultisampleStateCreateInfo()
@@ -715,7 +807,7 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         .build(device.target, pipelineCache.target);
 
                         framebuffers.resize(swapchain.target.getImages().size());
-                        for (size_t i = 0; i < framebuffers.size(); i++) {
+                        for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
                             exqudens::vulkan::Framebuffer::builder(framebuffers.at(i))
                             .addAttachment(*imageViews.at(i).target)
                             .setCreateInfo(
@@ -738,17 +830,11 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         .build(device.target);
 
                         imageAvailableSemaphores.resize(swapchain.target.getImages().size());
-                        for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
-                            exqudens::vulkan::Semaphore::builder(imageAvailableSemaphores.at(i)).build(device.target);
-                        }
-
                         renderFinishedSemaphores.resize(swapchain.target.getImages().size());
-                        for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
-                            exqudens::vulkan::Semaphore::builder(renderFinishedSemaphores.at(i)).build(device.target);
-                        }
-
                         inFlightFences.resize(swapchain.target.getImages().size());
-                        for (size_t i = 0; i < inFlightFences.size(); i++) {
+                        for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
+                            exqudens::vulkan::Semaphore::builder(imageAvailableSemaphores.at(i)).build(device.target);
+                            exqudens::vulkan::Semaphore::builder(renderFinishedSemaphores.at(i)).build(device.target);
                             exqudens::vulkan::Fence::builder(inFlightFences.at(i)).setCreateInfo(vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled)).build(device.target);
                         }
 
@@ -793,6 +879,17 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         for (size_t i = 0; i < imageViews.size(); i++) {
                             imageViews.at(i).clearAndRelease();
                         }
+
+                        for (size_t i = 0; i < uniformBuffers.size(); i++) {
+                            uniformBuffers.at(i).clearAndRelease();
+                        }
+
+                        for (size_t i = 0; i < uniformBufferMemories.size(); i++) {
+                            uniformBufferMemories.at(i).clearAndRelease();
+                        }
+
+                        descriptorSets.clearAndRelease();
+                        descriptorPool.clearAndRelease();
 
                         swapchain.clearAndRelease();
 
@@ -846,6 +943,7 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         commandBuffer.bindVertexBuffers(0, {*vertexBuffer.target}, {0});
                         commandBuffer.bindIndexBuffer(*indexBuffer.target, 0, vk::IndexType::eUint16);
 
+                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipelineLayout.target, 0, {*descriptorSets.targets.at(currentFrame)}, nullptr);
                         commandBuffer.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
                         commandBuffer.endRenderPass();
@@ -853,6 +951,23 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                     } catch (...) {
                         std::throw_with_nested(std::runtime_error(CALL_INFO));
                     }
+                }
+
+                void updateUniformBuffer(uint32_t currentFrame, uint32_t width, uint32_t height) {
+                    static auto startTime = std::chrono::high_resolution_clock::now();
+                    auto currentTime = std::chrono::high_resolution_clock::now();
+                    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+                    UniformBufferObject ubo = {};
+                    //ubo.model = {1.0f};
+                    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                    ubo.view = {1.0f};
+                    //ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+                    ubo.proj = {1.0f};
+                    //ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), 0.1f, 10.0f);
+                    ubo.proj[1][1] *= -1;
+
+                    std::memcpy(uniformBufferMappedMemories.at(currentFrame), &ubo, sizeof(ubo));
                 }
 
                 void drawFrame() {
@@ -868,6 +983,8 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         } else if (acquireNextImageValue.result != vk::Result::eSuccess && acquireNextImageValue.result != vk::Result::eSuboptimalKHR) {
                             throw std::runtime_error(CALL_INFO + ": failed to acquire swap chain image!");
                         }
+
+                        updateUniformBuffer(currentFrame, swapchain.createInfo.value().imageExtent.width, swapchain.createInfo.value().imageExtent.height);
 
                         // Only reset the fence if we are submitting work
                         device.target.resetFences({*inFlightFences.at(currentFrame).target});
@@ -939,7 +1056,7 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
     custom allocator that splits up a single allocation among many different objects by using the "offset" parameters
     that we've seen in many functions.
 */
-TEST_F(VulkanTutorialCom2GuiTests, test1) {
+TEST_F(VulkanTutorialCom3GuiTests, test1) {
     try {
         std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
         std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();

@@ -405,6 +405,15 @@ class VulkanTutorialCom1GuiTests: public testing::Test {
                             .setAttachment(0)
                             .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
                         })
+                        .addSubpassDependency(
+                            vk::SubpassDependency()
+                            .setSrcSubpass(vk::SubpassExternal)
+                            .setDstSubpass(0)
+                            .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+                            .setSrcAccessMask(vk::AccessFlagBits::eNone)
+                            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+                            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+                        )
                         .addSubpassDescription(
                             vk::SubpassDescription()
                             .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)

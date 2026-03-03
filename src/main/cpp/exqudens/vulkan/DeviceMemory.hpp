@@ -38,19 +38,19 @@ namespace exqudens::vulkan {
 
     class EXQUDENS_VULKAN_EXPORT DeviceMemory::Builder {
 
-    private:
+        private:
 
-        DeviceMemory& object;
+            DeviceMemory& object;
 
-    public:
+        public:
 
-        explicit Builder(DeviceMemory& object);
+            explicit Builder(DeviceMemory& object);
 
-        Builder& setAllocateInfo(const VULKAN_HPP_NAMESPACE::MemoryAllocateInfo& value);
+            Builder& setAllocateInfo(const VULKAN_HPP_NAMESPACE::MemoryAllocateInfo& value);
 
-        DeviceMemory& build(
-            VULKAN_HPP_NAMESPACE::raii::Device& device
-        );
+            DeviceMemory& build(
+                VULKAN_HPP_NAMESPACE::raii::Device& device
+            );
 
     };
 

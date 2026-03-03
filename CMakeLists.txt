@@ -455,6 +455,9 @@ set(LIB_SOURCES
     "src/main/cpp/${BASE_DIR}/ImageView.hpp"
     "src/main/cpp/${BASE_DIR}/RenderPass.hpp"
     "src/main/cpp/${BASE_DIR}/ShaderModule.hpp"
+    "src/main/cpp/${BASE_DIR}/DescriptorSetLayout.hpp"
+    "src/main/cpp/${BASE_DIR}/DescriptorPool.hpp"
+    "src/main/cpp/${BASE_DIR}/DescriptorSets.hpp"
     "src/main/cpp/${BASE_DIR}/PipelineLayout.hpp"
     "src/main/cpp/${BASE_DIR}/PipelineCache.hpp"
     "src/main/cpp/${BASE_DIR}/Pipeline.hpp"
@@ -616,13 +619,27 @@ if(NOT "${SKIP_TEST}")
         "src/test/cpp/TestApplication.cpp"
         "src/test/cpp/StringVector.hpp"
         "src/test/cpp/unit/OtherUnitTests.hpp"
+        "src/test/cpp/unit/GlmUnitTests.hpp"
         "src/test/cpp/unit/StringVectorUnitTests.hpp"
         "src/test/cpp/gui/vulkan-tutorial-com/VulkanTutorialCom1GuiTests.hpp"
         "src/test/cpp/gui/vulkan-tutorial-com/VulkanTutorialCom2GuiTests.hpp"
+        "src/test/cpp/gui/vulkan-tutorial-com/VulkanTutorialCom3GuiTests.hpp"
     )
     generate_export_header("test-lib"
         BASE_NAME "TEST_LIB"
         EXPORT_FILE_NAME "generated/src/test/cpp/test_lib_export.hpp"
+    )
+    target_compile_definitions("test-lib" PUBLIC
+        "GLM_ENABLE_EXPERIMENTAL"
+
+        #"GLM_FORCE_DEPTH_ZERO_TO_ONE"
+        #"GLM_FORCE_LEFT_HANDED"
+        #"GLM_FORCE_RIGHT_HANDED"
+
+        #"GLM_FORCE_DEFAULT_ALIGNED_GENTYPES"
+
+        "GLM_FORCE_RADIANS"
+        "GLFW_INCLUDE_VULKAN"
     )
     if(NOT "${BUILD_SHARED_LIBS}")
         target_compile_definitions("test-lib" PUBLIC
@@ -675,6 +692,9 @@ if(NOT "${SKIP_TEST}")
                 "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom2GuiTests/test1/vert.spv"
                 "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom2GuiTests/test1/frag.spv"
 
+                "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1/vert.spv"
+                "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1/frag.spv"
+
                #"${PROJECT_BINARY_DIR}/test/output/VulkanTutorial9GuiTests/test1/shader-1.spv"
 
                #"${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
@@ -694,6 +714,13 @@ if(NOT "${SKIP_TEST}")
             "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom2GuiTests/test1/vert.spv"
         COMMAND "${SLANGC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom2GuiTests/test1/1.frag"
             "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom2GuiTests/test1/frag.spv"
+
+        COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-rf" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1"
+        COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1"
+        COMMAND "${SLANGC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom3GuiTests/test1/1.vert"
+            "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1/vert.spv"
+        COMMAND "${SLANGC_COMMAND}" "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom3GuiTests/test1/1.frag"
+            "-o" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1/frag.spv"
 
         #[[COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1"
         COMMAND "${CMAKE_COMMAND}" "-E" "rm" "-f" "${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
@@ -723,6 +750,9 @@ if(NOT "${SKIP_TEST}")
                 "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom2GuiTests/test1/1.vert"
                 "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom2GuiTests/test1/1.frag"
 
+                "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom3GuiTests/test1/1.vert"
+                "${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorialCom3GuiTests/test1/1.frag"
+
                 #"${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial10GuiTests/test1/shader-1.slang"
                 #"${PROJECT_SOURCE_DIR}/src/test/resources/VulkanTutorial11GuiTests/test1/shader-1.slang"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
@@ -736,6 +766,9 @@ if(NOT "${SKIP_TEST}")
 
         "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom2GuiTests/test1/vert.spv"
         "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom2GuiTests/test1/frag.spv"
+
+        "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1/vert.spv"
+        "${PROJECT_BINARY_DIR}/test/output/VulkanTutorialCom3GuiTests/test1/frag.spv"
 
         #"${PROJECT_BINARY_DIR}/test/output/VulkanTutorial10GuiTests/test1/shader-1.spv"
         #"${PROJECT_BINARY_DIR}/test/output/VulkanTutorial11GuiTests/test1/shader-1.spv"

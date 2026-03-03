@@ -25,19 +25,19 @@ namespace exqudens::vulkan {
 
     class EXQUDENS_VULKAN_EXPORT Buffer::Builder {
 
-    private:
+        private:
 
-        Buffer& object;
+            Buffer& object;
 
-    public:
+        public:
 
-        explicit Builder(Buffer& object);
+            explicit Builder(Buffer& object);
 
-        Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::BufferCreateInfo& value);
+            Builder& setCreateInfo(const VULKAN_HPP_NAMESPACE::BufferCreateInfo& value);
 
-        Buffer& build(
-            VULKAN_HPP_NAMESPACE::raii::Device& device
-        );
+            Buffer& build(
+                VULKAN_HPP_NAMESPACE::raii::Device& device
+            );
 
     };
 
