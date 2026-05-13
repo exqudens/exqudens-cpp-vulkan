@@ -314,22 +314,28 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             std::vector<vk::QueueFamilyProperties> queueFamilyProperties = d.getQueueFamilyProperties();
                             for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
                                 vk::PhysicalDeviceProperties properties = d.getProperties();
+                                std::cout << "deviceName: '" << properties.deviceName << "'" << std::endl;
                                 if (properties.apiVersion < instance.applicationInfo.value().apiVersion) {
                                     continue;
                                 }
-                                if (
-                                    (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eTransfer) == vk::QueueFlagBits::eTransfer
-                                    && (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eGraphics) == static_cast<vk::QueueFlags>(0)
+                                /*if (
+                                    (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eTransfer) != static_cast<vk::QueueFlags>(0)
+                                    && (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0)
                                 ) {
                                     transferIndex = static_cast<uint32_t>(i);
-                                }
+                                }*/
                                 if (
-                                    (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0)
+                                    (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eTransfer) != static_cast<vk::QueueFlags>(0)
+                                    && (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eGraphics) != static_cast<vk::QueueFlags>(0)
                                     && d.getSurfaceSupportKHR(static_cast<uint32_t>(i), surface.surface)
                                 ) {
+                                    transferIndex = static_cast<uint32_t>(i);
                                     graphicsIndex = static_cast<uint32_t>(i);
                                     presentIndex = graphicsIndex.value();
                                 }
+                                std::cout << "transferIndex: " << (bool) transferIndex << std::endl;
+                                std::cout << "graphicsIndex: " << (bool) graphicsIndex << std::endl;
+                                std::cout << "presentIndex: " << (bool) presentIndex << std::endl;
                                 if (transferIndex && graphicsIndex && presentIndex) {
                                     break;
                                 }
@@ -339,6 +345,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             for (const auto& ep : extensionProperties) {
                                 notFoundExtensions.erase(ep.extensionName);
                             }
+                            std::cout << "notFoundExtensions.size: " << notFoundExtensions.size() << std::endl;
                             if (transferIndex && graphicsIndex && presentIndex && notFoundExtensions.empty()) {
                                 exqudens::vulkan::PhysicalDevice::builder(physicalDevice)
                                 .setRequiredExtensions(deviceRequiredExtensions)

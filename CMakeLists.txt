@@ -92,8 +92,6 @@ string(JSON NAME GET "${NAME_VERSION_JSON}" "name")
 string(JSON VERSION GET "${NAME_VERSION_JSON}" "version")
 project("${NAME}" VERSION "${VERSION}" LANGUAGES "NONE")
 
-find_program(SLANGC_COMMAND NAMES "slangc.exe" "slangc" PATHS ENV SLANGC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
-
 message(STATUS "PROJECT_NAME: '${PROJECT_NAME}'")
 message(STATUS "PROJECT_VERSION: '${PROJECT_VERSION}'")
 
@@ -353,9 +351,12 @@ endif()
 list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
     "Vulkan"
 )
-set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.328.1")
 if("windows" IN_LIST "PRESET_NAME_ELEMENTS")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.328.1")
     set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH" "C:/VulkanSDK/${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}")
+elseif("linux" IN_LIST "PRESET_NAME_ELEMENTS")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.341.1")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH" "/opt/vulkan-sdk/${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}/x86_64")
 else()
     message(FATAL_ERROR "Unsupported preset: '${PRESET_NAME}'")
 endif()
@@ -428,9 +429,10 @@ foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
         if("windows" IN_LIST "PRESET_NAME_ELEMENTS")
             set_property(TARGET "Vulkan" PROPERTY IMPORTED_IMPLIB "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/lib/vulkan-1.lib")
         else()
-            set_property(TARGET "Vulkan" PROPERTY IMPORTED_LOCATION "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/bin/vulkan.so")
+            set_property(TARGET "Vulkan" PROPERTY IMPORTED_LOCATION "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/lib/libvulkan.so")
         endif()
         add_library("Vulkan::Vulkan" ALIAS "Vulkan")
+        find_program(SLANGC_COMMAND NAMES "slangc.exe" "slangc" PATHS "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/bin" ENV SLANGC_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
     elseif("glfw3" STREQUAL "${cmakePackageName}")
         file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}Config.cmake")
         file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
@@ -670,6 +672,8 @@ if(NOT "${SKIP_TEST}")
         #"GLM_FORCE_DEFAULT_ALIGNED_GENTYPES"
 
         "GLM_FORCE_RADIANS"
+
+        "GLFW_INCLUDE_NONE"
         "GLFW_INCLUDE_VULKAN"
     )
     target_include_directories("test-lib" PUBLIC

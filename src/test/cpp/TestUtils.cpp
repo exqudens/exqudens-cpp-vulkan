@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cctype>
 #include <cstdlib>
+#include <climits>
 #include <stdexcept>
 #include <filesystem>
 #include <numeric>
