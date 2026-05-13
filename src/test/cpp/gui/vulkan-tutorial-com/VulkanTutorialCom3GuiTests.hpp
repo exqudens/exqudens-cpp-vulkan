@@ -86,9 +86,9 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
         };
 
         struct UniformBufferObject {
-            glm::mat4 model;
-            glm::mat4 view;
-            glm::mat4 proj;
+            alignas(16) glm::mat4 model;
+            alignas(16) glm::mat4 view;
+            alignas(16) glm::mat4 proj;
         };
 
         class Application {
@@ -267,7 +267,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                         exqudens::vulkan::Instance::builder(instance)
                         .setApplicationInfo(
                             vk::ApplicationInfo()
-                            .setApiVersion(vk::ApiVersion14)
+                            .setApiVersion(vk::ApiVersion12)
                             .setPApplicationName(LOGGER_ID)
                             .setApplicationVersion(VK_MAKE_VERSION(0, 0, 1))
                             .setPEngineName("No Engine")
@@ -313,6 +313,10 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                         for (auto& d : devices) {
                             std::vector<vk::QueueFamilyProperties> queueFamilyProperties = d.getQueueFamilyProperties();
                             for (size_t i = 0; i < queueFamilyProperties.size(); i++) {
+                                vk::PhysicalDeviceProperties properties = d.getProperties();
+                                if (properties.apiVersion < instance.applicationInfo.value().apiVersion) {
+                                    continue;
+                                }
                                 if (
                                     (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eTransfer) == vk::QueueFlagBits::eTransfer
                                     && (queueFamilyProperties.at(i).queueFlags & vk::QueueFlagBits::eGraphics) == static_cast<vk::QueueFlags>(0)
@@ -764,11 +768,11 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             .setPolygonMode(vk::PolygonMode::eFill)
                             .setCullMode(vk::CullModeFlagBits::eBack)
                             .setFrontFace(vk::FrontFace::eCounterClockwise)
+                            .setLineWidth(1.0f)
                             .setDepthBiasEnable(false)
                             .setDepthBiasConstantFactor(0.0f)
                             .setDepthBiasClamp(0.0f)
-                            .setDepthBiasSlopeFactor(1.0f)
-                            .setLineWidth(1.0f)
+                            .setDepthBiasSlopeFactor(0.0f)
                         )
                         .setMultisampleStateCreateInfo(
                             vk::PipelineMultisampleStateCreateInfo()
@@ -959,12 +963,12 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
                     UniformBufferObject ubo = {};
-                    //ubo.model = {1.0f};
                     ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                    ubo.view = {1.0f};
+                    //ubo.model = glm::mat4(1.0f);
                     //ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                    ubo.proj = {1.0f};
+                    ubo.view = glm::mat4(1.0f);
                     //ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), 0.1f, 10.0f);
+                    ubo.proj = glm::mat4(1.0f);
                     ubo.proj[1][1] *= -1;
 
                     std::memcpy(uniformBufferMappedMemories.at(currentFrame), &ubo, sizeof(ubo));

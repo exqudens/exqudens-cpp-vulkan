@@ -7,6 +7,8 @@
 #include <map>
 #include <exception>
 
+//#include <glm/glm.hpp>
+
 #include "test_lib_export.hpp"
 
 class TEST_LIB_EXPORT TestUtils {
@@ -72,5 +74,7 @@ class TEST_LIB_EXPORT TestUtils {
         static std::string toString(const std::map<std::string, std::any>& value);
 
         static std::string toString(const std::vector<std::any>& value);
+
+        //static glm::mat4 lookAt(glm::vec3 eye_pos, glm::vec3 scene_center, glm::vec3 up_vec);
 
 };

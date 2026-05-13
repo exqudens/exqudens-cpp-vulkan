@@ -1,5 +1,20 @@
 {
     "version": "0.2.0",
+    "inputs": [
+        {
+            "id": "test-app-selector",
+            "type": "command",
+            "command": "extension.commandvariable.pickStringRemember",
+            "args": {
+                "key": "test-app-selector",
+                "addLabelToTop": "${remember:test-app-selector}",
+                "description": "Select Test Entry",
+                "options": [
+                    "@_LAUNCH_TESTS@"
+                ]
+            }
+        }
+    ],
     "configurations": [
         {
             "name": "test-app",
@@ -18,16 +33,26 @@
                     "value": "@_BINARY_DIR@/test/bin"
                 }
             ]
-        }
-    ],
-    "inputs": [
+        },
         {
-            "id": "test-app-selector",
-            "type": "pickString",
-            "description": "Select Test Entry",
-            "default": "@_LAUNCH_DEFAULT_TEST@",
-            "options": [
-                "@_LAUNCH_TESTS@"
+            "name": "cppdbg-test-app",
+            "type": "cppdbg",
+            "request": "launch",
+            "externalConsole": false,
+            "avoidWindowsConsoleRedirection": true,
+            "internalConsoleOptions": "openOnSessionStart",
+            "MIMode": "gdb",
+            "cwd": "${workspaceRoot}",
+            "program": "@_BINARY_DIR@/test/bin/test-app",
+            "args": [
+                "--project-binary-dir=@_BINARY_DIR@",
+                "--gtest_filter=${input:test-app-selector}"
+            ],
+            "environment": [
+                {
+                    "name": "PATH",
+                    "value": "@_BINARY_DIR@/test/bin"
+                }
             ]
         }
     ]

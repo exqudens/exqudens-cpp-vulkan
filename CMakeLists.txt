@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION "3.25" FATAL_ERROR)
-
 message(STATUS "CMAKE_COMMAND: '${CMAKE_COMMAND}'")
 message(STATUS "CMAKE_VERSION: '${CMAKE_VERSION}'")
+
+cmake_minimum_required(VERSION "3.25" FATAL_ERROR)
+
 message(STATUS "PRESET_NAME: '${PRESET_NAME}'")
 
 string(REPLACE "." ";" PRESET_NAME_ELEMENTS "${PRESET_NAME}")
@@ -12,7 +13,16 @@ set(USE_CONAN "1" CACHE BOOL "...")
 message(STATUS "USE_CONAN: '${USE_CONAN}'")
 
 if("${USE_CONAN}")
-    find_program(CONAN_COMMAND NAMES "conan.exe" "conan" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+    if("windows" IN_LIST "PRESET_NAME_ELEMENTS")
+        find_program(CONAN_COMMAND NAMES "conan.exe" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+    else()
+        find_program(CONAN_COMMAND NAMES "conan" PATHS ENV CONAN_PATH ENV PATH REQUIRED NO_CACHE NO_DEFAULT_PATH)
+    endif()
+    message(STATUS "CONAN_COMMAND: '${CONAN_COMMAND}'")
+    set(CONAN_USER "exqudens" CACHE STRING "...")
+    set(CONAN_CHANNEL "development" CACHE STRING "...")
+    message(STATUS "CONAN_USER: '${CONAN_USER}'")
+    message(STATUS "CONAN_CHANNEL: '${CONAN_CHANNEL}'")
 endif()
 
 if("${CMAKE_UTIL_FILE}" STREQUAL "")
@@ -22,12 +32,14 @@ if("${CMAKE_UTIL_FILE}" STREQUAL "")
                 #[[execute_process(
                     COMMAND "${CONAN_COMMAND}" "user" "$ENV{CONAN_LOGIN_USERNAME}" "-r" "artifactory" "-p"
                     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                    COMMAND_ECHO "STDOUT"
                     ENCODING "UTF-8"
                     COMMAND_ERROR_IS_FATAL "ANY"
                 )]]
                 execute_process(
-                    COMMAND "${CONAN_COMMAND}" "install" "--tool-requires=exqudens-cmake/0.0.1" "--deployer" "direct_deploy" "--deployer-folder" "${CMAKE_SOURCE_DIR}/build/dependencies"
-                    COMMAND_ECHO "STDERR"
+                    COMMAND "${CONAN_COMMAND}" "install" "--tool-requires=exqudens-cmake/0.0.1@${CONAN_USER}/${CONAN_CHANNEL}" "--deployer" "direct_deploy" "--deployer-folder" "${CMAKE_SOURCE_DIR}/build/dependencies"
+                    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                    COMMAND_ECHO "STDOUT"
                     ENCODING "UTF-8"
                     COMMAND_ERROR_IS_FATAL "ANY"
                 )
@@ -187,6 +199,7 @@ if("${USE_CONAN}")
             #[[execute_process(
                 COMMAND "${CONAN_COMMAND}" "user" "$ENV{CONAN_LOGIN_USERNAME}" "-r" "artifactory" "-p"
                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                COMMAND_ECHO "STDOUT"
                 ENCODING "UTF-8"
                 COMMAND_ERROR_IS_FATAL "ANY"
             )]]
@@ -195,8 +208,11 @@ if("${USE_CONAN}")
                         "--output-folder" "${CONAN_INSTALL_PREFIX}"
                         ${CONAN_SETTINGS}
                         ${CONAN_OPTIONS}
+                        "--user" "${CONAN_USER}"
+                        "--channel" "${CONAN_CHANNEL}"
                         "${PROJECT_SOURCE_DIR}/conanfile.py"
-                COMMAND_ECHO "STDERR"
+                WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                COMMAND_ECHO "STDOUT"
                 ENCODING "UTF-8"
                 COMMAND_ERROR_IS_FATAL "ANY"
             )
@@ -260,8 +276,11 @@ if("${USE_CONAN}")
                         "--output-folder" "${CONAN_INSTALL_PREFIX}/test"
                         ${CONAN_SETTINGS}
                         ${CONAN_OPTIONS}
+                        "--user" "${CONAN_USER}"
+                        "--channel" "${CONAN_CHANNEL}"
                         "${PROJECT_SOURCE_DIR}/test-conanfile.py"
-                COMMAND_ECHO "STDERR"
+                WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                COMMAND_ECHO "STDOUT"
                 ENCODING "UTF-8"
                 COMMAND_ERROR_IS_FATAL "ANY"
             )
@@ -323,7 +342,7 @@ if("${${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES}" STREQUAL "")
             "GTest"
             "exqudens-cpp-log-api"
             "exqudens-cpp-log"
-            "nlohmann_json"
+            #"nlohmann_json"
             #"VulkanHeaders"
             #"vulkan-sdk"
             "glfw3"
@@ -629,23 +648,30 @@ if(NOT "${SKIP_TEST}")
         BASE_NAME "TEST_LIB"
         EXPORT_FILE_NAME "generated/src/test/cpp/test_lib_export.hpp"
     )
-    target_compile_definitions("test-lib" PUBLIC
-        "GLM_ENABLE_EXPERIMENTAL"
-
-        #"GLM_FORCE_DEPTH_ZERO_TO_ONE"
-        #"GLM_FORCE_LEFT_HANDED"
-        #"GLM_FORCE_RIGHT_HANDED"
-
-        #"GLM_FORCE_DEFAULT_ALIGNED_GENTYPES"
-
-        "GLM_FORCE_RADIANS"
-        "GLFW_INCLUDE_VULKAN"
-    )
     if(NOT "${BUILD_SHARED_LIBS}")
         target_compile_definitions("test-lib" PUBLIC
             "TEST_LIB_STATIC_DEFINE"
         )
     endif()
+    target_compile_definitions("test-lib" PUBLIC
+        #"NOMINMAX" # Windows
+
+        #"GLM_ENABLE_EXPERIMENTAL"
+
+        #"GLM_FORCE_DEPTH_ZERO_TO_ONE"
+        #"GLM_FORCE_LEFT_HANDED" # vk::FrontFace::eClockwise
+        #"GLM_FORCE_RIGHT_HANDED" # vk::FrontFace::eCounterClockwise
+
+        #"GLM_FORCE_MESSAGES"
+        #"GLM_FORCE_CXX11"
+        #"GLM_FORCE_CXX_UNKNOWN"
+        #"GLM_FORCE_UNRESTRICTED_GENTYPE"
+        #"GLM_FORCE_ALIGNED_GENTYPES"
+        #"GLM_FORCE_DEFAULT_ALIGNED_GENTYPES"
+
+        "GLM_FORCE_RADIANS"
+        "GLFW_INCLUDE_VULKAN"
+    )
     target_include_directories("test-lib" PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/test/cpp>"
         "$<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/generated/src/test/cpp>"
@@ -658,7 +684,7 @@ if(NOT "${SKIP_TEST}")
         "GTest::gmock_main"
         "GTest::gtest_main"
         "exqudens-cpp-log::exqudens-cpp-log"
-        "nlohmann_json::nlohmann_json"
+        #"nlohmann_json::nlohmann_json"
         #"vulkan-headers::vulkan-headers"
         #"vulkan-sdk::vulkan-sdk"
         "Vulkan::Vulkan"
@@ -908,8 +934,8 @@ if("${USE_CONAN}")
                 "--output-folder" "${CMAKE_INSTALL_PREFIX}"
                 ${CONAN_SETTINGS}
                 ${CONAN_OPTIONS}
-                #"--user" "gitlab-group+gitlab-sub-group+${PROJECT_NAME}"
-                #"--channel" "stable"
+                "--user" "${CONAN_USER}"
+                "--channel" "${CONAN_CHANNEL}"
                 "${PROJECT_SOURCE_DIR}/conanfile.py"
         DEPENDS "cmake-install"
         WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
@@ -919,6 +945,8 @@ if("${USE_CONAN}")
 endif()
 
 add_custom_target("vscode"
+    #COMMAND "${CMAKE_COMMAND}" "-E" "make_directory" "${PROJECT_SOURCE_DIR}/.vscode"
+    #COMMAND "${CMAKE_COMMAND}" "-E" "copy" "${PROJECT_SOURCE_DIR}/src/test/resources/vscode/tasks.json" "${PROJECT_SOURCE_DIR}/.vscode"
     COMMAND "${CMAKE_COMMAND}" "-P" "cmake/util.cmake" "--" "vscode"
             SOURCE_DIR "${PROJECT_SOURCE_DIR}"
             BINARY_DIR "${PROJECT_BINARY_DIR}"
@@ -929,7 +957,6 @@ add_custom_target("vscode"
             LAUNCH_FILE "${PROJECT_SOURCE_DIR}/.vscode/launch.json"
             LAUNCH_TESTS_FILE "${PROJECT_BINARY_DIR}/test/bin/tests.json"
             LAUNCH_TESTS "*.*" "*UnitTests.*" "*GuiTests.*"
-            LAUNCH_DEFAULT_TEST "*.*"
     DEPENDS "test-app"
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     USES_TERMINAL

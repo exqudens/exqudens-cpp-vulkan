@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "test-app",
+            "type": "cmake",
+            "command": "build",
+            "targets": [
+                "test-app"
+            ],
+            "preset": "${command:cmake.activeBuildPresetName}",
+            "problemMatcher": [],
+            "detail": "CMake build 'test-app' target.",
+            "group": "build"
+        }
+    ]
+}

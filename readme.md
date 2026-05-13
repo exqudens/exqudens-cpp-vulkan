@@ -13,6 +13,12 @@
 
 ## vscode
 
+extensions:
+
+- [Command Variable](https://marketplace.visualstudio.com/items?itemName=rioj7.command-variable#pickstringremember) `version >= v1.69.0`
+
+steps:
+
 1. `git clean -xdf`
 2. `cmake --preset ${preset}`
 3. `cmake --build --preset ${preset} --target vscode`

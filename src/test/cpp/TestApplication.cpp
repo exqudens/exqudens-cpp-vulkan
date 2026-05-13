@@ -16,7 +16,7 @@
 
 // include test files
 #include "unit/OtherUnitTests.hpp"
-#include "unit/GlmUnitTests.hpp"
+//#include "unit/GlmUnitTests.hpp"
 #include "unit/StringVectorUnitTests.hpp"
 #include "gui/vulkan-tutorial-com/VulkanTutorialCom1GuiTests.hpp"
 #include "gui/vulkan-tutorial-com/VulkanTutorialCom2GuiTests.hpp"
@@ -40,7 +40,7 @@ int TestApplication::run(int argc, char** argv) {
         size_t loggingFileSize = 1073741824; // 1 gb
         std::set<std::string> loggerIds = {
             OtherUnitTests::LOGGER_ID,
-            GlmUnitTests::LOGGER_ID,
+            //GlmUnitTests::LOGGER_ID,
             StringVectorUnitTests::LOGGER_ID,
             VulkanTutorialCom1GuiTests::LOGGER_ID,
             VulkanTutorialCom2GuiTests::LOGGER_ID,

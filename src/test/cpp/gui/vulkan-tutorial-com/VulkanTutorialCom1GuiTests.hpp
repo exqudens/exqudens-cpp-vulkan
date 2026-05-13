@@ -13,9 +13,6 @@
 #include <exqudens/Log.hpp>
 #include <exqudens/log/api/Logging.hpp>
 
-#ifndef GLFW_INCLUDE_VULKAN
-#define GLFW_INCLUDE_VULKAN
-#endif
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vulkan_raii.hpp>

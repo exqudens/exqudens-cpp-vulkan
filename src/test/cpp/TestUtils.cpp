@@ -9,6 +9,8 @@
 #include <sstream>
 #include <fstream>
 
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "TestUtils.hpp"
 
 #define CALL_INFO std::string(__FUNCTION__) + "(" + std::filesystem::path(__FILE__).filename().string() + ":" + std::to_string(__LINE__) + ")"
@@ -389,5 +391,22 @@ std::string TestUtils::toString(const std::vector<std::any>& value) {
         std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
 }
+
+/*glm::mat4 TestUtils::lookAt(glm::vec3 eye_pos, glm::vec3 scene_center, glm::vec3 up_vec) {
+    try {
+        // Create transform matrix in reverse order.
+        // First rotate around the X axis, and then around the Y axis, otherwise it does not match the practice of most games.
+        auto view_transform = glm::translate(glm::mat4(1.0f), scene_center); // last: move back
+        view_transform = glm::rotate(view_transform, /*camera_rotation_angle_y_#1# 0.0f * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        view_transform = glm::rotate(view_transform, /*camera_rotation_angle_x_#1# 0.0f * glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        view_transform = glm::translate(view_transform, -scene_center); // first: recenter
+
+        eye_pos = view_transform * glm::vec4(eye_pos, 1.0f); // The w component of point is 1
+        up_vec = view_transform * glm::vec4(up_vec, 0.0f); // The w component of vector is 0
+        return glm::lookAt(eye_pos, scene_center, up_vec);
+    } catch (...) {
+        std::throw_with_nested(std::runtime_error(CALL_INFO));
+    }
+}*/
 
 #undef CALL_INFO

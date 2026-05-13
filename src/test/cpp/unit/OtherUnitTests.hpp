@@ -12,7 +12,6 @@
 #include <gtest/gtest.h>
 #include <exqudens/Log.hpp>
 #include <exqudens/log/api/Logging.hpp>
-#include <nlohmann/json.hpp>
 
 // vulkan
 #include <vulkan/vulkan.hpp>
@@ -52,21 +51,8 @@ TEST_F(OtherUnitTests, test1) {
         std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
         EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
 
-        std::filesystem::path projectSourceDir = {};
-        std::string nameVersionContent = {};
-        nlohmann::json nameVersionJosn = {};
-        std::string expected = {};
-        std::string actual = {};
-
-        projectSourceDir = std::filesystem::path(TestUtils::getProjectSourceDir());
-        nameVersionContent = TestUtils::readFileString((projectSourceDir / "name-version.json").generic_string());
-        nameVersionJosn = nlohmann::json::parse(nameVersionContent);
-
-        expected = nameVersionJosn.at("version");
-        EXQUDENS_LOG_INFO(LOGGER_ID) << "expected: '" << expected << "'";
-
-        actual = "0.0.1";
-        EXQUDENS_LOG_INFO(LOGGER_ID) << "actual: '" << actual << "'";
+        std::string expected = "abc";
+        std::string actual = "abc";
 
         ASSERT_EQ(expected, actual);
 

@@ -25,6 +25,7 @@ function(vscode)
         "LAUNCH_FILE"
         "LAUNCH_TESTS_FILE"
         "LAUNCH_DEFAULT_TEST"
+        "LAUNCH_TESTS_INDENT"
     )
     set(multiValueKeywords
         "LAUNCH_ENV_PATH"
@@ -93,6 +94,13 @@ function(vscode)
     endif()
     if("${_LAUNCH_DEFAULT_TEST}" STREQUAL "")
         message(FATAL_ERROR "empty LAUNCH_DEFAULT_TEST: '${_LAUNCH_DEFAULT_TEST}'")
+    endif()
+
+    if("${_LAUNCH_TESTS_INDENT}" STREQUAL "")
+        set(_LAUNCH_TESTS_INDENT "16")
+    endif()
+    if("${_LAUNCH_TESTS_INDENT}" STREQUAL "")
+        message(FATAL_ERROR "empty LAUNCH_TESTS_INDENT: '${_LAUNCH_TESTS_INDENT}'")
     endif()
 
     if("${_LAUNCH_ENV_PATH}" STREQUAL "")
@@ -166,7 +174,8 @@ function(vscode)
         if("${_LAUNCH_DEFAULT_TEST}" STREQUAL "-")
             list(GET "_LAUNCH_TESTS" "0" "_LAUNCH_DEFAULT_TEST")
         endif()
-        string(JOIN "\",\n                \"" "_LAUNCH_TESTS" ${_LAUNCH_TESTS})
+        string(REPEAT " " "${_LAUNCH_TESTS_INDENT}" _LAUNCH_TESTS_INDENT)
+        string(JOIN "\",\n${_LAUNCH_TESTS_INDENT}\"" "_LAUNCH_TESTS" ${_LAUNCH_TESTS})
 
         configure_file("${_LAUNCH_TEMPLATE_FILE}" "${_LAUNCH_FILE}" @ONLY)
 

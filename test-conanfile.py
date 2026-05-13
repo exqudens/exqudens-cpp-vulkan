@@ -12,24 +12,25 @@ class ConanConfiguration(ConanFile):
 
     def requirements(self):
         try:
-            self.requires("gtest/1.11.0")
-            self.requires("exqudens-cpp-log/0.0.1")
-            self.requires("nlohmann_json/3.12.0")
-            #self.requires("vulkan-headers/1.4.313.0")
-            #self.requires("vulkan-sdk/1.4.328.1")
-            self.requires("glfw/3.4.0")
-            self.requires("glm/1.0.1")
+            if self.user and self.channel:
+                self.requires(f"gtest/1.11.0.0@{self.user}/{self.channel}")
+                self.requires(f"exqudens-cpp-log/0.0.1@{self.user}/{self.channel}")
+                #self.requires(f"nlohmann_json/3.12.0@{self.user}/{self.channel}")
+                #self.requires("vulkan-headers/1.4.313.0")
+                #self.requires("vulkan-sdk/1.4.328.1")
+                self.requires(f"glfw/3.4.0@{self.user}/{self.channel}")
+                self.requires(f"glm/1.0.3@{self.user}/{self.channel}")
+            else:
+                self.requires("gtest/1.11.0")
+                self.requires("exqudens-cpp-log/0.0.1")
+                #self.requires("nlohmann_json/3.12.0")
+                #self.requires("vulkan-headers/1.4.313.0")
+                #self.requires("vulkan-sdk/1.4.328.1")
+                self.requires("glfw/3.4.0")
+                self.requires("glm/1.0.3")
         except Exception as e:
             self.output.error(e)
             raise e
-
-    # def configure(self):
-    #     try:
-    #         self.options["gtest"].shared = self.options.shared
-    #         self.options["exqudens-cpp-log"].shared = self.options.shared
-    #     except Exception as e:
-    #         self.output.error(e)
-    #         raise e
 
     def generate(self):
         try:
