@@ -660,9 +660,9 @@ if(NOT "${SKIP_TEST}")
 
         #"GLM_ENABLE_EXPERIMENTAL"
 
-        #"GLM_FORCE_DEPTH_ZERO_TO_ONE"
+        "GLM_FORCE_DEPTH_ZERO_TO_ONE"
         #"GLM_FORCE_LEFT_HANDED" # vk::FrontFace::eClockwise
-        #"GLM_FORCE_RIGHT_HANDED" # vk::FrontFace::eCounterClockwise
+        "GLM_FORCE_RIGHT_HANDED" # vk::FrontFace::eCounterClockwise
 
         #"GLM_FORCE_MESSAGES"
         #"GLM_FORCE_CXX11"
