@@ -137,6 +137,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED "1")
 set(CMAKE_CXX_EXTENSIONS "0")
 
+#[[if("msvc-x64-x64" IN_LIST "PRESET_NAME_ELEMENTS")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Za-") # to fix glm GLM_FORCE_DEFAULT_ALIGNED_GENTYPES error C3861: 'call': identifier not found
+endif()]]
+
 #[[separate_arguments(CMAKE_CXX_FLAGS NATIVE_COMMAND "${CMAKE_CXX_FLAGS}")
 if(MSVC)
     if(NOT "/EHa" IN_LIST CMAKE_CXX_FLAGS AND "/EHsc" IN_LIST CMAKE_CXX_FLAGS)
@@ -332,17 +336,11 @@ if("${USE_CONAN}")
 endif()
 
 if("${${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES}" STREQUAL "")
-    #[[list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
-        "exqudens-cpp-log-api"
-    )]]
     if(NOT "${SKIP_TEST}")
         list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
             "GTest"
             "exqudens-cpp-log-api"
             "exqudens-cpp-log"
-            #"nlohmann_json"
-            #"VulkanHeaders"
-            #"vulkan-sdk"
             "glfw3"
             "glm"
         )
@@ -352,10 +350,10 @@ list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
     "Vulkan"
 )
 if("windows" IN_LIST "PRESET_NAME_ELEMENTS")
-    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.328.1")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.363.0")
     set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH" "C:/VulkanSDK/${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}")
 elseif("linux" IN_LIST "PRESET_NAME_ELEMENTS")
-    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.341.1")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.363.0")
     set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH" "/opt/vulkan-sdk/${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}/x86_64")
 else()
     message(FATAL_ERROR "Unsupported preset: '${PRESET_NAME}'")
@@ -381,44 +379,9 @@ foreach(cmakePackageName IN LISTS "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES")
         file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
         list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
-    elseif("nlohmann_json" STREQUAL "${cmakePackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}Config.cmake")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
-        #list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        #find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
-        if(NOT EXISTS "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}")
-            message(FATAL_ERROR "Not exists: '${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}'")
-        endif()
-        add_library("nlohmann_json" INTERFACE IMPORTED)
-        set_property(TARGET "nlohmann_json" PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/include")
-        add_library("nlohmann_json::nlohmann_json" ALIAS "nlohmann_json")
-    elseif("VulkanHeaders" STREQUAL "${cmakePackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}Config.cmake")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
-        #list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        #find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
-        if(NOT EXISTS "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}")
-            message(FATAL_ERROR "Not exists: '${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}'")
-        endif()
-        add_library("vulkan-headers" INTERFACE IMPORTED)
-        set_property(TARGET "vulkan-headers" PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/include")
-        add_library("vulkan-headers::vulkan-headers" ALIAS "vulkan-headers")
-    elseif("vulkan-sdk" STREQUAL "${cmakePackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}Config.cmake")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
-        list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
-        find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
-        add_library("vulkan-sdk" SHARED IMPORTED)
-        set_property(TARGET "vulkan-sdk" PROPERTY INTERFACE_INCLUDE_DIRECTORIES "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/include")
-        if("windows" IN_LIST "PRESET_NAME_ELEMENTS")
-            set_property(TARGET "vulkan-sdk" PROPERTY IMPORTED_IMPLIB "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/lib/vulkan-1.lib")
-        else()
-            set_property(TARGET "vulkan-sdk" PROPERTY IMPORTED_LOCATION "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}/bin/vulkan.so")
-        endif()
-        add_library("vulkan-sdk::vulkan-sdk" ALIAS "vulkan-sdk")
     elseif("Vulkan" STREQUAL "${cmakePackageName}")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}Config.cmake")
-        file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
+        #file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}Config.cmake")
+        #file(REMOVE "${CONAN_INSTALL_PREFIX}/test/${cmakePackageName}-config.cmake")
         #list(APPEND NOT_FOUND_PACKAGE_NAMES "${cmakePackageName}")
         #find_package("${cmakePackageName}" "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_VERSION}" EXACT QUIET)
         if(NOT EXISTS "${${PROJECT_NAME}_CMAKE_PACKAGE_${cmakePackageName}_PATH}")
@@ -658,13 +621,12 @@ if(NOT "${SKIP_TEST}")
     target_compile_definitions("test-lib" PUBLIC
         #"NOMINMAX" # Windows
 
-        #"GLM_ENABLE_EXPERIMENTAL"
-
         "GLM_FORCE_DEPTH_ZERO_TO_ONE"
         #"GLM_FORCE_LEFT_HANDED" # vk::FrontFace::eClockwise
         "GLM_FORCE_RIGHT_HANDED" # vk::FrontFace::eCounterClockwise
 
-        #"GLM_FORCE_MESSAGES"
+        "GLM_ENABLE_EXPERIMENTAL" # For glm::to_string etc
+        #"GLM_FORCE_MESSAGES" # Debug-Messages
         #"GLM_FORCE_CXX11"
         #"GLM_FORCE_CXX_UNKNOWN"
         #"GLM_FORCE_UNRESTRICTED_GENTYPE"

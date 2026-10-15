@@ -12,11 +12,14 @@ layout(location = 1) in vec3 inColor;
 layout(location = 0) out vec3 fragColor;
 
 void main() {
-    //gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
 
-    vec4 result = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
-    result = normalize(result);
-    gl_Position = vec4(result.xy, 0.0, 1.0);
+    //vec4 view = vec4(1.0, 1.0, 1.0, 1.0);
+    //gl_Position = view * ubo.model * vec4(inPosition, 0.0, 1.0); // works
+
+    //vec4 result = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
+    //result = normalize(result);
+    //gl_Position = vec4(result.xy, 0.0, 1.0); // works
 
     fragColor = inColor;
 }

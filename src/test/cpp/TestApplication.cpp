@@ -16,7 +16,7 @@
 
 // include test files
 #include "unit/OtherUnitTests.hpp"
-//#include "unit/GlmUnitTests.hpp"
+#include "unit/GlmUnitTests.hpp"
 #include "unit/StringVectorUnitTests.hpp"
 #include "gui/vulkan-tutorial-com/VulkanTutorialCom1GuiTests.hpp"
 #include "gui/vulkan-tutorial-com/VulkanTutorialCom2GuiTests.hpp"
@@ -35,19 +35,22 @@ int TestApplication::run(int argc, char** argv) {
         TestUtils::init(args);
 
         // logging
-        std::filesystem::path executableDir(TestUtils::getExecutableDir());
+        std::filesystem::path executableDir(TestUtils::getExecutableDir().value());
         std::string loggingFile = (executableDir / "log" / "log.txt").generic_string();
-        size_t loggingFileSize = 1073741824; // 1 gb
-        std::set<std::string> loggerIds = {
-            OtherUnitTests::LOGGER_ID,
-            //GlmUnitTests::LOGGER_ID,
-            StringVectorUnitTests::LOGGER_ID,
-            VulkanTutorialCom1GuiTests::LOGGER_ID,
-            VulkanTutorialCom2GuiTests::LOGGER_ID,
-            VulkanTutorialCom3GuiTests::LOGGER_ID,
-            LOGGER_ID
-        };
-        std::string loggingConfigResult = exqudens::Log::configure(loggingFile, loggingFileSize, loggerIds);
+        std::string loggingConfigJson = TestUtils::readFileString(
+            std::filesystem::path(__FILE__)
+            .parent_path()
+            .parent_path()
+            .append("resources")
+            .append("log-config.json")
+            .generic_string()
+        );
+        std::string loggingConfigAnchorFile = "@FILE@";
+        size_t loggingConfigAnchorFilePosition = loggingConfigJson.find(loggingConfigAnchorFile);
+        if (loggingConfigAnchorFilePosition != std::string::npos) {
+            loggingConfigJson.replace(loggingConfigAnchorFilePosition, loggingConfigAnchorFile.length(), loggingFile);
+        }
+        std::string loggingConfigResult = exqudens::log::api::Logging::configure(loggingConfigJson);
 
         EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
         EXQUDENS_LOG_INFO(LOGGER_ID) << "loggingConfigResult: '" << loggingConfigResult << "'";

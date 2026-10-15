@@ -196,3 +196,38 @@ TEST_F(GlmUnitTests, test_rotate_lookAt_perspective_1) {
         FAIL() << errorMessage;
     }
 }
+
+TEST_F(GlmUnitTests, test_rotate_lookAt_perspective_projInvertY_1) {
+    try {
+        std::string testGroup = testing::UnitTest::GetInstance()->current_test_info()->test_suite_name();
+        std::string testCase = testing::UnitTest::GetInstance()->current_test_info()->name();
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
+
+        glm::vec2 inPosition = {0.5f, 0.5f};
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "inPosition: " << glm::to_string(inPosition);
+
+        glm::mat4 model = glm::rotate(glm::mat4(1.0f), 0.75f * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "model: " << glm::to_string(model);
+
+        glm::mat4 view = glm::lookAtRH(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "view: " << glm::to_string(view);
+
+        glm::mat4 proj = glm::perspectiveRH_ZO(glm::radians(45.0f), static_cast<float>(800) / static_cast<float>(600), 0.1f, 10.0f);
+        proj[1][1] *= -1;
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "proj: " << glm::to_string(proj);
+
+        glm::vec4 expected = glm::vec4(1.182871f, 0.377172f, 3.174909f, 3.243159f);
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "expected: " << glm::to_string(expected);
+
+        glm::vec4 actual = proj * view * model * glm::vec4(inPosition, 0.0f, 1.0f);
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "actual: " << glm::to_string(actual);
+
+        ASSERT_TRUE(glm::all(glm::epsilonEqual(expected, actual, 0.0001f)));
+
+        EXQUDENS_LOG_INFO(LOGGER_ID) << "end";
+    } catch (const std::exception& e) {
+        std::string errorMessage = TestUtils::toString(e);
+        std::cout << LOGGER_ID << " ERROR: " << errorMessage << std::endl;
+        FAIL() << errorMessage;
+    }
+}

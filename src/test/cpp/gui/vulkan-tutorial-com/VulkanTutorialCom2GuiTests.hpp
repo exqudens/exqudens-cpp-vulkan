@@ -698,11 +698,11 @@ class VulkanTutorialCom2GuiTests: public testing::Test {
                         )
                         .addDynamicState(vk::DynamicState::eViewport)
                         .addDynamicState(vk::DynamicState::eScissor)
-                        .setRenderingCreateInfo(
+                        /*.setRenderingCreateInfo(
                             vk::PipelineRenderingCreateInfo()
                             .setColorAttachmentCount(1)
                             .setPColorAttachmentFormats(&swapchain.createInfo.value().imageFormat)
-                        )
+                        )*/
                         .setGraphicsCreateInfo(
                             vk::GraphicsPipelineCreateInfo()
                             .setLayout(*pipelineLayout.target)

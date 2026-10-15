@@ -119,6 +119,8 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                     0, 1, 2, 2, 3, 0
                 };
 
+                const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
                 int width = 0;
                 int height = 0;
                 const char* title = nullptr;
@@ -140,11 +142,18 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                 exqudens::vulkan::Queue transferQueue = {};
                 exqudens::vulkan::Queue graphicsQueue = {};
                 exqudens::vulkan::Queue presentQueue = {};
+                exqudens::vulkan::Swapchain swapchain = {};
+                std::vector<exqudens::vulkan::ImageView> imageViews = {};
                 exqudens::vulkan::DescriptorSetLayout descriptorSetLayout = {};
+                exqudens::vulkan::RenderPass renderPass = {};
+                std::vector<exqudens::vulkan::Framebuffer> framebuffers = {};
                 exqudens::vulkan::PipelineLayout pipelineLayout = {};
                 exqudens::vulkan::PipelineCache pipelineCache = {};
                 exqudens::vulkan::ShaderModule vertShaderModule = {};
                 exqudens::vulkan::ShaderModule fragShaderModule = {};
+                exqudens::vulkan::Pipeline pipeline = {};
+                exqudens::vulkan::CommandPool transferCommandPool = {};
+                exqudens::vulkan::CommandPool graphicsCommandPool = {};
                 exqudens::vulkan::Buffer vertexStagingBuffer = {};
                 exqudens::vulkan::DeviceMemory vertexStagingBufferMemory = {};
                 exqudens::vulkan::Buffer vertexBuffer = {};
@@ -153,27 +162,21 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                 exqudens::vulkan::DeviceMemory indexStagingBufferMemory = {};
                 exqudens::vulkan::Buffer indexBuffer = {};
                 exqudens::vulkan::DeviceMemory indexBufferMemory = {};
-                exqudens::vulkan::CommandPool transferCommandPool = {};
-                exqudens::vulkan::CommandBuffers transferCommandBuffers = {};
-                exqudens::vulkan::CommandPool graphicsCommandPool = {};
-
-                exqudens::vulkan::Swapchain swapchain = {};
-                exqudens::vulkan::DescriptorPool descriptorPool = {};
-                exqudens::vulkan::DescriptorSets descriptorSets = {};
                 std::vector<exqudens::vulkan::Buffer> uniformBuffers = {};
                 std::vector<exqudens::vulkan::DeviceMemory> uniformBufferMemories = {};
                 std::vector<void*> uniformBufferMappedMemories = {};
-                std::vector<exqudens::vulkan::ImageView> imageViews = {};
-                exqudens::vulkan::RenderPass renderPass = {};
-                exqudens::vulkan::Pipeline pipeline = {};
-                std::vector<exqudens::vulkan::Framebuffer> framebuffers = {};
+                exqudens::vulkan::DescriptorPool descriptorPool = {};
+                exqudens::vulkan::DescriptorSets descriptorSets = {};
+                exqudens::vulkan::CommandBuffers transferCommandBuffers = {};
                 exqudens::vulkan::CommandBuffers graphicsCommandBuffers = {};
+
                 std::vector<exqudens::vulkan::Semaphore> imageAvailableSemaphores = {};
-                std::vector<exqudens::vulkan::Semaphore> renderFinishedSemaphores = {};
                 std::vector<exqudens::vulkan::Fence> inFlightFences = {};
 
+                std::vector<exqudens::vulkan::Semaphore> renderFinishedSemaphores = {};
+
                 bool framebufferResized = false;
-                uint32_t currentFrame = 0;
+                uint32_t frameIndex = 0;
 
             public:
 
@@ -398,6 +401,53 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                         .setFamilyIndex(presentIndex.value())
                         .build(device.target);
 
+                        exqudens::vulkan::Swapchain::builder(swapchain)
+                        .setCreateInfo(
+                            exqudens::vulkan::Swapchain::createInfoFrom(
+                                physicalDevice.target,
+                                surface.target,
+                                framebufferWidth,
+                                framebufferHeight
+                            )
+                            .setImageArrayLayers(1)
+                            .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
+                            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+                            .setClipped(true)
+                            .setSurface(*surface.target)
+                        )
+                        .setQueueFamilyIndices({
+                            graphicsQueue.familyIndex.value(),
+                            presentQueue.familyIndex.value()
+                        })
+                        .build(device.target);
+
+                        imageViews.resize(swapchain.target.getImages().size());
+                        for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
+                            exqudens::vulkan::ImageView::builder(imageViews.at(i))
+                            .setCreateInfo(
+                                vk::ImageViewCreateInfo()
+                                .setImage(swapchain.target.getImages().at(i))
+                                .setViewType(vk::ImageViewType::e2D)
+                                .setFormat(swapchain.createInfo.value().imageFormat)
+                                .setComponents(
+                                    vk::ComponentMapping()
+                                    .setR(vk::ComponentSwizzle::eIdentity)
+                                    .setG(vk::ComponentSwizzle::eIdentity)
+                                    .setB(vk::ComponentSwizzle::eIdentity)
+                                    .setA(vk::ComponentSwizzle::eIdentity)
+                                )
+                                .setSubresourceRange(
+                                    vk::ImageSubresourceRange()
+                                    .setAspectMask(vk::ImageAspectFlagBits::eColor)
+                                    .setBaseMipLevel(0)
+                                    .setLevelCount(1)
+                                    .setBaseArrayLayer(0)
+                                    .setLayerCount(1)
+                                )
+                            )
+                            .build(device.target);
+                        }
+
                         exqudens::vulkan::DescriptorSetLayout::builder(descriptorSetLayout)
                         .addBinding(
                             vk::DescriptorSetLayoutBinding()
@@ -408,6 +458,55 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             .setPImmutableSamplers(nullptr)
                         )
                         .build(device.target);
+
+                        exqudens::vulkan::RenderPass::builder(renderPass)
+                        .addAttachmentDescription(
+                            vk::AttachmentDescription()
+                            .setFormat(swapchain.createInfo.value().imageFormat)
+                            .setSamples(vk::SampleCountFlagBits::e1)
+                            .setLoadOp(vk::AttachmentLoadOp::eClear)
+                            .setStoreOp(vk::AttachmentStoreOp::eStore)
+                            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+                            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+                            .setInitialLayout(vk::ImageLayout::eUndefined)
+                            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
+                        )
+                        .addSubpassDescriptionAttachmentReferences({
+                            vk::AttachmentReference()
+                            .setAttachment(0)
+                            .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
+                        })
+                        .addSubpassDependency(
+                            vk::SubpassDependency()
+                            .setSrcSubpass(vk::SubpassExternal)
+                            .setDstSubpass(0)
+                            .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+                            .setSrcAccessMask(vk::AccessFlagBits::eNone)
+                            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+                            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+                        )
+                        .addSubpassDescription(
+                            vk::SubpassDescription()
+                            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
+                        )
+                        .setCreateInfo(
+                            vk::RenderPassCreateInfo()
+                        )
+                        .build(device.target);
+
+                        framebuffers.resize(swapchain.target.getImages().size());
+                        for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
+                            exqudens::vulkan::Framebuffer::builder(framebuffers.at(i))
+                            .addAttachment(*imageViews.at(i).target)
+                            .setCreateInfo(
+                                vk::FramebufferCreateInfo()
+                                .setRenderPass(*renderPass.target)
+                                .setWidth(swapchain.createInfo.value().imageExtent.width)
+                                .setHeight(swapchain.createInfo.value().imageExtent.height)
+                                .setLayers(1)
+                            )
+                            .build(device.target);
+                        }
 
                         exqudens::vulkan::PipelineLayout::builder(pipelineLayout)
                         .setCreateInfo(
@@ -439,6 +538,105 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             .c_str()
                         )
                         .setReadFile(true)
+                        .build(device.target);
+
+                        exqudens::vulkan::Pipeline::builder(pipeline)
+                        .addShaderStageCreateInfo(
+                            vk::PipelineShaderStageCreateInfo()
+                            .setModule(vertShaderModule.target)
+                            .setStage(vk::ShaderStageFlagBits::eVertex)
+                            .setPName("main")
+                        )
+                        .addShaderStageCreateInfo(
+                            vk::PipelineShaderStageCreateInfo()
+                            .setModule(fragShaderModule.target)
+                            .setStage(vk::ShaderStageFlagBits::eFragment)
+                            .setPName("main")
+                        )
+                        .setVertexInputStateCreateInfoBindings({
+                            Vertex::getBindingDescription()
+                        })
+                        .setVertexInputStateCreateInfoAttributes({
+                            Vertex::getAttributeDescriptions().at(0),
+                            Vertex::getAttributeDescriptions().at(1)
+                        })
+                        .setVertexInputStateCreateInfo(
+                            vk::PipelineVertexInputStateCreateInfo()
+                        )
+                        .setInputAssemblyStateCreateInfo(
+                            vk::PipelineInputAssemblyStateCreateInfo()
+                            .setTopology(vk::PrimitiveTopology::eTriangleList)
+                            .setPrimitiveRestartEnable(false)
+                        )
+                        .setViewportStateCreateInfo(
+                            vk::PipelineViewportStateCreateInfo()
+                            .setViewportCount(1)
+                            .setScissorCount(1)
+                        )
+                        .setRasterizationStateCreateInfo(
+                            vk::PipelineRasterizationStateCreateInfo()
+                            .setFlags({})
+                            .setDepthClampEnable(false)
+                            .setRasterizerDiscardEnable(false)
+                            .setPolygonMode(vk::PolygonMode::eFill)
+                            .setCullMode(vk::CullModeFlagBits::eBack)
+                            .setFrontFace(vk::FrontFace::eCounterClockwise)
+                            .setLineWidth(1.0f)
+                            .setDepthBiasEnable(false)
+                            .setDepthBiasConstantFactor(0.0f)
+                            .setDepthBiasClamp(0.0f)
+                            .setDepthBiasSlopeFactor(0.0f)
+                        )
+                        .setMultisampleStateCreateInfo(
+                            vk::PipelineMultisampleStateCreateInfo()
+                            .setSampleShadingEnable(false)
+                            .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+                        )
+                        .addColorBlendAttachmentState(
+                            vk::PipelineColorBlendAttachmentState()
+                            .setColorWriteMask(
+                                vk::ColorComponentFlagBits::eR
+                                | vk::ColorComponentFlagBits::eG
+                                | vk::ColorComponentFlagBits::eB
+                                | vk::ColorComponentFlagBits::eA
+                            )
+                            .setBlendEnable(false)
+                        )
+                        .setColorBlendStateCreateInfo(
+                            vk::PipelineColorBlendStateCreateInfo()
+                            .setLogicOpEnable(false)
+                            .setLogicOp(VULKAN_HPP_NAMESPACE::LogicOp::eCopy)
+                            .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f})
+                        )
+                        .addDynamicState(vk::DynamicState::eViewport)
+                        .addDynamicState(vk::DynamicState::eScissor)
+                        /*.setRenderingCreateInfo(
+                            vk::PipelineRenderingCreateInfo()
+                            .setColorAttachmentCount(1)
+                            .setPColorAttachmentFormats(&swapchain.createInfo.value().imageFormat)
+                        )*/
+                        .setGraphicsCreateInfo(
+                            vk::GraphicsPipelineCreateInfo()
+                            .setLayout(*pipelineLayout.target)
+                            .setRenderPass(*renderPass.target)
+                            .setSubpass(0)
+                        )
+                        .build(device.target, pipelineCache.target);
+
+                        exqudens::vulkan::CommandPool::builder(transferCommandPool)
+                        .setCreateInfo(
+                            vk::CommandPoolCreateInfo()
+                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                            .setQueueFamilyIndex(transferQueue.familyIndex.value())
+                        )
+                        .build(device.target);
+
+                        exqudens::vulkan::CommandPool::builder(graphicsCommandPool)
+                        .setCreateInfo(
+                            vk::CommandPoolCreateInfo()
+                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+                            .setQueueFamilyIndex(graphicsQueue.familyIndex.value())
+                        )
                         .build(device.target);
 
                         exqudens::vulkan::Buffer::builder(vertexStagingBuffer)
@@ -525,13 +723,71 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
 
                         indexBuffer.target.bindMemory(*indexBufferMemory.target, 0);
 
-                        exqudens::vulkan::CommandPool::builder(transferCommandPool)
+                        uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+                        uniformBufferMemories.resize(MAX_FRAMES_IN_FLIGHT);
+                        uniformBufferMappedMemories.resize(MAX_FRAMES_IN_FLIGHT);
+                        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+                            exqudens::vulkan::Buffer::builder(uniformBuffers.at(i))
+                            .setCreateInfo(
+                                vk::BufferCreateInfo()
+                                .setSize(sizeof(UniformBufferObject))
+                                .setUsage(vk::BufferUsageFlagBits::eUniformBuffer)
+                                .setSharingMode(vk::SharingMode::eExclusive)
+                            )
+                            .build(device.target);
+
+                            exqudens::vulkan::DeviceMemory::builder(uniformBufferMemories.at(i))
+                            .setAllocateInfo(
+                                exqudens::vulkan::DeviceMemory::allocateInfoFrom(
+                                    physicalDevice.target,
+                                    uniformBuffers.at(i).target,
+                                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+                                )
+                            )
+                            .build(device.target);
+
+                            uniformBuffers.at(i).target.bindMemory(*uniformBufferMemories.at(i).target, 0);
+
+                            uniformBufferMappedMemories.at(i) = uniformBufferMemories.at(i).target.mapMemory(0, uniformBufferMemories.at(i).allocateInfo->allocationSize);
+                        }
+
+                        exqudens::vulkan::DescriptorPool::builder(descriptorPool)
+                        .addSize(
+                            vk::DescriptorPoolSize()
+                            .setType(vk::DescriptorType::eUniformBuffer)
+                            .setDescriptorCount(MAX_FRAMES_IN_FLIGHT)
+                        )
                         .setCreateInfo(
-                            vk::CommandPoolCreateInfo()
-                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                            .setQueueFamilyIndex(transferQueue.familyIndex.value())
+                            vk::DescriptorPoolCreateInfo()
+                            .setMaxSets(MAX_FRAMES_IN_FLIGHT)
+                            .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
                         )
                         .build(device.target);
+
+                        exqudens::vulkan::DescriptorSets::builder(descriptorSets)
+                        .setLayouts(std::vector<vk::DescriptorSetLayout>(MAX_FRAMES_IN_FLIGHT, *descriptorSetLayout.target))
+                        .setAllocateInfo(
+                            vk::DescriptorSetAllocateInfo()
+                            .setDescriptorPool(*descriptorPool.target)
+                        )
+                        .build(device.target);
+
+                        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+                            vk::DescriptorBufferInfo descriptorBufferInfo = vk::DescriptorBufferInfo()
+                            .setBuffer(*uniformBuffers.at(i).target)
+                            .setOffset(0)
+                            .setRange(sizeof(UniformBufferObject));
+
+                            vk::WriteDescriptorSet writeDescriptorSet = vk::WriteDescriptorSet()
+                            .setDstSet(*descriptorSets.targets.at(i))
+                            .setDstBinding(0)
+                            .setDstArrayElement(0)
+                            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+                            .setDescriptorCount(1)
+                            .setPBufferInfo(&descriptorBufferInfo);
+
+                            device.target.updateDescriptorSets({writeDescriptorSet}, {});
+                        }
 
                         exqudens::vulkan::CommandBuffers::builder(transferCommandBuffers)
                         .setAllocateInfo(
@@ -542,13 +798,26 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                         )
                         .build(device.target);
 
-                        exqudens::vulkan::CommandPool::builder(graphicsCommandPool)
-                        .setCreateInfo(
-                            vk::CommandPoolCreateInfo()
-                            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
-                            .setQueueFamilyIndex(graphicsQueue.familyIndex.value())
+                        exqudens::vulkan::CommandBuffers::builder(graphicsCommandBuffers)
+                        .setAllocateInfo(
+                            vk::CommandBufferAllocateInfo()
+                            .setCommandPool(*graphicsCommandPool.target)
+                            .setLevel(vk::CommandBufferLevel::ePrimary)
+                            .setCommandBufferCount(MAX_FRAMES_IN_FLIGHT)
                         )
                         .build(device.target);
+
+                        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+                        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+                        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+                            exqudens::vulkan::Semaphore::builder(imageAvailableSemaphores.at(i)).build(device.target);
+                            exqudens::vulkan::Fence::builder(inFlightFences.at(i)).setCreateInfo(vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled)).build(device.target);
+                        }
+
+                        renderFinishedSemaphores.resize(swapchain.target.getImages().size());
+                        for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
+                            exqudens::vulkan::Semaphore::builder(renderFinishedSemaphores.at(i)).build(device.target);
+                        }
 
                         vertexStagingBufferMemory.fill(vertices.data());
                         indexStagingBufferMemory.fill(indices.data());
@@ -578,25 +847,46 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                         indexStagingBuffer.clearAndRelease();
                         indexStagingBufferMemory.clearAndRelease();
 
-                        initVulkanSwapchain(framebufferWidth, framebufferHeight);
-
                         EXQUDENS_LOG_INFO(LOGGER_ID) << "end";
                     } catch (...) {
                         std::throw_with_nested(std::runtime_error(CALL_INFO));
                     }
                 }
 
-                void initVulkanSwapchain(int swapchainWidth, int swapchainHeight) {
+                void recreateSwapChain() {
                     try {
                         EXQUDENS_LOG_INFO(LOGGER_ID) << "bgn";
+
+                        int framebufferWidth = 0, framebufferHeight = 0;
+                        glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+                        while (framebufferWidth == 0 || height == 0) {
+                            glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+                            glfwWaitEvents();
+                        }
+
+                        device.target.waitIdle();
+
+                        for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
+                            renderFinishedSemaphores.at(i).clearAndRelease();
+                        }
+
+                        for (size_t i = 0; i < framebuffers.size(); i++) {
+                            framebuffers.at(i).clearAndRelease();
+                        }
+
+                        for (size_t i = 0; i < imageViews.size(); i++) {
+                            imageViews.at(i).clearAndRelease();
+                        }
+
+                        swapchain.clearAndRelease();
 
                         exqudens::vulkan::Swapchain::builder(swapchain)
                         .setCreateInfo(
                             exqudens::vulkan::Swapchain::createInfoFrom(
                                 physicalDevice.target,
                                 surface.target,
-                                swapchainWidth,
-                                swapchainHeight
+                                framebufferWidth,
+                                framebufferHeight
                             )
                             .setImageArrayLayers(1)
                             .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment)
@@ -610,55 +900,8 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                         })
                         .build(device.target);
 
-                        exqudens::vulkan::DescriptorPool::builder(descriptorPool)
-                        .addSize(
-                            vk::DescriptorPoolSize()
-                            .setType(vk::DescriptorType::eUniformBuffer)
-                            .setDescriptorCount(static_cast<uint32_t>(swapchain.target.getImages().size()))
-                        )
-                        .setCreateInfo(
-                            vk::DescriptorPoolCreateInfo()
-                            .setMaxSets(static_cast<uint32_t>(swapchain.target.getImages().size()))
-                            .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                        )
-                        .build(device.target);
-
-                        exqudens::vulkan::DescriptorSets::builder(descriptorSets)
-                        .setLayouts(std::vector<vk::DescriptorSetLayout>(swapchain.target.getImages().size(), *descriptorSetLayout.target))
-                        .setAllocateInfo(
-                            vk::DescriptorSetAllocateInfo()
-                            .setDescriptorPool(*descriptorPool.target)
-                        )
-                        .build(device.target);
-
-                        uniformBuffers.resize(swapchain.target.getImages().size());
-                        uniformBufferMemories.resize(swapchain.target.getImages().size());
-                        uniformBufferMappedMemories.resize(swapchain.target.getImages().size());
                         imageViews.resize(swapchain.target.getImages().size());
                         for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
-                            exqudens::vulkan::Buffer::builder(uniformBuffers.at(i))
-                            .setCreateInfo(
-                                vk::BufferCreateInfo()
-                                .setSize(sizeof(UniformBufferObject))
-                                .setUsage(vk::BufferUsageFlagBits::eUniformBuffer)
-                                .setSharingMode(vk::SharingMode::eExclusive)
-                            )
-                            .build(device.target);
-
-                            exqudens::vulkan::DeviceMemory::builder(uniformBufferMemories.at(i))
-                            .setAllocateInfo(
-                                exqudens::vulkan::DeviceMemory::allocateInfoFrom(
-                                    physicalDevice.target,
-                                    uniformBuffers.at(i).target,
-                                    vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-                                )
-                            )
-                            .build(device.target);
-
-                            uniformBuffers.at(i).target.bindMemory(*uniformBufferMemories.at(i).target, 0);
-
-                            uniformBufferMappedMemories.at(i) = uniformBufferMemories.at(i).target.mapMemory(0, uniformBufferMemories.at(i).allocateInfo->allocationSize);
-
                             exqudens::vulkan::ImageView::builder(imageViews.at(i))
                             .setCreateInfo(
                                 vk::ImageViewCreateInfo()
@@ -682,140 +925,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                                 )
                             )
                             .build(device.target);
-
-                            vk::DescriptorBufferInfo descriptorBufferInfo = vk::DescriptorBufferInfo()
-                            .setBuffer(*uniformBuffers.at(i).target)
-                            .setOffset(0)
-                            .setRange(sizeof(UniformBufferObject));
-
-                            vk::WriteDescriptorSet writeDescriptorSet = vk::WriteDescriptorSet()
-                            .setDstSet(*descriptorSets.targets.at(i))
-                            .setDstBinding(0)
-                            .setDstArrayElement(0)
-                            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
-                            .setDescriptorCount(1)
-                            .setPBufferInfo(&descriptorBufferInfo);
-
-                            device.target.updateDescriptorSets({writeDescriptorSet}, {});
                         }
-
-                        exqudens::vulkan::RenderPass::builder(renderPass)
-                        .addAttachmentDescription(
-                            vk::AttachmentDescription()
-                            .setFormat(swapchain.createInfo.value().imageFormat)
-                            .setSamples(vk::SampleCountFlagBits::e1)
-                            .setLoadOp(vk::AttachmentLoadOp::eClear)
-                            .setStoreOp(vk::AttachmentStoreOp::eStore)
-                            .setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
-                            .setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
-                            .setInitialLayout(vk::ImageLayout::eUndefined)
-                            .setFinalLayout(vk::ImageLayout::ePresentSrcKHR)
-                        )
-                        .addSubpassDescriptionAttachmentReferences({
-                            vk::AttachmentReference()
-                            .setAttachment(0)
-                            .setLayout(vk::ImageLayout::eColorAttachmentOptimal)
-                        })
-                        .addSubpassDependency(
-                            vk::SubpassDependency()
-                            .setSrcSubpass(vk::SubpassExternal)
-                            .setDstSubpass(0)
-                            .setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-                            .setSrcAccessMask(vk::AccessFlagBits::eNone)
-                            .setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-                            .setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
-                        )
-                        .addSubpassDescription(
-                            vk::SubpassDescription()
-                            .setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
-                        )
-                        .setCreateInfo(
-                            vk::RenderPassCreateInfo()
-                        )
-                        .build(device.target);
-
-                        exqudens::vulkan::Pipeline::builder(pipeline)
-                        .addShaderStageCreateInfo(
-                            vk::PipelineShaderStageCreateInfo()
-                            .setModule(vertShaderModule.target)
-                            .setStage(vk::ShaderStageFlagBits::eVertex)
-                            .setPName("main")
-                        )
-                        .addShaderStageCreateInfo(
-                            vk::PipelineShaderStageCreateInfo()
-                            .setModule(fragShaderModule.target)
-                            .setStage(vk::ShaderStageFlagBits::eFragment)
-                            .setPName("main")
-                        )
-                        .setVertexInputStateCreateInfoBindings({
-                            Vertex::getBindingDescription()
-                        })
-                        .setVertexInputStateCreateInfoAttributes({
-                            Vertex::getAttributeDescriptions().at(0),
-                            Vertex::getAttributeDescriptions().at(1)
-                        })
-                        .setVertexInputStateCreateInfo(
-                            vk::PipelineVertexInputStateCreateInfo()
-                        )
-                        .setInputAssemblyStateCreateInfo(
-                            vk::PipelineInputAssemblyStateCreateInfo()
-                            .setTopology(vk::PrimitiveTopology::eTriangleList)
-                            .setPrimitiveRestartEnable(false)
-                        )
-                        .setViewportStateCreateInfo(
-                            vk::PipelineViewportStateCreateInfo()
-                            .setViewportCount(1)
-                            .setScissorCount(1)
-                        )
-                        .setRasterizationStateCreateInfo(
-                            vk::PipelineRasterizationStateCreateInfo()
-                            .setFlags({})
-                            .setDepthClampEnable(false)
-                            .setRasterizerDiscardEnable(false)
-                            .setPolygonMode(vk::PolygonMode::eFill)
-                            .setCullMode(vk::CullModeFlagBits::eBack)
-                            .setFrontFace(vk::FrontFace::eCounterClockwise)
-                            .setLineWidth(1.0f)
-                            .setDepthBiasEnable(false)
-                            .setDepthBiasConstantFactor(0.0f)
-                            .setDepthBiasClamp(0.0f)
-                            .setDepthBiasSlopeFactor(0.0f)
-                        )
-                        .setMultisampleStateCreateInfo(
-                            vk::PipelineMultisampleStateCreateInfo()
-                            .setSampleShadingEnable(false)
-                            .setRasterizationSamples(vk::SampleCountFlagBits::e1)
-                        )
-                        .addColorBlendAttachmentState(
-                            vk::PipelineColorBlendAttachmentState()
-                            .setColorWriteMask(
-                                vk::ColorComponentFlagBits::eR
-                                | vk::ColorComponentFlagBits::eG
-                                | vk::ColorComponentFlagBits::eB
-                                | vk::ColorComponentFlagBits::eA
-                            )
-                            .setBlendEnable(false)
-                        )
-                        .setColorBlendStateCreateInfo(
-                            vk::PipelineColorBlendStateCreateInfo()
-                            .setLogicOpEnable(false)
-                            .setLogicOp(VULKAN_HPP_NAMESPACE::LogicOp::eCopy)
-                            .setBlendConstants({0.0f, 0.0f, 0.0f, 0.0f})
-                        )
-                        .addDynamicState(vk::DynamicState::eViewport)
-                        .addDynamicState(vk::DynamicState::eScissor)
-                        .setRenderingCreateInfo(
-                            vk::PipelineRenderingCreateInfo()
-                            .setColorAttachmentCount(1)
-                            .setPColorAttachmentFormats(&swapchain.createInfo.value().imageFormat)
-                        )
-                        .setGraphicsCreateInfo(
-                            vk::GraphicsPipelineCreateInfo()
-                            .setLayout(*pipelineLayout.target)
-                            .setRenderPass(*renderPass.target)
-                            .setSubpass(0)
-                        )
-                        .build(device.target, pipelineCache.target);
 
                         framebuffers.resize(swapchain.target.getImages().size());
                         for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
@@ -831,80 +941,12 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             .build(device.target);
                         }
 
-                        exqudens::vulkan::CommandBuffers::builder(graphicsCommandBuffers)
-                        .setAllocateInfo(
-                            vk::CommandBufferAllocateInfo()
-                            .setCommandPool(*graphicsCommandPool.target)
-                            .setLevel(vk::CommandBufferLevel::ePrimary)
-                            .setCommandBufferCount(static_cast<uint32_t>(swapchain.target.getImages().size()))
-                        )
-                        .build(device.target);
-
-                        imageAvailableSemaphores.resize(swapchain.target.getImages().size());
                         renderFinishedSemaphores.resize(swapchain.target.getImages().size());
-                        inFlightFences.resize(swapchain.target.getImages().size());
                         for (size_t i = 0; i < swapchain.target.getImages().size(); i++) {
-                            exqudens::vulkan::Semaphore::builder(imageAvailableSemaphores.at(i)).build(device.target);
                             exqudens::vulkan::Semaphore::builder(renderFinishedSemaphores.at(i)).build(device.target);
-                            exqudens::vulkan::Fence::builder(inFlightFences.at(i)).setCreateInfo(vk::FenceCreateInfo().setFlags(vk::FenceCreateFlagBits::eSignaled)).build(device.target);
                         }
 
                         EXQUDENS_LOG_INFO(LOGGER_ID) << "end";
-                    } catch (...) {
-                        std::throw_with_nested(std::runtime_error(CALL_INFO));
-                    }
-                }
-
-                void recreateSwapChain() {
-                    try {
-                        int framebufferWidth = 0, framebufferHeight = 0;
-                        glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
-                        while (framebufferWidth == 0 || height == 0) {
-                            glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
-                            glfwWaitEvents();
-                        }
-
-                        device.target.waitIdle();
-
-                        for (size_t i = 0; i < inFlightFences.size(); i++) {
-                            inFlightFences.at(i).clearAndRelease();
-                        }
-
-                        for (size_t i = 0; i < renderFinishedSemaphores.size(); i++) {
-                            renderFinishedSemaphores.at(i).clearAndRelease();
-                        }
-
-                        for (size_t i = 0; i < imageAvailableSemaphores.size(); i++) {
-                            imageAvailableSemaphores.at(i).clearAndRelease();
-                        }
-
-                        graphicsCommandBuffers.clearAndRelease();
-
-                        for (size_t i = 0; i < framebuffers.size(); i++) {
-                            framebuffers.at(i).clearAndRelease();
-                        }
-
-                        pipeline.clearAndRelease();
-                        renderPass.clearAndRelease();
-
-                        for (size_t i = 0; i < imageViews.size(); i++) {
-                            imageViews.at(i).clearAndRelease();
-                        }
-
-                        for (size_t i = 0; i < uniformBuffers.size(); i++) {
-                            uniformBuffers.at(i).clearAndRelease();
-                        }
-
-                        for (size_t i = 0; i < uniformBufferMemories.size(); i++) {
-                            uniformBufferMemories.at(i).clearAndRelease();
-                        }
-
-                        descriptorSets.clearAndRelease();
-                        descriptorPool.clearAndRelease();
-
-                        swapchain.clearAndRelease();
-
-                        initVulkanSwapchain(framebufferWidth, framebufferHeight);
                     } catch (...) {
                         std::throw_with_nested(std::runtime_error(CALL_INFO));
                     }
@@ -947,14 +989,14 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
 
                         commandBuffer.setScissor(0, {
                             vk::Rect2D()
-                            .setOffset(vk::Offset2D().setY(0).setY(0))
+                            .setOffset(vk::Offset2D().setX(0).setY(0))
                             .setExtent(swapchain.createInfo.value().imageExtent)
                         });
 
                         commandBuffer.bindVertexBuffers(0, {*vertexBuffer.target}, {0});
                         commandBuffer.bindIndexBuffer(*indexBuffer.target, 0, vk::IndexType::eUint16);
 
-                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipelineLayout.target, 0, {*descriptorSets.targets.at(currentFrame)}, nullptr);
+                        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, *pipelineLayout.target, 0, {*descriptorSets.targets.at(frameIndex)}, nullptr);
                         commandBuffer.drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 
                         commandBuffer.endRenderPass();
@@ -964,7 +1006,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                     }
                 }
 
-                void updateUniformBuffer(uint32_t currentFrame, uint32_t width, uint32_t height) {
+                void updateUniformBuffer(uint32_t frameIndex, uint32_t width, uint32_t height) {
                     static auto startTime = std::chrono::high_resolution_clock::now();
                     auto currentTime = std::chrono::high_resolution_clock::now();
                     float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
@@ -993,7 +1035,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                     // definition independant
                     ubo.model = glm::rotate(
                         glm::mat4(1.0f),
-                        time * glm::radians(90.0f),
+                        0.75f * glm::radians(90.0f),
                         glm::vec3(0.0f, 0.0f, 1.0f)
                     );
                     ubo.view = glm::lookAtRH(
@@ -1009,14 +1051,14 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                     );
                     ubo.proj[1][1] *= -1;
 
-                    std::memcpy(uniformBufferMappedMemories.at(currentFrame), &ubo, sizeof(ubo));
+                    std::memcpy(uniformBufferMappedMemories.at(frameIndex), &ubo, sizeof(ubo));
                 }
 
                 void drawFrame() {
                     try {
-                        (void) device.target.waitForFences({*inFlightFences.at(currentFrame).target}, true, UINT64_MAX);
+                        (void) device.target.waitForFences({*inFlightFences.at(frameIndex).target}, true, UINT64_MAX);
 
-                        vk::ResultValue<uint32_t> acquireNextImageValue = swapchain.target.acquireNextImage(UINT64_MAX, *imageAvailableSemaphores.at(currentFrame).target, nullptr);
+                        vk::ResultValue<uint32_t> acquireNextImageValue = swapchain.target.acquireNextImage(UINT64_MAX, *imageAvailableSemaphores.at(frameIndex).target, nullptr);
                         uint32_t imageIndex = acquireNextImageValue.value;
 
                         if (acquireNextImageValue.result == vk::Result::eErrorOutOfDateKHR) {
@@ -1026,25 +1068,25 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             throw std::runtime_error(CALL_INFO + ": failed to acquire swap chain image!");
                         }
 
-                        updateUniformBuffer(currentFrame, swapchain.createInfo.value().imageExtent.width, swapchain.createInfo.value().imageExtent.height);
+                        updateUniformBuffer(frameIndex, swapchain.createInfo.value().imageExtent.width, swapchain.createInfo.value().imageExtent.height);
 
                         // Only reset the fence if we are submitting work
-                        device.target.resetFences({*inFlightFences.at(currentFrame).target});
+                        device.target.resetFences({*inFlightFences.at(frameIndex).target});
 
-                        graphicsCommandBuffers.targets.at(currentFrame).reset();
-                        recordCommandBuffer(graphicsCommandBuffers.targets.at(currentFrame), imageIndex);
+                        graphicsCommandBuffers.targets.at(frameIndex).reset();
+                        recordCommandBuffer(graphicsCommandBuffers.targets.at(frameIndex), imageIndex);
 
                         std::vector<vk::Semaphore> waitSemaphores = {
-                            *imageAvailableSemaphores.at(currentFrame).target
+                            *imageAvailableSemaphores.at(frameIndex).target
                         };
                         std::vector<vk::PipelineStageFlags> waitStages = {
                             vk::PipelineStageFlagBits::eColorAttachmentOutput
                         };
                         std::vector<vk::CommandBuffer> waitCommandBuffers = {
-                            *graphicsCommandBuffers.targets.at(currentFrame)
+                            *graphicsCommandBuffers.targets.at(frameIndex)
                         };
                         std::vector<vk::Semaphore> signalSemaphores = {
-                            *renderFinishedSemaphores.at(currentFrame).target
+                            *renderFinishedSemaphores.at(imageIndex).target
                         };
 
                         graphicsQueue.target.submit(
@@ -1055,7 +1097,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                                 .setCommandBuffers(waitCommandBuffers)
                                 .setSignalSemaphores(signalSemaphores)
                             },
-                            *inFlightFences.at(currentFrame).target
+                            *inFlightFences.at(frameIndex).target
                         );
 
                         std::vector<vk::SwapchainKHR> swapchains = {
@@ -1076,7 +1118,7 @@ class VulkanTutorialCom3GuiTests: public testing::Test {
                             throw std::runtime_error(CALL_INFO + ": failed to present swap chain image!");
                         }
 
-                        currentFrame = (currentFrame + 1) % static_cast<uint32_t>(swapchain.target.getImages().size());
+                        frameIndex = (frameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
                     } catch (...) {
                         std::throw_with_nested(std::runtime_error(CALL_INFO));
                     }

@@ -19,18 +19,18 @@
 void TestUtils::init(const std::vector<std::string>& input) {
     try {
         for (size_t i = 0; i < input.size(); i++) {
-            if (!data.executableFile.has_value() && i == 0) {
+            if (!executableFile.has_value() && i == 0) {
                 std::filesystem::path path = std::filesystem::path(input.at(i));
-                data.executableFile = path.generic_string();
+                executableFile = path.generic_string();
                 if (!path.parent_path().empty()) {
-                    data.executableDir = path.parent_path().generic_string();
+                    executableDir = path.parent_path().generic_string();
                 }
             }
-            if (!data.projectBinaryDir.has_value() && i != 0 && input.at(i).starts_with("--project-binary-dir=")) {
+            if (!projectBinaryDir.has_value() && i != 0 && input.at(i).starts_with("--project-binary-dir=")) {
                 std::vector<std::string> parts = split(input.at(i), "=");
                 if (parts.size() > 1) {
                     std::filesystem::path path = std::filesystem::path(parts.at(1));
-                    data.projectBinaryDir = path.generic_string();
+                    projectBinaryDir = path.generic_string();
                 }
             }
         }
@@ -39,41 +39,45 @@ void TestUtils::init(const std::vector<std::string>& input) {
     }
 }
 
-std::string TestUtils::getExecutableFile() {
+std::optional<std::string> TestUtils::getExecutableFile() {
     try {
-        return data.executableFile.value();
+        return executableFile;
     } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
 }
 
-std::string TestUtils::getExecutableDir() {
+std::optional<std::string> TestUtils::getExecutableDir() {
     try {
-        return data.executableDir.value();
+        return executableDir;
     } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
 }
 
-std::string TestUtils::getProjectBinaryDir() {
+std::optional<std::string> TestUtils::getProjectBinaryDir() {
     try {
-        return data.projectBinaryDir.value();
+        return projectBinaryDir;
     } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
 }
 
-std::string TestUtils::getTestOutputDir(const std::string& testGroup, const std::string& testCase) {
+std::optional<std::string> TestUtils::getTestOutputDir(const std::string& testGroup, const std::string& testCase) {
     try {
-        std::filesystem::path result(getProjectBinaryDir());
-        result = result / "test" / "output" / testGroup / testCase;
-        return result.generic_string();
+        std::optional<std::string> result = getProjectBinaryDir();
+        if (!result) {
+            return result;
+        }
+        std::filesystem::path resultPath(result.value());
+        resultPath = resultPath / "test" / "output" / testGroup / testCase;
+        return resultPath.generic_string();
     } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO));
     }
 }
 
-std::string TestUtils::getProjectSourceDir() {
+std::optional<std::string> TestUtils::getProjectSourceDir() {
     try {
         return std::filesystem::path(__FILE__).parent_path().parent_path().parent_path().parent_path().generic_string();
     } catch (...) {
@@ -81,11 +85,15 @@ std::string TestUtils::getProjectSourceDir() {
     }
 }
 
-std::string TestUtils::getTestInputDir(const std::string& testGroup, const std::string& testCase) {
+std::optional<std::string> TestUtils::getTestInputDir(const std::string& testGroup, const std::string& testCase) {
     try {
-        std::filesystem::path result(getProjectSourceDir());
-        result = result / "src" / "test" / "resources" / testGroup / testCase;
-        return result.generic_string();
+        std::optional<std::string> result = getProjectSourceDir();
+        if (!result) {
+            return result;
+        }
+        std::filesystem::path resultPath(result.value());
+        resultPath = resultPath / "src" / "test" / "resources" / testGroup / testCase;
+        return resultPath.generic_string();
     } catch (...) {
         std::throw_with_nested(std::runtime_error(CALL_INFO));
     }

@@ -1,0 +1,32 @@
+{
+    "formatters": {
+        "formatter": {
+            "format": "${timestamp} ${level} ${logger} [${thread}] ${function}(${file}:${line}): ${message}",
+            "parameters": {
+                "timestamp": {"format": "%Y-%m-%d %H:%M:%S", "seconds": 9}
+            }
+        }
+    },
+    "handlers": {
+        "console-handler": {
+            "type": "console",
+            "stream": "stdout",
+            "formatter": "formatter"
+        },
+        "file-handler": {
+            "type": "file",
+            "file": "@FILE@",
+            "size": 2147483647,
+            "formatter": "formatter"
+        }
+    },
+    "loggers": {
+        "root": {
+            "level": 6,
+            "handlers": [
+                "console-handler",
+                "file-handler"
+            ]
+        }
+    }
+}
