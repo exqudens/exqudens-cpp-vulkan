@@ -3,16 +3,12 @@
     "inputs": [
         {
             "id": "test-app-selector",
-            "type": "command",
-            "command": "extension.commandvariable.pickStringRemember",
-            "args": {
-                "key": "test-app-selector",
-                "addLabelToTop": "${remember:test-app-selector}",
-                "description": "Select Test Entry",
-                "options": [
-                    "@_LAUNCH_TESTS@"
-                ]
-            }
+            "type": "pickString",
+            "description": "Select Test Entry",
+            "default": "@_LAUNCH_DEFAULT_TEST@",
+            "options": [
+                "@_LAUNCH_TESTS@"
+            ]
         }
     ],
     "configurations": [

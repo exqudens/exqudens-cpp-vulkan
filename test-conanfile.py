@@ -13,13 +13,13 @@ class ConanConfiguration(ConanFile):
     def requirements(self):
         try:
             if self.user and self.channel:
-                self.requires(f"gtest/1.11.0.0@{self.user}/{self.channel}")
+                self.requires(f"gtest/1.18.0.0@{self.user}/{self.channel}")
                 self.requires(f"exqudens-cpp-log/1.0.0@{self.user}/{self.channel}")
                 self.requires(f"glfw/3.4.0@{self.user}/{self.channel}")
                 self.requires(f"glm/1.0.3@{self.user}/{self.channel}")
             else:
-                self.requires("gtest/1.11.0")
-                self.requires("exqudens-cpp-log/0.0.1")
+                self.requires("gtest/1.18.0.0")
+                self.requires("exqudens-cpp-log/1.0.0")
                 self.requires("glfw/3.4.0")
                 self.requires("glm/1.0.3")
         except Exception as e:

@@ -37,7 +37,11 @@ if("${CMAKE_UTIL_FILE}" STREQUAL "")
                     COMMAND_ERROR_IS_FATAL "ANY"
                 )]]
                 execute_process(
-                    COMMAND "${CONAN_COMMAND}" "install" "--tool-requires=exqudens-cmake/0.0.1@${CONAN_USER}/${CONAN_CHANNEL}" "--deployer" "direct_deploy" "--deployer-folder" "${CMAKE_SOURCE_DIR}/build/dependencies"
+                    COMMAND "${CONAN_COMMAND}" "install"
+                            "--envs-generation" "false"
+                            "--tool-requires" "exqudens-cmake/0.0.1@${CONAN_USER}/${CONAN_CHANNEL}"
+                            "--deployer" "direct_deploy"
+                            "--deployer-folder" "${CMAKE_SOURCE_DIR}/build/dependencies"
                     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                     COMMAND_ECHO "STDOUT"
                     ENCODING "UTF-8"
@@ -65,7 +69,7 @@ if("msvc-x64-x64" IN_LIST "PRESET_NAME_ELEMENTS")
         set_msvc_toolchain(TOOLCHAIN_CONTENT
             PROCESSOR "x86_64"
             OS "${CMAKE_HOST_SYSTEM_NAME}"
-            VERSION "17"
+            VERSION "18"
             HOST "x64"
             TARGET "x64"
             SET_CMAKE_SYSTEM_NAME "0"
@@ -350,10 +354,10 @@ list(APPEND "${PROJECT_NAME}_CMAKE_FIND_PACKAGE_NAMES"
     "Vulkan"
 )
 if("windows" IN_LIST "PRESET_NAME_ELEMENTS")
-    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.363.0")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.363.1")
     set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH" "C:/VulkanSDK/${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}")
 elseif("linux" IN_LIST "PRESET_NAME_ELEMENTS")
-    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.363.0")
+    set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION" "1.4.363.1")
     set("${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_PATH" "/opt/vulkan-sdk/${${PROJECT_NAME}_CMAKE_PACKAGE_Vulkan_VERSION}/x86_64")
 else()
     message(FATAL_ERROR "Unsupported preset: '${PRESET_NAME}'")
